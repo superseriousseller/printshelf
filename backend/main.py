@@ -33,6 +33,7 @@ from auth import (
 from routes import printers as printers_routes
 from routes import filaments as filaments_routes
 from routes import prints as prints_routes
+from routes import profile as profile_routes
 
 # --- Logging ---
 logging.basicConfig(
@@ -91,6 +92,12 @@ app.add_middleware(
 app.include_router(printers_routes.router)
 app.include_router(filaments_routes.router)
 app.include_router(prints_routes.router)
+app.include_router(profile_routes.router)
+
+# Serve /static/* (CSS, future favicon etc.)
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+_BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+app.mount("/static", StaticFiles(directory=os.path.join(_BACKEND_DIR, "static")), name="static")
 
 
 # --- Lifecycle ---

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}PrintShelf{% endblock %}</title>
+    {% block meta %}{% endblock %}
+    <link rel="stylesheet" href="/static/app.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧊</text></svg>">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="/">PrintShelf</a>
+        <nav class="topnav">
+            <a href="/">Home</a>
+        </nav>
+    </header>
+    <main>{% block content %}{% endblock %}</main>
+    <footer>
+        <p>PrintShelf — track every print. <a href="/">printshelf.app</a></p>
+    </footer>
+</body>
+</html>

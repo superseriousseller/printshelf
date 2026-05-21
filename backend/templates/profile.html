@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.display_name or user.username }}'s prints — PrintShelf{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="{{ user.display_name or user.username }} has printed {{ stats.total }} models on PrintShelf.{% if user.bio %} {{ user.bio }}{% endif %}">
+    <meta property="og:type" content="profile">
+    <meta property="og:title" content="{{ user.display_name or user.username }} on PrintShelf">
+    <meta property="og:description" content="{{ stats.total }} prints · {{ stats.success_pct }}% success rate{% if stats.favorite_material %} · {{ stats.favorite_material }} favorite{% endif %}">
+    {% if first_photo %}<meta property="og:image" content="{{ first_photo }}">{% endif %}
+    <meta property="og:url" content="{{ app_url }}/u/{{ user.username }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="{{ app_url }}/u/{{ user.username }}">
+{% endblock %}
+
+{% block content %}
+<section class="profile-hero">
+    <div class="avatar">
+        {% if user.avatar_url %}<img src="{{ user.avatar_url }}" alt="{{ user.username }}">{% else %}<div class="avatar-fallback">{{ (user.display_name or user.username)[0]|upper }}</div>{% endif %}
+    </div>
+    <div class="profile-meta">
+        <h1>{{ user.display_name or user.username }}</h1>
+        <p class="handle">@{{ user.username }}</p>
+        {% if user.bio %}<p class="bio">{{ user.bio }}</p>{% endif %}
+        <ul class="stats">
+            <li><strong>{{ stats.total }}</strong> {{ "print" if stats.total == 1 else "prints" }}</li>
+            <li><strong>{{ stats.success_pct }}%</strong> success</li>
+            {% if stats.favorite_material %}<li><strong>{{ stats.favorite_material }}</strong> favorite</li>{% endif %}
+        </ul>
+    </div>
+</section>
+
+<section class="filters">
+    <form method="get" action="">
+        <label>Material
+            <select name="material" onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for m in materials_present %}<option value="{{ m }}" {% if m == active.material %}selected{% endif %}>{{ m }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>Status
+            <select name="status" onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for s in ["printed", "failed", "partial"] %}<option value="{{ s }}" {% if s == active.status %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>Min rating
+            <select name="rating" onchange="this.form.submit()">
+                <option value="">Any</option>
+                {% for r in [5, 4, 3, 2, 1] %}<option value="{{ r }}" {% if r|string == active.rating %}selected{% endif %}>{{ r }}+ stars</option>{% endfor %}
+            </select>
+        </label>
+        {% if active.material or active.status or active.rating %}<a class="clear-link" href="/u/{{ user.username }}">Clear</a>{% endif %}
+    </form>
+</section>
+
+{% if prints %}
+<section class="print-grid">
+    {% for p in prints %}
+    <article class="print-card">
+        <div class="thumb">
+            {% set img = p.photo_url or p.thumbnail_url %}
+            {% if img %}
+                <img src="{{ img }}" alt="{{ p.title }}" loading="lazy">
+            {% else %}
+                <div class="thumb-fallback">🧊</div>
+            {% endif %}
+            {% if p.status == "failed" %}<span class="badge badge-fail">Failed</span>
+            {% elif p.status == "partial" %}<span class="badge badge-partial">Partial</span>{% endif %}
+        </div>
+        <div class="card-body">
+            <h3>{{ p.title }}</h3>
+            {% if p.designer %}<p class="designer">by {{ p.designer }}</p>{% endif %}
+            <div class="card-meta">
+                {% if p.rating %}<span class="rating">{% for _ in range(p.rating) %}★{% endfor %}{% for _ in range(5 - p.rating) %}☆{% endfor %}</span>{% endif %}
+                {% if p.source_url %}<a class="source" href="{{ p.source_url }}" target="_blank" rel="noopener">{{ p.source_platform }}</a>{% endif %}
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<section class="empty">
+    {% if active.material or active.status or active.rating %}
+        <p>No prints match those filters. <a href="/u/{{ user.username }}">Show everything</a>.</p>
+    {% else %}
+        <p>{{ user.display_name or user.username }} hasn't published any prints yet. Check back soon.</p>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
