@@ -30,6 +30,9 @@ from auth import (
     create_user, authenticate_user, create_access_token,
     get_current_user, regenerate_api_key,
 )
+from routes import printers as printers_routes
+from routes import filaments as filaments_routes
+from routes import prints as prints_routes
 
 # --- Logging ---
 logging.basicConfig(
@@ -83,6 +86,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(printers_routes.router)
+app.include_router(filaments_routes.router)
+app.include_router(prints_routes.router)
 
 
 # --- Lifecycle ---
