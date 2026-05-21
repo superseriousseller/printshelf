@@ -22,3 +22,4 @@ htmlcov/
 # Filled seed files contain real credentials — only templates are committed
 seed/*.yaml
 !seed/*.template.yaml
+seed/reddit_post.md
