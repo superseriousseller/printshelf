@@ -18,3 +18,7 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Filled seed files contain real credentials — only templates are committed
+seed/*.yaml
+!seed/*.template.yaml

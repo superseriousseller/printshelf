@@ -125,6 +125,12 @@ class RegisterRequest(BaseModel):
     display_name: Optional[str] = Field(default=None, max_length=100)
 
 
+class ProfileUpdate(BaseModel):
+    display_name: Optional[str] = Field(default=None, max_length=100)
+    bio: Optional[str] = Field(default=None, max_length=2000)
+    avatar_url: Optional[str] = Field(default=None, max_length=500)
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
@@ -160,6 +166,22 @@ def login(body: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
 
 @app.get("/api/auth/me")
 def me(user: User = Depends(get_current_user)) -> dict:
+    return user.to_dict(include_private=True)
+
+
+@app.patch("/api/auth/me")
+def update_me(
+    body: ProfileUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    data = body.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        if isinstance(v, str):
+            v = v.strip()
+        setattr(user, k, v)
+    db.commit()
+    db.refresh(user)
     return user.to_dict(include_private=True)
 
 
