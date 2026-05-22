@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Add photo — {{ print_.title }} — PrintShelf{% endblock %}
+
+{% block content %}
+<section class="photo-upload-page">
+    <a class="back-link" href="/dashboard/prints">← Back</a>
+    <h1>{{ print_.title }}</h1>
+
+    {% if print_.photo_url %}
+    <img class="current-photo-lg" src="{{ print_.photo_url }}" alt="current photo">
+    <p class="hint">Uploading a new photo replaces this one.</p>
+    {% endif %}
+
+    {% if error %}
+    <p class="notice notice-warn">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="/dashboard/prints/{{ print_.id }}/photo"
+          enctype="multipart/form-data" class="photo-drop-form">
+        <label class="photo-drop-zone" id="dropzone">
+            <input type="file" name="photo_file" accept="image/png,image/jpeg,image/webp,image/gif"
+                   required id="photo-input">
+            <span class="drop-icon">📷</span>
+            <span class="drop-label">Tap to choose a photo</span>
+            <span class="drop-sub">or drag and drop here</span>
+            <span class="hint">PNG, JPG, WebP · max 10MB</span>
+        </label>
+        <div id="preview-wrap" style="display:none">
+            <img id="preview-img" alt="preview">
+        </div>
+        <button type="submit" class="btn-primary btn-full" id="submit-btn">Upload photo</button>
+    </form>
+</section>
+
+<script>
+const input = document.getElementById('photo-input');
+const preview = document.getElementById('preview-img');
+const wrap = document.getElementById('preview-wrap');
+const zone = document.getElementById('dropzone');
+
+input.addEventListener('change', () => {
+    const f = input.files[0];
+    if (!f) return;
+    preview.src = URL.createObjectURL(f);
+    wrap.style.display = 'block';
+    zone.querySelector('.drop-label').textContent = f.name;
+});
+
+['dragover', 'dragleave', 'drop'].forEach(evt => zone.addEventListener(evt, e => e.preventDefault()));
+zone.addEventListener('dragover', () => zone.classList.add('drag-over'));
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+    zone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (!f) return;
+    const dt = new DataTransfer();
+    dt.items.add(f);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+});
+</script>
+{% endblock %}
