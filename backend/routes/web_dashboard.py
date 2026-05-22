@@ -424,14 +424,21 @@ def new_print(
     }
     import_error: Optional[str] = None
     import_notice: Optional[str] = None
+    import_partial: bool = False
     if import_url:
         # Check cache first; on miss, scrape.
         from datetime import datetime, timedelta
         row = db.query(ImportCache).filter(ImportCache.source_url == import_url.strip()).first()
         result: Optional[dict] = None
         if row and (datetime.utcnow() - row.fetched_at) < timedelta(days=_IMPORT_CACHE_TTL_DAYS):
-            result = row.to_dict()
-            import_notice = f"Pre-filled from {result.get('platform')} (cached)."
+            result = {
+                "platform": row.platform,
+                "title": row.title,
+                "designer": row.designer,
+                "thumbnail_url": row.thumbnail_url,
+                "source_url": row.source_url,
+                "partial": (row.raw_metadata or {}).get("partial", False),
+            }
         else:
             try:
                 result = extract_url(import_url.strip())
@@ -445,10 +452,17 @@ def new_print(
                 row.raw_metadata = result
                 row.fetched_at = datetime.utcnow()
                 db.commit()
-                import_notice = f"Pre-filled from {result['platform']}."
             except ImportError_ as e:
                 import_error = str(e)
         if result:
+            import_partial = bool(result.get("partial"))
+            if import_partial:
+                import_notice = (
+                    f"Title pulled from the URL ({result.get('platform')}) — "
+                    f"add a photo and designer manually below."
+                )
+            else:
+                import_notice = f"Pre-filled from {result.get('platform')}."
             defaults.update({
                 "title": result.get("title") or "",
                 "designer": result.get("designer") or "",
@@ -462,6 +476,7 @@ def new_print(
     ctx = _print_form_ctx(user, db, None, [], defaults)
     ctx["import_error"] = import_error
     ctx["import_notice"] = import_notice
+    ctx["import_partial"] = import_partial
     return templates.TemplateResponse(request, "dashboard/print_form.html", ctx)
 
 

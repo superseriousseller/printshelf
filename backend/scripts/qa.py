@@ -362,9 +362,19 @@ def run(base: str) -> int:
     r = httpx.post(f"{base}/api/import-url", json={"url": "https://www.printables.com/model/3"}, headers=H, timeout=30)
     qa.check("second import → cached=true", (_json_or_none(r) or {}).get("cached") is True, "")
 
-    # Makerworld — JS-rendered, returns 400 with manual-paste message
+    # Makerworld with slug — falls back to slug-derived title (or full OG when the page is popular enough)
+    r = httpx.post(
+        f"{base}/api/import-url",
+        json={"url": "https://makerworld.com/en/models/2815747-fruit-trinket-trays-cherry-blueberry-lemon"},
+        headers=H, timeout=30,
+    )
+    qa.check("Makerworld URL with slug → 200", r.status_code == 200, f"got {r.status_code}")
+    body = _json_or_none(r) or {}
+    qa.check("Makerworld slug yields a title", bool(body.get("title")), f"title={body.get('title')!r}")
+
+    # Makerworld without a slug (just numeric ID) — no salvage possible → 400
     r = httpx.post(f"{base}/api/import-url", json={"url": "https://makerworld.com/en/models/2"}, headers=H, timeout=30)
-    qa.check("Makerworld import → 400 (JS-rendered)", r.status_code == 400, f"got {r.status_code}")
+    qa.check("Makerworld id-only URL → 400", r.status_code == 400, f"got {r.status_code}")
     detail = (_json_or_none(r) or {}).get("detail", "")
     qa.check("Makerworld error mentions manual paste", "manually" in detail or "manual" in detail.lower(), f"detail={detail[:120]}")
 

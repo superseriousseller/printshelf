@@ -35,6 +35,7 @@ def _wire_response(result: dict, cached: bool) -> dict:
         "designer": result.get("designer"),
         "thumbnailUrl": result.get("thumbnail_url"),
         "sourceUrl": result.get("source_url"),
+        "partial": bool(result.get("partial")),
         "cached": cached,
     }
 

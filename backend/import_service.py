@@ -75,6 +75,47 @@ def _og(soup: BeautifulSoup, key: str) -> Optional[str]:
     return None
 
 
+def _title_from_url_slug(url: str) -> Optional[str]:
+    """Extract a human-readable title from a URL slug.
+
+    Most model platforms put the title in the URL as kebab-case after a
+    numeric ID (Makerworld, Printables) or after a category (Cults3D).
+    This is the last-resort signal when the page itself blocks scraping
+    or hydrates metadata client-side (Makerworld).
+
+    Examples:
+      /en/models/2815747-fruit-trinket-trays-cherry  → "Fruit Trinket Trays Cherry"
+      /model/3-josef-prusa-figure-zombie              → "Josef Prusa Figure Zombie"
+      /en/3d-model/game/cosplay-g1-megatron           → "Cosplay G1 Megatron"
+
+    Returns None when the slug yields nothing useful.
+    """
+    path = urlparse(url).path.rstrip("/")
+    if not path:
+        return None
+    last = path.split("/")[-1]
+    # Strip a leading numeric ID + dash ("2815747-fruit..." → "fruit...")
+    m = re.match(r"^\d+-(.+)$", last)
+    if m:
+        last = m.group(1)
+    # Drop pure-numeric segments (e.g. "/models/2" → "2")
+    if last.isdigit():
+        return None
+    words = [w for w in last.split("-") if w]
+    if not words:
+        return None
+    # Capitalize but preserve all-caps tokens that look intentional (G1, X1C)
+    out = []
+    for w in words:
+        if w.isupper() and len(w) <= 4:
+            out.append(w)
+        elif re.match(r"^[a-z]\d+[a-z]?$", w, re.I):  # G1, X1C, v2
+            out.append(w.upper())
+        else:
+            out.append(w.capitalize())
+    return " ".join(out)
+
+
 def _extract_designer(soup: BeautifulSoup, title: Optional[str]) -> Optional[str]:
     # JSON-LD author / creator
     for script in soup.find_all("script", type="application/ld+json"):
@@ -143,14 +184,35 @@ def extract(url: str) -> dict:
     designer = _extract_designer(soup, title)
 
     if _looks_generic(platform, title, description, thumbnail):
-        # Makerworld is the documented case: HTML shell is fine but metadata
-        # is JS-hydrated. Tell the client to ask the user for input.
+        # Page metadata is JS-hydrated (Makerworld). Salvage the title
+        # from the URL slug if possible — better than rejecting outright.
+        slug_title = _title_from_url_slug(str(r.url))
+        if slug_title:
+            return {
+                "platform": platform,
+                "title": slug_title,
+                "designer": None,
+                "thumbnail_url": None,
+                "source_url": str(r.url),
+                "partial": True,
+            }
         raise ImportError_(
-            "Makerworld pages don't expose metadata to scrapers — paste the title and photo manually "
+            "That page doesn't expose metadata to scrapers — paste the title and photo manually "
             "(or use the Chrome extension which reads the rendered page)"
         )
 
     if not title:
+        # Last-ditch: try the slug
+        slug_title = _title_from_url_slug(str(r.url))
+        if slug_title:
+            return {
+                "platform": platform,
+                "title": slug_title,
+                "designer": None,
+                "thumbnail_url": thumbnail,
+                "source_url": str(r.url),
+                "partial": True,
+            }
         raise ImportError_("No title found at that URL")
 
     return {
@@ -159,4 +221,5 @@ def extract(url: str) -> dict:
         "designer": designer,
         "thumbnail_url": thumbnail,
         "source_url": str(r.url),
+        "partial": False,
     }
