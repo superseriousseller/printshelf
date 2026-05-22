@@ -36,6 +36,7 @@ from routes import prints as prints_routes
 from routes import profile as profile_routes
 from routes import web_auth as web_auth_routes
 from routes import web_dashboard as web_dashboard_routes
+from routes import homepage as homepage_routes
 
 # --- Logging ---
 logging.basicConfig(
@@ -95,6 +96,7 @@ app.include_router(printers_routes.router)
 app.include_router(filaments_routes.router)
 app.include_router(prints_routes.router)
 app.include_router(profile_routes.router)
+app.include_router(homepage_routes.router)
 app.include_router(web_auth_routes.router)
 app.include_router(web_dashboard_routes.router)
 

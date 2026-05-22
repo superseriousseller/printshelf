@@ -1,0 +1,66 @@
+"""Public homepage at /.
+
+Server-rendered marketing page with a real visual hook: a gallery of
+the most recent public prints across all users. Empty at fresh-launch;
+fills out as people sign up and log prints.
+"""
+import os
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+
+from auth import get_current_user_web_optional
+from models import Print, User, get_db
+
+router = APIRouter(tags=["homepage"])
+
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
+
+FEATURED_LIMIT = 6
+
+
+@router.get("/", response_class=HTMLResponse)
+def homepage(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    # Pull the most recent public, non-queued prints with photos.
+    # Joined so we can render the maker's username under each card.
+    rows = (
+        db.query(Print, User.username, User.display_name)
+        .join(User, Print.user_id == User.id)
+        .filter(
+            Print.is_public == True,  # noqa: E712
+            Print.queued == False,    # noqa: E712
+        )
+        .order_by(Print.created_at.desc())
+        .limit(FEATURED_LIMIT)
+        .all()
+    )
+    featured = [
+        {
+            "title": p.title,
+            "designer": p.designer,
+            "thumbnail": p.photo_url or p.thumbnail_url,
+            "rating": p.rating,
+            "username": uname,
+            "maker": display_name or uname,
+            "status": p.status,
+        }
+        for p, uname, display_name in rows
+        if p.photo_url or p.thumbnail_url  # require an image — visual hook only
+    ]
+
+    return templates.TemplateResponse(
+        request,
+        "homepage.html",
+        {
+            "current_user": current_user,
+            "featured": featured,
+        },
+    )

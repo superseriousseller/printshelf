@@ -159,6 +159,57 @@ a:hover { text-decoration: underline; }
     .thumb-sm { width: 70px; height: 70px; }
 }
 
+/* ---------- Homepage ---------- */
+.hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; padding: 40px 0 56px; }
+.hero h1 { font-size: 2.6rem; line-height: 1.1; margin: 0 0 18px; letter-spacing: -0.02em; }
+.hero-sub { font-size: 1.15rem; color: var(--text-dim); margin: 0 0 28px; max-width: 48ch; line-height: 1.5; }
+.hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.btn-lg { padding: 13px 22px; font-size: 1rem; }
+.btn-ghost { background: transparent; color: var(--text); padding: 13px 22px; border-radius: 8px; border: 1px solid var(--border); font-weight: 500; }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.hero-fineprint { font-size: 0.85rem; color: var(--text-dim); margin: 8px 0 0; }
+
+.hero-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.hero-gallery-empty { display: flex; align-items: center; justify-content: center; min-height: 280px; background: var(--bg-elev); border: 1px dashed var(--border); border-radius: var(--radius); }
+.empty-placeholder { text-align: center; color: var(--text-dim); }
+.empty-placeholder p:first-child { font-size: 3rem; margin: 0 0 6px; opacity: 0.5; }
+.empty-placeholder p { margin: 4px 0; }
+.empty-placeholder .muted { color: var(--accent); font-size: 0.9rem; }
+
+.home-card { display: block; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; color: var(--text); transition: transform 0.15s, border-color 0.15s; }
+.home-card:hover { transform: translateY(-2px); border-color: var(--accent-soft); text-decoration: none; }
+.home-thumb { position: relative; aspect-ratio: 1 / 1; background: #0a0c10; overflow: hidden; }
+.home-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.home-thumb .badge-pill { position: absolute; top: 8px; left: 8px; }
+.home-card-body { padding: 8px 10px 10px; }
+.home-card-body h4 { margin: 0 0 2px; font-size: 0.85rem; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.home-maker { margin: 0; color: var(--text-dim); font-size: 0.72rem; }
+
+.how { padding: 48px 0; border-top: 1px solid var(--border); }
+.how h2, .features h2, .closing-cta h2 { font-size: 1.7rem; margin: 0 0 32px; }
+.how-steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.how-steps li { position: relative; padding-top: 8px; }
+.step-num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 1rem; margin-bottom: 14px; }
+.how-steps h3 { font-size: 1.1rem; margin: 0 0 8px; }
+.how-steps p { color: var(--text-dim); margin: 0; line-height: 1.5; }
+.how-steps code { background: var(--bg-elev); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; color: var(--accent); }
+
+.features { padding: 48px 0; border-top: 1px solid var(--border); }
+.feat-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.feat-grid li { background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+.feat-grid h4 { margin: 0 0 8px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+.feat-grid p { margin: 0; color: var(--text-dim); line-height: 1.5; font-size: 0.92rem; }
+.feat-grid .soon { background: var(--accent-soft); color: var(--accent); font-size: 0.65rem; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+
+.closing-cta { padding: 60px 0 40px; border-top: 1px solid var(--border); text-align: center; }
+.closing-cta p { color: var(--text-dim); margin: 0 0 22px; }
+
+@media (max-width: 800px) {
+    .hero { grid-template-columns: 1fr; gap: 28px; padding: 28px 0 40px; }
+    .hero h1 { font-size: 2rem; }
+    .how-steps { grid-template-columns: 1fr; gap: 28px; }
+}
+
 main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
 
 /* Profile hero */
