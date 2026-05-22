@@ -314,13 +314,17 @@ footer {
     background: var(--bg-elev);
 }
 .photo-drop-zone:hover, .photo-drop-zone.drag-over { border-color: var(--accent); background: var(--accent-soft); }
+.photo-drop-zone.has-file { padding: 16px 20px; border-style: solid; border-color: var(--border); }
+.photo-drop-zone.has-file .drop-icon { font-size: 1.4rem; }
+.photo-drop-zone.has-file .drop-sub { display: none; }
 .photo-drop-zone input[type="file"] { display: none; }
 .drop-icon { font-size: 2.5rem; line-height: 1; }
 .drop-label { font-size: 1rem; font-weight: 600; color: var(--text); }
 .drop-sub { font-size: 0.85rem; color: var(--text-dim); }
 #preview-wrap { border-radius: var(--radius); overflow: hidden; }
-#preview-img { width: 100%; max-height: 320px; object-fit: cover; display: block; }
+#preview-img { width: 100%; max-height: 360px; object-fit: cover; display: block; }
 .btn-full { width: 100%; justify-content: center; }
+.btn-primary.uploading { opacity: 0.7; cursor: not-allowed; }
 
 @media (max-width: 600px) {
     .profile-hero { flex-direction: column; text-align: center; align-items: center; padding: 20px; }
