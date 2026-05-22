@@ -6,9 +6,11 @@ are wired in subsequent tasks.
 """
 import os
 from datetime import date
+
+import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -25,6 +27,9 @@ from models import (
     User,
     get_db,
 )
+from storage import MAX_UPLOAD_BYTES, UploadError, upload_image
+
+_log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -419,8 +424,30 @@ def new_print(
     )
 
 
+async def _resolve_photo(photo_file: Optional[UploadFile], photo_url: str, existing: str = "") -> tuple[str, list[str]]:
+    """Returns (resolved_photo_url, errors). Uploaded file wins over typed URL."""
+    errors: list[str] = []
+    if photo_file is not None and photo_file.filename:
+        raw = await photo_file.read(MAX_UPLOAD_BYTES + 1)
+        if len(raw) > MAX_UPLOAD_BYTES:
+            errors.append(f"Photo too large (max {MAX_UPLOAD_BYTES // 1024 // 1024}MB).")
+            return existing, errors
+        try:
+            return upload_image(raw, prefix="p"), errors
+        except UploadError as e:
+            errors.append(f"Photo: {e}")
+            return existing, errors
+        except Exception as e:
+            _log.exception("dashboard photo upload failed")
+            errors.append("Photo upload failed.")
+            return existing, errors
+    if photo_url.strip():
+        return photo_url.strip(), errors
+    return existing, errors
+
+
 @router.post("/prints")
-def create_print(
+async def create_print(
     request: Request,
     title: str = Form(...),
     designer: str = Form(""),
@@ -428,6 +455,7 @@ def create_print(
     source_url: str = Form(""),
     thumbnail_url: str = Form(""),
     photo_url: str = Form(""),
+    photo_file: Optional[UploadFile] = File(None),
     printer_id: str = Form(""),
     filament_ids: list[str] = Form(default=[]),
     status: str = Form("printed"),
@@ -479,6 +507,10 @@ def create_print(
         if missing:
             errors.append(f"Filaments not found: {missing}")
 
+    # Resolve photo: uploaded file wins over typed URL
+    resolved_photo_url, photo_errors = await _resolve_photo(photo_file, photo_url, existing="")
+    errors.extend(photo_errors)
+
     if errors:
         values = {
             "title": title, "designer": designer, "source_platform": source_platform,
@@ -499,7 +531,7 @@ def create_print(
         source_platform=source_platform,
         source_url=source_url.strip() or None,
         thumbnail_url=thumbnail_url.strip() or None,
-        photo_url=photo_url.strip() or None,
+        photo_url=resolved_photo_url or None,
         printer_id=printer_id_int,
         filament_ids=fil_ids,
         status=status, rating=rating_int,
@@ -545,7 +577,7 @@ def edit_print(
 
 
 @router.post("/prints/{print_id}")
-def update_print(
+async def update_print(
     request: Request,
     print_id: int,
     title: str = Form(...),
@@ -554,6 +586,7 @@ def update_print(
     source_url: str = Form(""),
     thumbnail_url: str = Form(""),
     photo_url: str = Form(""),
+    photo_file: Optional[UploadFile] = File(None),
     printer_id: str = Form(""),
     filament_ids: list[str] = Form(default=[]),
     status: str = Form("printed"),
@@ -596,13 +629,20 @@ def update_print(
         owned_ids = {r[0] for r in rows}
         fil_ids = [f for f in fil_ids if f in owned_ids]
 
+    # Photo: uploaded file replaces existing; otherwise typed URL or keep existing
+    resolved_photo_url, photo_errors = await _resolve_photo(photo_file, photo_url, existing=p.photo_url or "")
+    # photo errors on edit are silently dropped so the rest of the edit still applies;
+    # log them so we don't lose visibility.
+    for err in photo_errors:
+        _log.warning("photo error on edit (print=%s): %s", p.id, err)
+
     p.title = title.strip()
     p.designer = designer.strip() or None
     if source_platform in {sp.value for sp in SourcePlatform}:
         p.source_platform = source_platform
     p.source_url = source_url.strip() or None
     p.thumbnail_url = thumbnail_url.strip() or None
-    p.photo_url = photo_url.strip() or None
+    p.photo_url = resolved_photo_url or None
     p.printer_id = printer_id_int
     p.filament_ids = fil_ids
     if status in {s.value for s in PrintStatus}:

@@ -285,6 +285,67 @@ def run(base: str) -> int:
             qa.check("POST /prints with foreign printer_id → 400", r.status_code == 400, f"got {r.status_code}")
 
     # =========================================================
+    # 3b. Photo upload
+    # =========================================================
+    qa.section("Photo upload")
+    # Build a small valid JPEG in-memory via Pillow
+    try:
+        from PIL import Image
+        import io as _io
+        buf = _io.BytesIO()
+        Image.new("RGB", (800, 600), color=(255, 100, 50)).save(buf, format="JPEG", quality=85)
+        jpeg_bytes = buf.getvalue()
+    except Exception as e:
+        jpeg_bytes = b""
+        qa.check("Pillow available for upload test", False, str(e))
+
+    if jpeg_bytes:
+        # Valid image upload
+        r = httpx.post(
+            f"{base}/api/uploads/photo",
+            files={"file": ("qa.jpg", jpeg_bytes, "image/jpeg")},
+            headers=H,
+            timeout=30,
+        )
+        qa.check("POST /api/uploads/photo with JPEG (200)", r.status_code == 200, f"got {r.status_code} body={r.text[:200]}")
+        upload_body = _json_or_none(r) or {}
+        url = upload_body.get("url", "")
+        qa.check("upload response has url", bool(url), "")
+        qa.check("upload response has storage mode", upload_body.get("storage") in {"local", "r2"}, f"got {upload_body.get('storage')!r}")
+
+        # Dedup: same bytes → same url
+        r = httpx.post(
+            f"{base}/api/uploads/photo",
+            files={"file": ("qa.jpg", jpeg_bytes, "image/jpeg")},
+            headers=H,
+            timeout=30,
+        )
+        qa.check("re-upload dedupes to same URL", (_json_or_none(r) or {}).get("url") == url, "")
+
+        # Served URL works (absolute for R2, relative for local)
+        served = url if url.startswith("http") else f"{base}{url}"
+        r = httpx.get(served, timeout=20)
+        qa.check("uploaded photo is publicly fetchable", r.status_code == 200, f"got {r.status_code}")
+        qa.check("served as image/* content-type", r.headers.get("content-type", "").startswith("image/"), f"ct={r.headers.get('content-type')}")
+
+        # Invalid file rejected
+        r = httpx.post(
+            f"{base}/api/uploads/photo",
+            files={"file": ("bogus.txt", b"not an image", "text/plain")},
+            headers=H,
+            timeout=20,
+        )
+        qa.check("upload non-image → 400", r.status_code == 400, f"got {r.status_code}")
+
+        # Unauthenticated upload → 401
+        r = httpx.post(
+            f"{base}/api/uploads/photo",
+            files={"file": ("qa.jpg", jpeg_bytes, "image/jpeg")},
+            timeout=20,
+        )
+        qa.check("upload without auth → 401", r.status_code == 401, f"got {r.status_code}")
+
+    # =========================================================
     # 4. Free-tier enforcement (10 filaments)
     # =========================================================
     qa.section("Free tier enforcement")

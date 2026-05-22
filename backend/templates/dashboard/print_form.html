@@ -9,7 +9,7 @@
 
 {% if errors %}<ul class="errors">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
 
-<form method="post" action="{% if print_ %}/dashboard/prints/{{ print_.id }}{% else %}/dashboard/prints{% endif %}" class="dash-form">
+<form method="post" action="{% if print_ %}/dashboard/prints/{{ print_.id }}{% else %}/dashboard/prints{% endif %}" enctype="multipart/form-data" class="dash-form">
     <label>
         Title
         <input type="text" name="title" required maxlength="300" value="{{ values.title or '' }}" placeholder="What did you print?">
@@ -30,16 +30,28 @@
         Source URL <span class="hint">(model page on Makerworld/Printables/etc — optional)</span>
         <input type="url" name="source_url" maxlength="1000" value="{{ values.source_url or '' }}" placeholder="https://www.printables.com/model/…">
     </label>
-    <div class="row">
-        <label>
-            Thumbnail URL <span class="hint">(from the source platform)</span>
-            <input type="url" name="thumbnail_url" maxlength="1000" value="{{ values.thumbnail_url or '' }}">
+    <label>
+        Thumbnail URL <span class="hint">(from the source platform — falls back when you have no photo)</span>
+        <input type="url" name="thumbnail_url" maxlength="1000" value="{{ values.thumbnail_url or '' }}">
+    </label>
+    <fieldset class="photo-picker">
+        <legend>Your photo</legend>
+        {% if print_ and print_.photo_url %}
+        <div class="current-photo">
+            <img src="{{ print_.photo_url }}" alt="current photo">
+            <p class="hint">Uploading a new one replaces this.</p>
+        </div>
+        {% endif %}
+        <label class="photo-file-label">
+            Upload from your computer
+            <input type="file" name="photo_file" accept="image/png,image/jpeg,image/webp,image/gif">
+            <span class="hint">PNG, JPG, WebP, or GIF — max 10MB. We resize and strip EXIF for you.</span>
         </label>
         <label>
-            Photo URL <span class="hint">(your own photo — paste R2 URL for now)</span>
+            …or paste a photo URL
             <input type="url" name="photo_url" maxlength="1000" value="{{ values.photo_url or '' }}" placeholder="https://cdn.printshelf.app/…">
         </label>
-    </div>
+    </fieldset>
     <div class="row">
         <label>
             Printer

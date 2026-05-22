@@ -37,6 +37,7 @@ from routes import profile as profile_routes
 from routes import web_auth as web_auth_routes
 from routes import web_dashboard as web_dashboard_routes
 from routes import homepage as homepage_routes
+from routes import uploads as uploads_routes
 
 # --- Logging ---
 logging.basicConfig(
@@ -97,6 +98,7 @@ app.include_router(filaments_routes.router)
 app.include_router(prints_routes.router)
 app.include_router(profile_routes.router)
 app.include_router(homepage_routes.router)
+app.include_router(uploads_routes.router)
 app.include_router(web_auth_routes.router)
 app.include_router(web_dashboard_routes.router)
 
@@ -104,6 +106,13 @@ app.include_router(web_dashboard_routes.router)
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 _BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 app.mount("/static", StaticFiles(directory=os.path.join(_BACKEND_DIR, "static")), name="static")
+
+# Local uploads served when R2 isn't configured (dev mode).
+# In production these requests don't reach here — the CDN URL points
+# straight at cdn.printshelf.app and R2 serves them directly.
+_LOCAL_UPLOADS = os.path.join(os.path.dirname(_BACKEND_DIR), "uploads", "photos")
+os.makedirs(_LOCAL_UPLOADS, exist_ok=True)
+app.mount("/uploads/photos", StaticFiles(directory=_LOCAL_UPLOADS), name="uploads")
 
 
 # --- Lifecycle ---
