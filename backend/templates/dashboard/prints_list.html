@@ -1,0 +1,75 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = ("queue" if queued_filter == "true" else "prints") %}
+{% block title %}{% if queued_filter == "true" %}Queue{% else %}Prints{% endif %} — PrintShelf{% endblock %}
+
+{% block dash %}
+<header class="dash-header">
+    <h1>{% if queued_filter == "true" %}Queue{% else %}Prints{% endif %}</h1>
+    <div class="header-actions">
+        <div class="tabs">
+            <a href="/dashboard/prints" {% if not queued_filter %}class="active"{% endif %}>All</a>
+            <a href="/dashboard/prints?queued=false" {% if queued_filter == "false" %}class="active"{% endif %}>Printed</a>
+            <a href="/dashboard/prints?queued=true" {% if queued_filter == "true" %}class="active"{% endif %}>Queued</a>
+        </div>
+        <a href="/dashboard/prints/new{% if queued_filter == 'true' %}?queued=true{% endif %}" class="btn-primary">+ {% if queued_filter == "true" %}Queue print{% else %}Log print{% endif %}</a>
+    </div>
+</header>
+
+{% if prints %}
+<ul class="prints-list">
+    {% for p in prints %}
+    <li class="prints-row">
+        <div class="thumb-sm">
+            {% set img = p.photo_url or p.thumbnail_url %}
+            {% if img %}<img src="{{ img }}" alt="" loading="lazy">{% else %}<div class="thumb-fallback-sm">🧊</div>{% endif %}
+        </div>
+        <div class="prints-row-body">
+            <h3>
+                {{ p.title }}
+                {% if p.queued %}<span class="badge-pill badge-queued">Queued</span>{% endif %}
+                {% if p.status == "failed" %}<span class="badge-pill badge-fail">Failed</span>
+                {% elif p.status == "partial" %}<span class="badge-pill badge-partial">Partial</span>{% endif %}
+                {% if not p.is_public %}<span class="badge-pill badge-private">Private</span>{% endif %}
+            </h3>
+            <p class="meta">
+                {% if p.designer %}by {{ p.designer }} · {% endif %}
+                {{ p.source_platform }}
+                {% if p.printer_id and printer_names[p.printer_id] %} · {{ printer_names[p.printer_id] }}{% endif %}
+                {% if p.rating %} · {{ "★" * p.rating }}{% endif %}
+                {% if p.print_date %} · {{ p.print_date.isoformat() }}{% endif %}
+            </p>
+            {% if p.filament_ids %}
+            <p class="filament-chips">
+                {% for fid in p.filament_ids %}
+                    {% if fid in fil_meta %}
+                    {% set f = fil_meta[fid] %}
+                    <span class="chip">{% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span>{% endif %}{{ f.brand }} {{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}</span>
+                    {% endif %}
+                {% endfor %}
+            </p>
+            {% endif %}
+        </div>
+        <div class="actions">
+            {% if p.queued %}
+            <form method="post" action="/dashboard/prints/{{ p.id }}/printed" class="inline-form">
+                <button type="submit" class="btn-secondary">Mark printed</button>
+            </form>
+            {% endif %}
+            <a href="/dashboard/prints/{{ p.id }}/edit">Edit</a>
+            <form method="post" action="/dashboard/prints/{{ p.id }}/delete" class="inline-form" onsubmit="return confirm('Delete {{ p.title }}?');">
+                <button type="submit" class="linklike danger">Delete</button>
+            </form>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="empty-block">
+    {% if queued_filter == "true" %}
+    <p>Queue is empty. <a href="/dashboard/prints/new?queued=true">Add something to print next</a>.</p>
+    {% else %}
+    <p>No prints logged yet. <a href="/dashboard/prints/new">Log your first print</a> — failed ones count too.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

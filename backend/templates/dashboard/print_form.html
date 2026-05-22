@@ -1,0 +1,106 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = "prints" %}
+{% block title %}{% if print_ %}Edit print{% else %}New print{% endif %} — PrintShelf{% endblock %}
+
+{% block dash %}
+<header class="dash-header">
+    <h1>{% if print_ %}Edit print{% else %}New print{% endif %}</h1>
+</header>
+
+{% if errors %}<ul class="errors">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+<form method="post" action="{% if print_ %}/dashboard/prints/{{ print_.id }}{% else %}/dashboard/prints{% endif %}" class="dash-form">
+    <label>
+        Title
+        <input type="text" name="title" required maxlength="300" value="{{ values.title or '' }}" placeholder="What did you print?">
+    </label>
+    <div class="row">
+        <label>
+            Designer <span class="hint">(optional)</span>
+            <input type="text" name="designer" maxlength="200" value="{{ values.designer or '' }}">
+        </label>
+        <label>
+            Source platform
+            <select name="source_platform">
+                {% for p in platforms %}<option value="{{ p }}" {% if values.source_platform == p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+            </select>
+        </label>
+    </div>
+    <label>
+        Source URL <span class="hint">(model page on Makerworld/Printables/etc — optional)</span>
+        <input type="url" name="source_url" maxlength="1000" value="{{ values.source_url or '' }}" placeholder="https://www.printables.com/model/…">
+    </label>
+    <div class="row">
+        <label>
+            Thumbnail URL <span class="hint">(from the source platform)</span>
+            <input type="url" name="thumbnail_url" maxlength="1000" value="{{ values.thumbnail_url or '' }}">
+        </label>
+        <label>
+            Photo URL <span class="hint">(your own photo — paste R2 URL for now)</span>
+            <input type="url" name="photo_url" maxlength="1000" value="{{ values.photo_url or '' }}" placeholder="https://cdn.printshelf.app/…">
+        </label>
+    </div>
+    <div class="row">
+        <label>
+            Printer
+            <select name="printer_id">
+                <option value="">— none —</option>
+                {% for pr in printers %}<option value="{{ pr.id }}" {% if values.printer_id == pr.id|string %}selected{% endif %}>{{ pr.name }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>
+            Status
+            <select name="status">
+                {% for s in statuses %}<option value="{{ s }}" {% if values.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>
+            Rating
+            <select name="rating">
+                <option value="" {% if not values.rating %}selected{% endif %}>—</option>
+                {% for r in [1, 2, 3, 4, 5] %}<option value="{{ r }}" {% if values.rating|string == r|string %}selected{% endif %}>{{ "★" * r }}</option>{% endfor %}
+            </select>
+        </label>
+    </div>
+    <fieldset class="filaments-picker">
+        <legend>Filaments used <span class="hint">(pick one or more)</span></legend>
+        {% if filaments %}
+        <ul class="checkbox-list">
+            {% for f in filaments %}
+            <li>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="filament_ids" value="{{ f.id }}" {% if f.id in values.filament_ids %}checked{% endif %}>
+                    {% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span>{% endif %}
+                    {{ f.brand }} {{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}
+                </label>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="hint">No filaments in your library yet. <a href="/dashboard/filaments/new">Add one</a> to attach it here.</p>
+        {% endif %}
+    </fieldset>
+    <div class="row">
+        <label>
+            Print date
+            <input type="date" name="print_date" value="{{ values.print_date or '' }}">
+        </label>
+        <label class="checkbox-inline">
+            <input type="checkbox" name="queued" value="1" {% if values.queued %}checked{% endif %}>
+            In queue (not yet printed)
+        </label>
+        <label class="checkbox-inline">
+            <input type="checkbox" name="is_public" value="1" {% if values.is_public %}checked{% endif %}>
+            Show on public profile
+        </label>
+    </div>
+    <label>
+        Notes
+        <textarea name="notes" rows="3" placeholder="Print settings, fixes that worked, lessons learned…">{{ values.notes or '' }}</textarea>
+    </label>
+    <div class="form-actions">
+        <button type="submit" class="btn-primary">{% if print_ %}Save changes{% else %}Save print{% endif %}</button>
+        <a href="/dashboard/prints">Cancel</a>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = "printers" %}
+{% block title %}{% if printer %}Edit {{ printer.name }}{% else %}New printer{% endif %} — PrintShelf{% endblock %}
+
+{% block dash %}
+<header class="dash-header">
+    <h1>{% if printer %}Edit printer{% else %}New printer{% endif %}</h1>
+</header>
+
+{% if errors %}<ul class="errors">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+<form method="post" action="{% if printer %}/dashboard/printers/{{ printer.id }}{% else %}/dashboard/printers{% endif %}" class="dash-form">
+    <label>
+        Name <span class="hint">(your nickname for the machine — e.g. "My X1C")</span>
+        <input type="text" name="name" required maxlength="100" value="{{ values.name or '' }}">
+    </label>
+    <label>
+        Brand
+        <input type="text" name="brand" maxlength="50" value="{{ values.brand or '' }}" placeholder="Bambu Lab, Prusa, Creality…">
+    </label>
+    <label>
+        Model
+        <input type="text" name="model" maxlength="100" value="{{ values.model or '' }}" placeholder="X1 Carbon, MK4, Ender-3 V3…">
+    </label>
+    <div class="form-actions">
+        <button type="submit" class="btn-primary">{% if printer %}Save changes{% else %}Add printer{% endif %}</button>
+        <a href="/dashboard/printers">Cancel</a>
+    </div>
+</form>
+{% endblock %}

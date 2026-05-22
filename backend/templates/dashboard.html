@@ -1,21 +1,35 @@
-{% extends "base.html" %}
+{% extends "dashboard/_layout.html" %}
+{% set section = "home" %}
 {% block title %}Dashboard — PrintShelf{% endblock %}
 
-{% block content %}
-<section class="dashboard-stub">
+{% block dash %}
+<header class="dash-header">
     <h1>Welcome back, {{ user.display_name or user.username }}</h1>
-    <p>Your public profile lives at <a href="/u/{{ user.username }}">/u/{{ user.username }}</a>.</p>
+    <p class="dash-subtitle">Your public profile lives at <a href="/u/{{ user.username }}">/u/{{ user.username }}</a>.</p>
+</header>
 
-    <ul class="quick-links">
-        <li><strong>Printers:</strong> manage your machines (coming next)</li>
-        <li><strong>Filaments:</strong> log your spool library (coming next)</li>
-        <li><strong>Prints:</strong> add new prints + work the queue (coming next)</li>
-    </ul>
-
-    <details>
-        <summary>Your API key (for the Chrome extension)</summary>
-        <pre class="apikey">{{ user.api_key }}</pre>
-        <p class="hint">Keep this secret. <a href="/dashboard">Regenerate</a> (coming next).</p>
-    </details>
+<section class="dash-cards">
+    <a class="dash-card" href="/dashboard/prints/new">
+        <h3>+ Log a print</h3>
+        <p>Add a print you just finished.</p>
+    </a>
+    <a class="dash-card" href="/dashboard/prints/new?queued=true">
+        <h3>+ Queue a print</h3>
+        <p>Save a model you want to print later.</p>
+    </a>
+    <a class="dash-card" href="/dashboard/printers/new">
+        <h3>+ Add printer</h3>
+        <p>Register a new machine.</p>
+    </a>
+    <a class="dash-card" href="/dashboard/filaments/new">
+        <h3>+ Add filament</h3>
+        <p>Log a spool in your library.</p>
+    </a>
 </section>
+
+<details class="dash-apikey">
+    <summary>Chrome extension API key</summary>
+    <pre class="apikey">{{ user.api_key }}</pre>
+    <p class="hint">Use this as the Bearer token in the extension. Keep it secret.</p>
+</details>
 {% endblock %}
