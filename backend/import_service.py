@@ -166,9 +166,23 @@ def extract(url: str) -> dict:
             r = c.get(url)
     except httpx.RequestError as e:
         logger.warning("import fetch failed for %s: %s", url, e)
+        # Even with a network failure we can sometimes salvage a title from the URL slug.
+        slug_title = _title_from_url_slug(url)
+        if slug_title:
+            return {
+                "platform": platform, "title": slug_title, "designer": None,
+                "thumbnail_url": None, "source_url": url, "partial": True,
+            }
         raise ImportError_("Could not reach that URL")
 
     if r.status_code >= 400:
+        # Source blocked us (Cloudflare / Railway IP rep / etc). Try the slug.
+        slug_title = _title_from_url_slug(str(r.url))
+        if slug_title:
+            return {
+                "platform": platform, "title": slug_title, "designer": None,
+                "thumbnail_url": None, "source_url": str(r.url), "partial": True,
+            }
         if platform == "makerworld":
             raise ImportError_(
                 "Makerworld blocks server-side imports — paste the title and photo manually for now"
