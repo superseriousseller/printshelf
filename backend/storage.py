@@ -38,11 +38,23 @@ class UploadError(Exception):
     """Raised for invalid uploads — message is safe to return to client."""
 
 
+_R2_REQUIRED_ENV = (
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY",
+    "R2_BUCKET",
+    "R2_ENDPOINT",
+    "R2_PUBLIC_URL_BASE",
+)
+
+
 def _r2_configured() -> bool:
-    return all(
-        os.environ.get(k)
-        for k in ("R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET", "R2_ENDPOINT")
-    )
+    """All 5 R2 vars must be set — missing R2_PUBLIC_URL_BASE silently put
+    objects in R2 with no way to serve them. Treat as all-or-nothing."""
+    missing = [k for k in _R2_REQUIRED_ENV if not os.environ.get(k)]
+    if missing and any(os.environ.get(k) for k in _R2_REQUIRED_ENV):
+        # Partial config — log loudly so it's obvious in Railway logs.
+        logger.warning("R2 partially configured; missing env vars: %s — falling back to local", missing)
+    return not missing
 
 
 _r2_client = None
@@ -132,18 +144,16 @@ def upload_image(raw: bytes, *, prefix: str = "p") -> str:
     content_type = "image/jpeg" if ext == ".jpg" else "image/png"
 
     if _r2_configured():
+        # All 5 vars verified by _r2_configured(); safe to access directly.
+        base = os.environ["R2_PUBLIC_URL_BASE"].rstrip("/")
         client = _get_r2_client()
-        bucket = os.environ["R2_BUCKET"]
         client.put_object(
-            Bucket=bucket,
+            Bucket=os.environ["R2_BUCKET"],
             Key=filename,
             Body=processed,
             ContentType=content_type,
             CacheControl="public, max-age=31536000, immutable",
         )
-        base = os.environ.get("R2_PUBLIC_URL_BASE", "").rstrip("/")
-        if not base:
-            raise UploadError("R2_PUBLIC_URL_BASE not configured")
         return f"{base}/{filename}"
 
     # Local fallback for dev
