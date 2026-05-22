@@ -27,9 +27,12 @@ from models import (
     User,
     get_db,
 )
+from import_service import ImportError_, extract as extract_url
+from models import ImportCache
 from storage import MAX_UPLOAD_BYTES, UploadError, upload_image
 
 _log = logging.getLogger(__name__)
+_IMPORT_CACHE_TTL_DAYS = 14
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -407,6 +410,7 @@ def _print_form_ctx(user: User, db: Session, p: Optional[Print], errors: list, v
 def new_print(
     request: Request,
     queued: Optional[str] = None,
+    import_url: Optional[str] = None,
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -418,10 +422,47 @@ def new_print(
         "source_platform": "manual",
         "is_public": "1",
     }
-    return templates.TemplateResponse(
-        request, "dashboard/print_form.html",
-        _print_form_ctx(user, db, None, [], defaults),
-    )
+    import_error: Optional[str] = None
+    import_notice: Optional[str] = None
+    if import_url:
+        # Check cache first; on miss, scrape.
+        from datetime import datetime, timedelta
+        row = db.query(ImportCache).filter(ImportCache.source_url == import_url.strip()).first()
+        result: Optional[dict] = None
+        if row and (datetime.utcnow() - row.fetched_at) < timedelta(days=_IMPORT_CACHE_TTL_DAYS):
+            result = row.to_dict()
+            import_notice = f"Pre-filled from {result.get('platform')} (cached)."
+        else:
+            try:
+                result = extract_url(import_url.strip())
+                if row is None:
+                    row = ImportCache(source_url=import_url.strip())
+                    db.add(row)
+                row.platform = result["platform"]
+                row.title = result["title"]
+                row.designer = result.get("designer")
+                row.thumbnail_url = result.get("thumbnail_url")
+                row.raw_metadata = result
+                row.fetched_at = datetime.utcnow()
+                db.commit()
+                import_notice = f"Pre-filled from {result['platform']}."
+            except ImportError_ as e:
+                import_error = str(e)
+        if result:
+            defaults.update({
+                "title": result.get("title") or "",
+                "designer": result.get("designer") or "",
+                "source_platform": result.get("platform") or "manual",
+                "source_url": import_url.strip(),
+                "thumbnail_url": result.get("thumbnail_url") or "",
+            })
+        else:
+            defaults["source_url"] = import_url.strip()
+
+    ctx = _print_form_ctx(user, db, None, [], defaults)
+    ctx["import_error"] = import_error
+    ctx["import_notice"] = import_notice
+    return templates.TemplateResponse(request, "dashboard/print_form.html", ctx)
 
 
 async def _resolve_photo(photo_file: Optional[UploadFile], photo_url: str, existing: str = "") -> tuple[str, list[str]]:

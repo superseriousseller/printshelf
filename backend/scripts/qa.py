@@ -346,6 +346,37 @@ def run(base: str) -> int:
         qa.check("upload without auth → 401", r.status_code == 401, f"got {r.status_code}")
 
     # =========================================================
+    # 3c. URL import
+    # =========================================================
+    qa.section("URL import")
+
+    # Printables — works server-side
+    r = httpx.post(f"{base}/api/import-url", json={"url": "https://www.printables.com/model/3"}, headers=H, timeout=30)
+    qa.check("POST /api/import-url Printables (200)", r.status_code == 200, f"got {r.status_code}")
+    body = _json_or_none(r) or {}
+    qa.check("Printables import returns title", bool(body.get("title")), "")
+    qa.check("Printables import returns thumbnailUrl", bool(body.get("thumbnailUrl")), "")
+    qa.check("Printables import returns platform=printables", body.get("platform") == "printables", "")
+
+    # Cached on second hit
+    r = httpx.post(f"{base}/api/import-url", json={"url": "https://www.printables.com/model/3"}, headers=H, timeout=30)
+    qa.check("second import → cached=true", (_json_or_none(r) or {}).get("cached") is True, "")
+
+    # Makerworld — JS-rendered, returns 400 with manual-paste message
+    r = httpx.post(f"{base}/api/import-url", json={"url": "https://makerworld.com/en/models/2"}, headers=H, timeout=30)
+    qa.check("Makerworld import → 400 (JS-rendered)", r.status_code == 400, f"got {r.status_code}")
+    detail = (_json_or_none(r) or {}).get("detail", "")
+    qa.check("Makerworld error mentions manual paste", "manually" in detail or "manual" in detail.lower(), f"detail={detail[:120]}")
+
+    # Bad URL
+    r = httpx.post(f"{base}/api/import-url", json={"url": "not-a-real-url"}, headers=H, timeout=20)
+    qa.check("Bad URL → 400", r.status_code == 400, f"got {r.status_code}")
+
+    # Unauthed
+    r = httpx.post(f"{base}/api/import-url", json={"url": "https://www.printables.com/model/3"}, timeout=20)
+    qa.check("Import without auth → 401", r.status_code == 401, f"got {r.status_code}")
+
+    # =========================================================
     # 4. Free-tier enforcement (10 filaments)
     # =========================================================
     qa.section("Free tier enforcement")

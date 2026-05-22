@@ -38,6 +38,7 @@ from routes import web_auth as web_auth_routes
 from routes import web_dashboard as web_dashboard_routes
 from routes import homepage as homepage_routes
 from routes import uploads as uploads_routes
+from routes import imports as imports_routes
 
 # --- Logging ---
 logging.basicConfig(
@@ -99,6 +100,7 @@ app.include_router(prints_routes.router)
 app.include_router(profile_routes.router)
 app.include_router(homepage_routes.router)
 app.include_router(uploads_routes.router)
+app.include_router(imports_routes.router)
 app.include_router(web_auth_routes.router)
 app.include_router(web_dashboard_routes.router)
 
