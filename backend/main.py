@@ -33,6 +33,12 @@ from auth import (
 from routes import printers as printers_routes
 from routes import filaments as filaments_routes
 from routes import prints as prints_routes
+from routes import profile as profile_routes
+from routes import web_auth as web_auth_routes
+from routes import web_dashboard as web_dashboard_routes
+from routes import homepage as homepage_routes
+from routes import uploads as uploads_routes
+from routes import imports as imports_routes
 
 # --- Logging ---
 logging.basicConfig(
@@ -91,6 +97,24 @@ app.add_middleware(
 app.include_router(printers_routes.router)
 app.include_router(filaments_routes.router)
 app.include_router(prints_routes.router)
+app.include_router(profile_routes.router)
+app.include_router(homepage_routes.router)
+app.include_router(uploads_routes.router)
+app.include_router(imports_routes.router)
+app.include_router(web_auth_routes.router)
+app.include_router(web_dashboard_routes.router)
+
+# Serve /static/* (CSS, future favicon etc.)
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+_BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+app.mount("/static", StaticFiles(directory=os.path.join(_BACKEND_DIR, "static")), name="static")
+
+# Local uploads served when R2 isn't configured (dev mode).
+# In production these requests don't reach here — the CDN URL points
+# straight at cdn.printshelf.app and R2 serves them directly.
+_LOCAL_UPLOADS = os.path.join(os.path.dirname(_BACKEND_DIR), "uploads", "photos")
+os.makedirs(_LOCAL_UPLOADS, exist_ok=True)
+app.mount("/uploads/photos", StaticFiles(directory=_LOCAL_UPLOADS), name="uploads")
 
 
 # --- Lifecycle ---
@@ -116,6 +140,12 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=200)
     username: str = Field(min_length=3, max_length=30)
     display_name: Optional[str] = Field(default=None, max_length=100)
+
+
+class ProfileUpdate(BaseModel):
+    display_name: Optional[str] = Field(default=None, max_length=100)
+    bio: Optional[str] = Field(default=None, max_length=2000)
+    avatar_url: Optional[str] = Field(default=None, max_length=500)
 
 
 class LoginRequest(BaseModel):
@@ -153,6 +183,22 @@ def login(body: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
 
 @app.get("/api/auth/me")
 def me(user: User = Depends(get_current_user)) -> dict:
+    return user.to_dict(include_private=True)
+
+
+@app.patch("/api/auth/me")
+def update_me(
+    body: ProfileUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    data = body.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        if isinstance(v, str):
+            v = v.strip()
+        setattr(user, k, v)
+    db.commit()
+    db.refresh(user)
     return user.to_dict(include_private=True)
 
 

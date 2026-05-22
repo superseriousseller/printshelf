@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Create your shelf — PrintShelf{% endblock %}
+
+{% block content %}
+<section class="auth-form">
+    <h1>Start your shelf</h1>
+    <p class="auth-sub">Track every print, share a public wall. Free to start.</p>
+
+    {% if errors %}
+    <ul class="errors">
+        {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" action="/signup">
+        <label>
+            Email
+            <input type="email" name="email" required value="{{ values.email or '' }}" autocomplete="email">
+        </label>
+        <label>
+            Username <span class="hint">(used for your public URL: /u/your-handle)</span>
+            <input type="text" name="username" required pattern="[A-Za-z0-9_\-]{3,30}" value="{{ values.username or '' }}" autocomplete="username">
+        </label>
+        <label>
+            Display name <span class="hint">(optional — shown on your profile)</span>
+            <input type="text" name="display_name" maxlength="100" value="{{ values.display_name or '' }}" autocomplete="name">
+        </label>
+        <label>
+            Password <span class="hint">(8+ characters)</span>
+            <input type="password" name="password" required minlength="8" autocomplete="new-password">
+        </label>
+        <label>
+            Confirm password
+            <input type="password" name="password_confirm" required minlength="8" autocomplete="new-password">
+        </label>
+        <button type="submit" class="primary">Create account</button>
+    </form>
+    <p class="auth-alt">Already have one? <a href="/login">Log in</a></p>
+</section>
+{% endblock %}

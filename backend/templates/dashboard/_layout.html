@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dash-shell">
+    <aside class="dash-sidebar">
+        <ul>
+            <li><a href="/dashboard" {% if section == "home" %}class="active"{% endif %}>Overview</a></li>
+            <li><a href="/dashboard/prints" {% if section == "prints" %}class="active"{% endif %}>Prints</a></li>
+            <li><a href="/dashboard/prints?queued=true" {% if section == "queue" %}class="active"{% endif %}>Queue</a></li>
+            <li><a href="/dashboard/printers" {% if section == "printers" %}class="active"{% endif %}>Printers</a></li>
+            <li><a href="/dashboard/filaments" {% if section == "filaments" %}class="active"{% endif %}>Filaments</a></li>
+        </ul>
+    </aside>
+    <div class="dash-main">
+        {% block dash %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

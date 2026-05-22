@@ -1,0 +1,67 @@
+# PrintShelf seed file — fills /u/cam with PluggedIn3D prints.
+#
+# Workflow:
+#   1. Drag 15 print photos into your Cloudflare R2 bucket (printshelf-uploads).
+#   2. Copy each photo's public URL into the `photo_url` field below.
+#   3. Fill out title / designer / source_url / etc. for each print.
+#   4. Run from the repo root:
+#        python backend/scripts/seed_user.py --config seed/cam.yaml \
+#               --base https://staging.printshelf.app
+#      (Use --base http://127.0.0.1:8765 for local first.)
+#   5. Visit /u/cam — if it looks good, run again pointing at production.
+#
+# To copy this file:    cp seed/cam.template.yaml seed/cam.yaml
+# seed/cam.yaml is gitignored so it can hold your real email/password.
+
+user:
+  email: "cam@printshelf.app"
+  password: "REPLACE_ME"             # min 8 chars
+  username: "cam"
+  display_name: "Cam"
+  bio: "PluggedIn3D — chasing pretty layer lines on a Bambu X1C."
+  avatar_url: "https://cdn.printshelf.app/cam-avatar.jpg"   # or any public URL
+
+printers:
+  - name: "My X1C"
+    brand: "Bambu Lab"
+    model: "X1 Carbon"
+  # add more printers if you use multiple
+  # - name: "Mini"
+  #   brand: "Bambu Lab"
+  #   model: "A1 mini"
+
+# Filaments — each gets a unique `key` that prints reference below.
+filaments:
+  - key: bambu_pla_galaxy_black
+    brand: "Bambu Lab"
+    material: "PLA"
+    color_name: "Galaxy Black"
+    color_hex: "#111111"
+  - key: polymaker_petg_teal
+    brand: "Polymaker"
+    material: "PETG"
+    color_name: "Teal"
+    color_hex: "#007a87"
+  - key: sunlu_pla_silk_red
+    brand: "SUNLU"
+    material: "PLA Silk"
+    color_name: "Red"
+    color_hex: "#c1272d"
+
+prints:
+  - title: "Articulated Dragon"
+    designer: "Cinderwing3D"
+    source_platform: "printables"
+    source_url: "https://www.printables.com/model/3"
+    photo_url: "https://cdn.printshelf.app/dragon-1.jpg"
+    printer: "My X1C"
+    filaments: [bambu_pla_galaxy_black]
+    status: "printed"
+    rating: 5
+    print_date: 2026-04-12
+    notes: "Multi-color via AMS. Came off the plate clean."
+
+  # … paste 14 more print entries here following the same shape.
+  # source_platform options: makerworld | printables | cults3d | thingiverse | manual
+  # status options: printed | failed | partial
+  # rating: 1-5 (omit for unrated)

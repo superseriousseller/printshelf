@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Log in — PrintShelf{% endblock %}
+
+{% block content %}
+<section class="auth-form">
+    <h1>Welcome back</h1>
+
+    {% if errors %}
+    <ul class="errors">
+        {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" action="/login">
+        <input type="hidden" name="next" value="{{ next or '/dashboard' }}">
+        <label>
+            Email
+            <input type="email" name="email" required value="{{ values.email or '' }}" autocomplete="email">
+        </label>
+        <label>
+            Password
+            <input type="password" name="password" required autocomplete="current-password">
+        </label>
+        <button type="submit" class="primary">Log in</button>
+    </form>
+    <p class="auth-alt">Don't have an account? <a href="/signup">Start your shelf</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}PrintShelf — a shelf for every print you make{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="Track every 3D print, your filament library, your queue. Share a public wall. Free to start.">
+    <meta property="og:title" content="PrintShelf — a shelf for every print you make">
+    <meta property="og:description" content="Track every 3D print, your filament library, your queue. Share a public wall. Free to start.">
+    <meta property="og:url" content="https://printshelf.app/">
+    <meta name="twitter:card" content="summary_large_image">
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-copy">
+        <h1>A shelf for every print you make.</h1>
+        <p class="hero-sub">
+            Log your 3D prints, your filament library, your queue.
+            Share a public wall. Failed prints count too.
+        </p>
+        <div class="hero-cta">
+            {% if current_user %}
+                <a href="/dashboard" class="btn-primary btn-lg">Open your dashboard</a>
+                <a href="/u/{{ current_user.username }}" class="btn-ghost btn-lg">See your shelf</a>
+            {% else %}
+                <a href="/signup" class="btn-primary btn-lg">Start your shelf — free</a>
+                <a href="/login" class="btn-ghost btn-lg">Log in</a>
+            {% endif %}
+        </div>
+        <p class="hero-fineprint">Free tier: 50 prints, 10 filaments. Pro coming soon.</p>
+    </div>
+
+    {% if featured %}
+    <div class="hero-gallery">
+        {% for f in featured %}
+        <a class="home-card" href="/u/{{ f.username }}">
+            <div class="home-thumb">
+                <img src="{{ f.thumbnail }}" alt="{{ f.title }}" loading="lazy">
+                {% if f.status == "failed" %}<span class="badge-pill badge-fail">Failed</span>
+                {% elif f.status == "partial" %}<span class="badge-pill badge-partial">Partial</span>{% endif %}
+            </div>
+            <div class="home-card-body">
+                <h4>{{ f.title }}</h4>
+                <p class="home-maker">by @{{ f.username }}{% if f.rating %} · {{ "★" * f.rating }}{% endif %}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="hero-gallery hero-gallery-empty">
+        <div class="empty-placeholder">
+            <p>🧊</p>
+            <p>The first prints will land here.</p>
+            <p class="muted">Could be yours.</p>
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+<section class="how">
+    <h2>How it works</h2>
+    <ol class="how-steps">
+        <li>
+            <span class="step-num">1</span>
+            <h3>Log every print</h3>
+            <p>Title, photo, filament, printer, rating. Notes if you want them. Failed prints stay on the wall because pretending they didn't happen feels wrong.</p>
+        </li>
+        <li>
+            <span class="step-num">2</span>
+            <h3>Track your library</h3>
+            <p>Catalog your filament spools by brand, material, color, and status. Queue the next model you want to print so you don't lose the link.</p>
+        </li>
+        <li>
+            <span class="step-num">3</span>
+            <h3>Share your shelf</h3>
+            <p>Every account gets a public URL — <code>printshelf.app/u/your-handle</code>. Show off the prints you're proud of, link it on Reddit, send it to your friends.</p>
+        </li>
+    </ol>
+</section>
+
+<section class="features">
+    <h2>What's in the box</h2>
+    <ul class="feat-grid">
+        <li>
+            <h4>Print log + queue</h4>
+            <p>Two states: queued and printed. Move them between with one click. Filter the wall by material, status, or rating.</p>
+        </li>
+        <li>
+            <h4>Filament library</h4>
+            <p>Brand, material, color, diameter, status. Tag prints with the spools you used — even multi-material prints with multiple filaments.</p>
+        </li>
+        <li>
+            <h4>Public profile</h4>
+            <p>SEO-indexable, mobile-friendly. Visitors don't need an account to see your shelf.</p>
+        </li>
+        <li>
+            <h4>Chrome extension <span class="soon">soon</span></h4>
+            <p>One-click import from Makerworld, Printables, Cults3D, Thingiverse. Your queue grows as you browse models.</p>
+        </li>
+        <li>
+            <h4>Pro tier <span class="soon">soon</span></h4>
+            <p>Unlimited prints + filaments, CSV export, custom profile themes. $9/mo when it lands.</p>
+        </li>
+        <li>
+            <h4>API access</h4>
+            <p>Every account gets an API key. Build your own integrations against PrintShelf if you want.</p>
+        </li>
+    </ul>
+</section>
+
+<section class="closing-cta">
+    <h2>Start tracking what you print</h2>
+    <p>Takes about 30 seconds to sign up. No card needed.</p>
+    {% if current_user %}
+    <a href="/dashboard" class="btn-primary btn-lg">Open your dashboard</a>
+    {% else %}
+    <a href="/signup" class="btn-primary btn-lg">Start your shelf — free</a>
+    {% endif %}
+</section>
+{% endblock %}

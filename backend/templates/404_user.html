@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Shelf not found — PrintShelf{% endblock %}
+{% block content %}
+<section class="empty">
+    <h1>That shelf is empty</h1>
+    <p>No PrintShelf user named <code>{{ username }}</code>. Either the URL is wrong, or they haven't claimed that handle yet.</p>
+    <p><a href="/">Back to home</a></p>
+</section>
+{% endblock %}

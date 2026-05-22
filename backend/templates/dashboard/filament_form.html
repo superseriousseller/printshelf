@@ -1,0 +1,61 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = "filaments" %}
+{% block title %}{% if filament %}Edit filament{% else %}New filament{% endif %} — PrintShelf{% endblock %}
+
+{% block dash %}
+<header class="dash-header">
+    <h1>{% if filament %}Edit filament{% else %}New filament{% endif %}</h1>
+</header>
+
+{% if errors %}<ul class="errors">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+<form method="post" action="{% if filament %}/dashboard/filaments/{{ filament.id }}{% else %}/dashboard/filaments{% endif %}" class="dash-form">
+    <div class="row">
+        <label>
+            Brand
+            <input type="text" name="brand" required maxlength="100" value="{{ values.brand or '' }}" placeholder="Bambu Lab, SUNLU, Polymaker…">
+        </label>
+        <label>
+            Material
+            <input type="text" name="material" required maxlength="50" value="{{ values.material or '' }}" placeholder="PLA, PETG, ABS, TPU…">
+        </label>
+    </div>
+    <div class="row">
+        <label>
+            Color name
+            <input type="text" name="color_name" maxlength="100" value="{{ values.color_name or '' }}" placeholder="Galaxy Black, Jade White…">
+        </label>
+        <label>
+            Color hex <span class="hint">(e.g. #111111)</span>
+            <input type="text" name="color_hex" pattern="#?[0-9A-Fa-f]{6}" value="{{ values.color_hex or '' }}">
+        </label>
+    </div>
+    <div class="row">
+        <label>
+            Diameter
+            <select name="diameter">
+                <option value="1.75" {% if values.diameter == "1.75" %}selected{% endif %}>1.75mm</option>
+                <option value="2.85" {% if values.diameter == "2.85" %}selected{% endif %}>2.85mm</option>
+            </select>
+        </label>
+        <label>
+            Status
+            <select name="status">
+                {% for s in statuses %}<option value="{{ s }}" {% if values.status == s %}selected{% endif %}>{{ s|replace("_", " ") }}</option>{% endfor %}
+            </select>
+        </label>
+    </div>
+    <label>
+        Source URL <span class="hint">(where you bought it)</span>
+        <input type="url" name="source_url" maxlength="1000" value="{{ values.source_url or '' }}" placeholder="https://…">
+    </label>
+    <label>
+        Notes
+        <textarea name="notes" rows="3">{{ values.notes or '' }}</textarea>
+    </label>
+    <div class="form-actions">
+        <button type="submit" class="btn-primary">{% if filament %}Save changes{% else %}Add filament{% endif %}</button>
+        <a href="/dashboard/filaments">Cancel</a>
+    </div>
+</form>
+{% endblock %}
