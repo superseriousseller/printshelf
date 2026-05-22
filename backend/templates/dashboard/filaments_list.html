@@ -9,6 +9,7 @@
 </header>
 
 {% if filaments %}
+<div class="table-scroll">
 <table class="dash-table">
     <thead>
         <tr>
@@ -34,6 +35,7 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty-block">
     <p>No filaments logged yet. <a href="/dashboard/filaments/new">Add your first spool</a>.</p>

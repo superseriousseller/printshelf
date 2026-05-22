@@ -9,6 +9,7 @@
 </header>
 
 {% if printers %}
+<div class="table-scroll">
 <table class="dash-table">
     <thead>
         <tr>
@@ -31,6 +32,7 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty-block">
     <p>No printers yet. <a href="/dashboard/printers/new">Add your first one</a> so prints have somewhere to go.</p>
