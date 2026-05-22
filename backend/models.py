@@ -262,6 +262,21 @@ class CommunityFilament(Base):
 Index("ix_community_filaments_brand_material", CommunityFilament.brand, CommunityFilament.material)
 
 
+# ============== Password Reset Token ==============
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+
+    user = relationship("User")
+
+
 # ============== URL Import Cache ==============
 
 class ImportCache(Base):
