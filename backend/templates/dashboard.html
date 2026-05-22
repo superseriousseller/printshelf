@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — PrintShelf{% endblock %}
+
+{% block content %}
+<section class="dashboard-stub">
+    <h1>Welcome back, {{ user.display_name or user.username }}</h1>
+    <p>Your public profile lives at <a href="/u/{{ user.username }}">/u/{{ user.username }}</a>.</p>
+
+    <ul class="quick-links">
+        <li><strong>Printers:</strong> manage your machines (coming next)</li>
+        <li><strong>Filaments:</strong> log your spool library (coming next)</li>
+        <li><strong>Prints:</strong> add new prints + work the queue (coming next)</li>
+    </ul>
+
+    <details>
+        <summary>Your API key (for the Chrome extension)</summary>
+        <pre class="apikey">{{ user.api_key }}</pre>
+        <p class="hint">Keep this secret. <a href="/dashboard">Regenerate</a> (coming next).</p>
+    </details>
+</section>
+{% endblock %}

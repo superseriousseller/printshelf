@@ -34,6 +34,7 @@ from routes import printers as printers_routes
 from routes import filaments as filaments_routes
 from routes import prints as prints_routes
 from routes import profile as profile_routes
+from routes import web_auth as web_auth_routes
 
 # --- Logging ---
 logging.basicConfig(
@@ -93,6 +94,7 @@ app.include_router(printers_routes.router)
 app.include_router(filaments_routes.router)
 app.include_router(prints_routes.router)
 app.include_router(profile_routes.router)
+app.include_router(web_auth_routes.router)
 
 # Serve /static/* (CSS, future favicon etc.)
 from fastapi.staticfiles import StaticFiles  # noqa: E402

@@ -17,11 +17,13 @@ from typing import Optional
 import bcrypt
 import jwt
 from jwt.exceptions import PyJWTError
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from models import User, get_db, generate_api_key
+
+SESSION_COOKIE_NAME = "session"
 
 # --- JWT config ---
 _secret_key = os.environ.get("SECRET_KEY")
@@ -116,6 +118,23 @@ async def get_current_user_optional(
     db: Session = Depends(get_db),
 ) -> Optional[User]:
     return _user_from_credentials(credentials, db)
+
+
+def get_current_user_web_optional(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    """Web UI auth: reads the session cookie set by the login form.
+
+    Returns None instead of raising so handlers can redirect to /login.
+    """
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
+        return None
+    user_id = decode_token(token)
+    if user_id is None:
+        return None
+    return db.query(User).filter(User.id == user_id).first()
 
 
 # --- User creation / login ---

@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from auth import get_current_user_web_optional
 from models import Print, User, get_db
 
 router = APIRouter(tags=["profile"])
@@ -55,13 +56,14 @@ def public_profile(
     material: Optional[str] = None,
     status: Optional[str] = None,
     rating: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     user = db.query(User).filter(User.username == username).first()
     if user is None:
         return templates.TemplateResponse(
             request,
             "404_user.html",
-            {"username": username},
+            {"username": username, "current_user": current_user},
             status_code=404,
         )
 
@@ -118,5 +120,6 @@ def public_profile(
             "active": {"material": material, "status": status, "rating": str(rating) if rating else None},
             "first_photo": first_photo,
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
+            "current_user": current_user,
         },
     )
