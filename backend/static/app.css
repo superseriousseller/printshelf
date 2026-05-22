@@ -300,10 +300,38 @@ footer {
     color: var(--text-dim); font-size: 0.85rem; margin-top: 60px;
 }
 
+/* Photo upload page */
+.photo-upload-page { max-width: 480px; margin: 40px auto; padding: 0 20px; }
+.photo-upload-page h1 { font-size: 1.3rem; margin: 8px 0 20px; }
+.photo-upload-page .back-link { color: var(--text-dim); text-decoration: none; font-size: 0.9rem; }
+.photo-upload-page .back-link:hover { color: var(--text); }
+.current-photo-lg { width: 100%; max-height: 320px; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 8px; }
+.photo-drop-form { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
+.photo-drop-zone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 40px 20px; border: 2px dashed var(--border); border-radius: var(--radius);
+    cursor: pointer; text-align: center; transition: border-color 0.15s, background 0.15s;
+    background: var(--bg-elev);
+}
+.photo-drop-zone:hover, .photo-drop-zone.drag-over { border-color: var(--accent); background: var(--accent-soft); }
+.photo-drop-zone.has-file { padding: 16px 20px; border-style: solid; border-color: var(--border); }
+.photo-drop-zone.has-file .drop-icon { font-size: 1.4rem; }
+.photo-drop-zone.has-file .drop-sub { display: none; }
+.photo-drop-zone input[type="file"] { display: none; }
+.drop-icon { font-size: 2.5rem; line-height: 1; }
+.drop-label { font-size: 1rem; font-weight: 600; color: var(--text); }
+.drop-sub { font-size: 0.85rem; color: var(--text-dim); }
+#preview-wrap { border-radius: var(--radius); overflow: hidden; }
+#preview-img { width: 100%; max-height: 360px; object-fit: cover; display: block; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-primary.uploading { opacity: 0.7; cursor: not-allowed; }
+
 @media (max-width: 600px) {
     .profile-hero { flex-direction: column; text-align: center; align-items: center; padding: 20px; }
     .profile-meta .stats { justify-content: center; }
     .filters form { width: 100%; }
     .filters label { flex: 1; min-width: 140px; }
     .filters select { width: 100%; }
+    .photo-drop-zone { padding: 50px 20px; }
+    .drop-sub { display: none; }
 }

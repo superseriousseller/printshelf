@@ -740,6 +740,48 @@ async def update_print(
     return RedirectResponse("/dashboard/prints", status_code=303)
 
 
+@router.get("/prints/{print_id}/photo", response_class=HTMLResponse)
+def photo_upload_form(
+    print_id: int,
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    p = db.query(Print).filter(Print.id == print_id, Print.user_id == user.id).first()
+    if p is None:
+        return RedirectResponse("/dashboard/prints", status_code=303)
+    return templates.TemplateResponse(request, "dashboard/photo_upload.html", {
+        "print_": p, "error": None, "current_user": user,
+    })
+
+
+@router.post("/prints/{print_id}/photo")
+async def photo_upload_submit(
+    print_id: int,
+    request: Request,
+    photo_file: Optional[UploadFile] = File(None),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    p = db.query(Print).filter(Print.id == print_id, Print.user_id == user.id).first()
+    if p is None:
+        return RedirectResponse("/dashboard/prints", status_code=303)
+
+    resolved, errors = await _resolve_photo(photo_file, "", existing=p.photo_url or "")
+    if errors:
+        return templates.TemplateResponse(request, "dashboard/photo_upload.html", {
+            "print_": p, "error": errors[0], "current_user": user,
+        }, status_code=400)
+
+    p.photo_url = resolved or p.photo_url
+    db.commit()
+    return RedirectResponse("/dashboard/prints", status_code=303)
+
+
 @router.post("/prints/{print_id}/printed")
 def mark_print_done(
     print_id: int,
