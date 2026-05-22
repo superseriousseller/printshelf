@@ -455,6 +455,31 @@ def run(base: str) -> int:
         r = client.post(f"{base}/dashboard/printers", data={"name": "Web Mini", "brand": "Bambu", "model": "A1 mini"})
         qa.check("POST /dashboard/printers (303)", r.status_code == 303, f"got {r.status_code}")
 
+        # Auto-import on save: URL provided, title blank → server extracts title from URL
+        r = client.post(
+            f"{base}/dashboard/prints",
+            data={
+                "title": "",
+                "source_url": "https://www.printables.com/model/3",
+                "source_platform": "manual",  # server should overwrite with "printables"
+                "status": "printed",
+                "is_public": "1",
+            },
+        )
+        qa.check("POST /dashboard/prints with URL + blank title → 303", r.status_code == 303, f"got {r.status_code}")
+
+        # Confirm the print landed with the extracted title (server should have populated it)
+        r = client.get(f"{base}/dashboard/prints")
+        qa.check("auto-imported print has the extracted title", "Josef Prusa" in r.text, "title not in list")
+
+        # Neither title nor URL → server-side validation error (no HTML5 required gate anymore)
+        r = client.post(
+            f"{base}/dashboard/prints",
+            data={"title": "", "source_url": "", "source_platform": "manual", "status": "printed"},
+        )
+        qa.check("blank title + no URL → 400 with helpful message", r.status_code == 400, f"got {r.status_code}")
+        qa.check("error mentions URL fallback", "source URL" in r.text or "paste a source URL" in r.text, "")
+
         r = client.get(f"{base}/dashboard/printers")
         qa.check("printer appears in dashboard list", "Web Mini" in r.text, "")
 

@@ -505,7 +505,7 @@ async def _resolve_photo(photo_file: Optional[UploadFile], photo_url: str, exist
 @router.post("/prints")
 async def create_print(
     request: Request,
-    title: str = Form(...),
+    title: str = Form(""),
     designer: str = Form(""),
     source_platform: str = Form("manual"),
     source_url: str = Form(""),
@@ -526,9 +526,37 @@ async def create_print(
     if (r := _require_user(user)) is not None:
         return r
     enforce_print_limit(db, user)
-    errors = []
+    errors: list[str] = []
+
+    # Auto-import: if the user pasted a source URL but skipped the "Pre-fill
+    # form" button, fill missing fields from the URL before validating.
+    if source_url.strip() and not title.strip():
+        try:
+            result = extract_url(source_url.strip())
+            title = title or (result.get("title") or "")
+            designer = designer or (result.get("designer") or "")
+            if not thumbnail_url.strip() and result.get("thumbnail_url"):
+                thumbnail_url = result["thumbnail_url"]
+            if source_platform in ("", "manual") and result.get("platform"):
+                source_platform = result["platform"]
+            # Stash in import cache for next time
+            from datetime import datetime
+            row = db.query(ImportCache).filter(ImportCache.source_url == source_url.strip()).first()
+            if row is None:
+                row = ImportCache(source_url=source_url.strip())
+                db.add(row)
+            row.platform = result["platform"]
+            row.title = result["title"]
+            row.designer = result.get("designer")
+            row.thumbnail_url = result.get("thumbnail_url")
+            row.raw_metadata = result
+            row.fetched_at = datetime.utcnow()
+            db.commit()
+        except ImportError_ as e:
+            errors.append(f"Couldn't auto-fill from that URL ({e}). Add a title manually.")
+
     if not title.strip():
-        errors.append("Title is required.")
+        errors.append("Title is required (or paste a source URL we can pull a title from).")
     if source_platform not in {p.value for p in SourcePlatform}:
         errors.append("Invalid source platform.")
     if status not in {s.value for s in PrintStatus}:

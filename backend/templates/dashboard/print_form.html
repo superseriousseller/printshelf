@@ -26,8 +26,8 @@
 
 <form method="post" action="{% if print_ %}/dashboard/prints/{{ print_.id }}{% else %}/dashboard/prints{% endif %}" enctype="multipart/form-data" class="dash-form">
     <label>
-        Title
-        <input type="text" name="title" required maxlength="300" value="{{ values.title or '' }}" placeholder="What did you print?">
+        Title <span class="hint">(auto-fills from source URL if you leave it blank)</span>
+        <input type="text" name="title" maxlength="300" value="{{ values.title or '' }}" placeholder="What did you print?">
     </label>
     <div class="row">
         <label>
