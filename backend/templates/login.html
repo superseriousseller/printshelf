@@ -5,6 +5,10 @@
 <section class="auth-form">
     <h1>Welcome back</h1>
 
+    {% if request.query_params.get('reset') %}
+    <p class="auth-notice">Password updated — log in with your new password.</p>
+    {% endif %}
+
     {% if errors %}
     <ul class="errors">
         {% for e in errors %}<li>{{ e }}</li>{% endfor %}
@@ -23,6 +27,7 @@
         </label>
         <button type="submit" class="primary">Log in</button>
     </form>
+    <p class="auth-alt"><a href="/forgot-password">Forgot your password?</a></p>
     <p class="auth-alt">Don't have an account? <a href="/signup">Start your shelf</a></p>
 </section>
 {% endblock %}

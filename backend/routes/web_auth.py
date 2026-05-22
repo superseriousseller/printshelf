@@ -4,7 +4,8 @@ Cookie-based session — JWT same as the API uses, but stored in an HttpOnly
 SameSite=Lax cookie so the browser carries it on every request without JS.
 """
 import os
-from datetime import timedelta
+import secrets
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -20,8 +21,10 @@ from auth import (
     create_access_token,
     create_user,
     get_current_user_web_optional,
+    hash_password,
 )
-from models import User, get_db
+from email_service import send_password_reset
+from models import PasswordResetToken, User, get_db
 
 router = APIRouter(tags=["web-auth"])
 
@@ -149,6 +152,100 @@ def logout_submit():
     response = RedirectResponse("/", status_code=303)
     response.delete_cookie(SESSION_COOKIE_NAME, path="/")
     return response
+
+
+# ---- Forgot password ----
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_form(request: Request):
+    return templates.TemplateResponse(request, "forgot_password.html", {"sent": False, "current_user": None})
+
+
+@router.post("/forgot-password")
+def forgot_password_submit(
+    request: Request,
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.email == email.lower().strip()).first()
+    if user:
+        token = secrets.token_urlsafe(48)[:64]
+        reset = PasswordResetToken(
+            token=token,
+            user_id=user.id,
+            expires_at=datetime.utcnow() + timedelta(hours=1),
+        )
+        db.add(reset)
+        db.commit()
+        send_password_reset(user.email, token)
+
+    # Always show "check your email" — don't leak whether address exists
+    return templates.TemplateResponse(request, "forgot_password.html", {"sent": True, "current_user": None})
+
+
+# ---- Reset password ----
+
+@router.get("/reset-password", response_class=HTMLResponse)
+def reset_password_form(request: Request, token: str = ""):
+    record = _valid_token(token, db=next(get_db()))
+    if not record:
+        return templates.TemplateResponse(
+            request, "reset_password.html",
+            {"token": token, "invalid": True, "errors": [], "current_user": None},
+        )
+    return templates.TemplateResponse(
+        request, "reset_password.html",
+        {"token": token, "invalid": False, "errors": [], "current_user": None},
+    )
+
+
+@router.post("/reset-password")
+def reset_password_submit(
+    request: Request,
+    token: str = Form(...),
+    password: str = Form(...),
+    password_confirm: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    record = _valid_token(token, db)
+    if not record:
+        return templates.TemplateResponse(
+            request, "reset_password.html",
+            {"token": token, "invalid": True, "errors": [], "current_user": None},
+            status_code=400,
+        )
+
+    errors: list[str] = []
+    if password != password_confirm:
+        errors.append("Passwords don't match.")
+    if len(password) < 8:
+        errors.append("Password must be at least 8 characters.")
+
+    if errors:
+        return templates.TemplateResponse(
+            request, "reset_password.html",
+            {"token": token, "invalid": False, "errors": errors, "current_user": None},
+            status_code=400,
+        )
+
+    record.user.password_hash = hash_password(password)
+    record.used_at = datetime.utcnow()
+    db.commit()
+
+    return RedirectResponse("/login?reset=1", status_code=303)
+
+
+def _valid_token(token: str, db: Session) -> Optional[PasswordResetToken]:
+    if not token:
+        return None
+    record = db.query(PasswordResetToken).filter(PasswordResetToken.token == token).first()
+    if not record:
+        return None
+    if record.used_at is not None:
+        return None
+    if record.expires_at < datetime.utcnow():
+        return None
+    return record
 
 
 # ---- Dashboard stub (real CRUD UI in Task #11) ----
