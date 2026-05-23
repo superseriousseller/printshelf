@@ -27,9 +27,19 @@
     </a>
 </section>
 
-<details class="dash-apikey">
+<details class="dash-apikey" id="api-key">
     <summary>Chrome extension API key</summary>
     <pre class="apikey">{{ user.api_key }}</pre>
     <p class="hint">Use this as the Bearer token in the extension. Keep it secret.</p>
 </details>
+<script>
+  // Auto-expand and scroll when arriving from the extension (#api-key).
+  (function () {
+    if (window.location.hash !== "#api-key") return;
+    var el = document.getElementById("api-key");
+    if (!el) return;
+    el.open = true;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  })();
+</script>
 {% endblock %}
