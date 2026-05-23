@@ -1,0 +1,76 @@
+/* All extension UI is namespaced under #printshelf-fab and uses prefixed
+   class names to avoid colliding with host-page styles. */
+
+#printshelf-fab {
+  all: initial;
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+#printshelf-fab .ps-fab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px 11px 14px;
+  background: #ff6a3d;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  font-weight: 600;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.32),
+    0 2px 6px rgba(0, 0, 0, 0.18);
+  transition: transform 0.12s ease, filter 0.12s ease, background 0.18s ease;
+}
+#printshelf-fab .ps-fab-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+#printshelf-fab .ps-fab-btn:active { transform: translateY(0); filter: brightness(0.96); }
+#printshelf-fab .ps-fab-btn:disabled { opacity: 0.75; cursor: default; transform: none; }
+
+#printshelf-fab .ps-fab-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #ff6a3d;
+  font-weight: 800;
+  font-size: 13px;
+  text-align: center;
+  line-height: 18px;
+}
+
+#printshelf-fab.ps-state-success .ps-fab-btn { background: #1f7a3a; }
+#printshelf-fab.ps-state-error .ps-fab-btn { background: #a13a2a; }
+#printshelf-fab.ps-state-success .ps-fab-icon,
+#printshelf-fab.ps-state-error .ps-fab-icon { color: inherit; background: transparent; }
+
+#printshelf-fab .ps-fab-toast {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  max-width: 280px;
+  padding: 9px 12px;
+  background: #1c2027;
+  color: #e8eaed;
+  border: 1px solid #2e333d;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+#printshelf-fab .ps-fab-toast.ps-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+#printshelf-fab .ps-fab-toast a { color: #ff6a3d; text-decoration: none; }
+#printshelf-fab .ps-fab-toast a:hover { text-decoration: underline; }
