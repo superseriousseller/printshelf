@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "PrintShelf",
+  "description": "One-click add 3D model pages to your PrintShelf print queue.",
+  "version": "0.1.0",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "PrintShelf",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://printshelf.app/*",
+    "https://staging.printshelf.app/*",
+    "http://127.0.0.1:8765/*",
+    "http://localhost:8765/*",
+    "https://makerworld.com/*",
+    "https://www.makerworld.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://makerworld.com/*",
+        "https://www.makerworld.com/*"
+      ],
+      "js": ["content/makerworld.js"],
+      "css": ["content/common.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

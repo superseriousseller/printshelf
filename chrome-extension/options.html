@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>PrintShelf — Settings</title>
+    <link rel="stylesheet" href="styles/options.css" />
+  </head>
+  <body>
+    <main class="ps-opts">
+      <header>
+        <h1>PrintShelf Settings</h1>
+        <p class="ps-sub">Connect this browser to your PrintShelf account.</p>
+      </header>
+
+      <section class="ps-card">
+        <label for="ps-api-key">API key</label>
+        <input
+          id="ps-api-key"
+          type="password"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Paste your PrintShelf API key"
+        />
+        <p class="ps-help">
+          Sign in at
+          <a id="ps-dashboard-link" href="#" target="_blank" rel="noopener">printshelf.app/dashboard</a>,
+          open <em>Settings &rarr; API key</em>, and paste it here.
+          The key stays in <code>chrome.storage.sync</code> on this profile only.
+        </p>
+      </section>
+
+      <section class="ps-card">
+        <label for="ps-api-base">API base URL</label>
+        <select id="ps-api-base-preset">
+          <option value="https://printshelf.app">Production — printshelf.app</option>
+          <option value="https://staging.printshelf.app">Staging — staging.printshelf.app</option>
+          <option value="http://127.0.0.1:8765">Local dev — http://127.0.0.1:8765</option>
+          <option value="__custom__">Custom…</option>
+        </select>
+        <input
+          id="ps-api-base"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="https://printshelf.app"
+        />
+        <p class="ps-help">Change this if you're dogfooding against staging or a local dev server.</p>
+      </section>
+
+      <div class="ps-row">
+        <button id="ps-save" class="ps-btn ps-btn-primary">Save</button>
+        <button id="ps-test" class="ps-btn ps-btn-secondary">Test connection</button>
+      </div>
+
+      <p id="ps-feedback" class="ps-feedback" role="status" aria-live="polite"></p>
+
+      <footer>
+        <span>PrintShelf extension v0.1.0</span>
+      </footer>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>

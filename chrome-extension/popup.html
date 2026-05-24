@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="styles/popup.css" />
+    <title>PrintShelf</title>
+  </head>
+  <body>
+    <header class="ps-popup-header">
+      <span class="ps-logo">PrintShelf</span>
+      <span id="ps-status-pill" class="ps-status-pill ps-status-unknown">…</span>
+    </header>
+
+    <section class="ps-section">
+      <label class="ps-label" for="ps-api-key">API key</label>
+      <input
+        id="ps-api-key"
+        type="password"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Paste your PrintShelf API key"
+      />
+      <p class="ps-help">
+        Find it in your
+        <a id="ps-dashboard-link" href="#" target="_blank" rel="noopener">dashboard settings</a>.
+      </p>
+
+      <div class="ps-row">
+        <button id="ps-save" class="ps-btn ps-btn-primary">Save</button>
+        <button id="ps-test" class="ps-btn ps-btn-secondary">Test</button>
+        <button id="ps-options" class="ps-btn ps-btn-ghost">More…</button>
+      </div>
+
+      <p id="ps-feedback" class="ps-feedback" role="status" aria-live="polite"></p>
+    </section>
+
+    <footer class="ps-footer">
+      <span>v0.1.0</span>
+      <a href="https://printshelf.app" target="_blank" rel="noopener">printshelf.app</a>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
