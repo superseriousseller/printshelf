@@ -1,16 +1,64 @@
-// PrintShelf — Makerworld content script.
+// PrintShelf — model-platform content script.
 //
 // Injects a floating "Add to PrintShelf" button on model pages and pulls
 // metadata (title, designer, thumbnail, source URL) from the rendered DOM
-// when the button is clicked. Reading on click rather than on inject
+// when the button is clicked. Reading on click (rather than on inject)
 // keeps us safe against late hydration.
+//
+// One script handles all four platforms — only the path pattern and the
+// per-site author-link selectors really differ. Title/thumbnail use the
+// generic OG-tag fallbacks.
 
 (() => {
-  const PLATFORM = "makerworld";
   const FAB_ID = "printshelf-fab";
 
-  // Match /models/<id...> at any locale prefix: /en/models/..., /ja/models/..., /models/...
-  const MODEL_PATH_RE = /^\/([a-z]{2,3}\/)?models\/[^/]+/i;
+  const PLATFORMS = [
+    {
+      platform: "makerworld",
+      hosts: ["makerworld.com", "www.makerworld.com"],
+      siteName: "Makerworld",
+      // /en/models/<id>-<slug>, /models/<anything>, etc.
+      pathPattern: /^\/([a-z]{2,3}\/)?models\/[^/]+/i,
+      designerSelectors: [
+        'a[href*="/@"]',
+        'a[href*="/u/"]',
+        'a[href*="/profile/"]',
+        'a[href*="/user/"]',
+      ],
+    },
+    {
+      platform: "printables",
+      hosts: ["printables.com", "www.printables.com"],
+      siteName: "Printables",
+      // /en/model/123456-foo or /model/123456-foo
+      pathPattern: /^\/([a-z]{2,3}\/)?model\/\d+/i,
+      designerSelectors: [
+        'a[href^="/@"]',
+        'a[href*="/social/"]',
+        'a[href*="/users/"]',
+      ],
+    },
+    {
+      platform: "cults3d",
+      hosts: ["cults3d.com", "www.cults3d.com"],
+      siteName: "Cults3D",
+      // /en/3d-model/<category>/<slug>
+      pathPattern: /^\/([a-z]{2,3}\/)?3d-model\/[^/]+\/[^/]+/i,
+      designerSelectors: ['a[href*="/users/"]'],
+    },
+    {
+      platform: "thingiverse",
+      hosts: ["thingiverse.com", "www.thingiverse.com"],
+      siteName: "Thingiverse",
+      // /thing:1234567
+      pathPattern: /^\/thing:\d+/i,
+      designerSelectors: ['a[href$="/designs"]', 'a[href*="/users/"]'],
+    },
+  ];
+
+  const HOST = (window.location.hostname || "").toLowerCase();
+  const CONFIG = PLATFORMS.find((p) => p.hosts.includes(HOST));
+  if (!CONFIG) return; // host not in our list — should never happen given the manifest match, but safe.
 
   // ---------- Metadata extraction ----------
 
@@ -51,29 +99,28 @@
     const fromLd = readJsonLdAuthors();
     if (fromLd.length) return fromLd[0];
 
-    // Makerworld designer link patterns observed in the rendered DOM.
-    const candidates = document.querySelectorAll(
-      'a[href*="/@"], a[href*="/u/"], a[href*="/profile/"], a[href*="/user/"]'
-    );
+    const selector = CONFIG.designerSelectors.join(", ");
+    const candidates = document.querySelectorAll(selector);
     for (const a of candidates) {
       const txt = trim(a.textContent);
       if (!txt) continue;
       if (txt.length > 60) continue;
-      if (/^(home|login|sign\s*up|profile|settings)$/i.test(txt)) continue;
-      // Skip nav links — designer names usually appear near the title within main content.
+      if (/^(home|login|sign\s*up|profile|settings|follow|message|share)$/i.test(txt)) continue;
       if (a.closest('nav, header[role="banner"], footer')) continue;
       return txt;
     }
 
-    // og:title sometimes encodes "Title by Author"
-    const og = metaContent('meta[property="og:title"]');
+    // Last resort: og:title sometimes encodes "Title by Author"
+    const og = metaContent('meta[property="og:title"], meta[name="og:title"]');
     const m = /\bby\s+([^|·•\-—]+?)(?:\s*[|·•\-—].*)?$/i.exec(og);
     if (m) return trim(m[1]);
     return "";
   }
 
   function extractThumbnail() {
-    const og = metaContent('meta[property="og:image"]') || metaContent('meta[name="twitter:image"]');
+    const og =
+      metaContent('meta[property="og:image"], meta[name="og:image"]') ||
+      metaContent('meta[name="twitter:image"], meta[property="twitter:image"]');
     if (og && !/og-icon|default|placeholder/i.test(og)) return og;
 
     // Fallback: first sizable <img> outside chrome/nav.
@@ -89,22 +136,26 @@
     return og || "";
   }
 
+  function stripSiteSuffix(s) {
+    if (!s) return "";
+    const safe = CONFIG.siteName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return s.replace(new RegExp(`\\s*[|·•\\-—]\\s*${safe}.*$`, "i"), "").trim();
+  }
+
   function extractTitle() {
-    const og = metaContent('meta[property="og:title"]');
-    if (og) return og.replace(/\s*[|·•\-—]\s*Makerworld.*$/i, "").trim();
+    const og = metaContent('meta[property="og:title"], meta[name="og:title"]');
+    if (og) return stripSiteSuffix(og);
 
     const h1 = document.querySelector("h1");
     if (h1 && trim(h1.textContent)) return trim(h1.textContent);
 
-    const t = trim(document.title);
-    return t.replace(/\s*[|·•\-—]\s*Makerworld.*$/i, "").trim();
+    return stripSiteSuffix(trim(document.title));
   }
 
   function canonicalUrl() {
     const link = document.querySelector('link[rel="canonical"]');
     const href = link && link.getAttribute("href");
     if (href) return href;
-    // Strip tracking params from window URL.
     try {
       const u = new URL(window.location.href);
       ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ref"].forEach((p) =>
@@ -122,14 +173,14 @@
       designer: extractDesigner(),
       thumbnailUrl: extractThumbnail(),
       sourceUrl: canonicalUrl(),
-      sourcePlatform: PLATFORM,
+      sourcePlatform: CONFIG.platform,
     };
   }
 
   // ---------- Page-fit check ----------
 
   function isModelPage() {
-    return MODEL_PATH_RE.test(window.location.pathname);
+    return CONFIG.pathPattern.test(window.location.pathname);
   }
 
   // ---------- HTML escaping ----------
@@ -172,10 +223,8 @@
 
     const showToast = (htmlOrText, kind, autoHideMs = 5000) => {
       toast.removeAttribute("hidden");
-      // Use textContent by default; allow safe HTML when we control the input.
       if (kind === "html") toast.innerHTML = htmlOrText;
       else toast.textContent = htmlOrText;
-      // Force reflow for transition.
       void toast.offsetWidth;
       toast.classList.add("ps-visible");
       clearTimeout(toast._hideT);
@@ -199,7 +248,6 @@
       try {
         resp = await chrome.runtime.sendMessage({ type: "addPrint", payload: meta });
       } catch (err) {
-        // Service worker can be dormant; sendMessage failures usually recover on retry.
         setState("error", "Try again", { icon: "!" });
         showToast(`Extension error: ${err.message || err}`, "text");
         setTimeout(() => setState("idle", "Add to PrintShelf"), 3500);
@@ -226,7 +274,7 @@
       const errText = (resp && resp.error) || "Save failed.";
       if (resp && resp.needsApiKey) {
         showToast(
-          `${errText} <a href="#" data-open-options>Open settings</a>`,
+          `${escapeHtml(errText)} <a href="#" data-open-options>Open settings</a>`,
           "html",
           8000
         );
@@ -249,7 +297,7 @@
       return;
     }
     if (document.getElementById(FAB_ID)) return;
-    if (!document.body) return; // run_at: document_idle should guarantee body, but be safe.
+    if (!document.body) return;
     buildFab();
   }
 
@@ -259,7 +307,10 @@
   }
 
   // ---------- SPA URL watcher ----------
-  // Makerworld is a client-rendered SPA; route changes don't reload the page.
+  // popstate (Back / Forward) is a real DOM event and crosses the isolated
+  // world, so we catch it for free. SPA router pushState/replaceState calls
+  // happen in the page world, out of reach of an isolated-world patch — a
+  // 1 Hz URL poll is the reliable fallback.
 
   let lastUrl = window.location.href;
   const onUrlMaybeChanged = () => {
@@ -267,14 +318,8 @@
     lastUrl = window.location.href;
     ensureFab();
   };
-
-  // popstate (Back / Forward) is a real DOM event and crosses the isolated
-  // world, so we catch it for free. pushState/replaceState patches only work
-  // for calls inside *our* world — Next.js router calls in the page world
-  // sail past them, so a 1 Hz URL poll is the reliable fallback.
   window.addEventListener("popstate", onUrlMaybeChanged);
   setInterval(onUrlMaybeChanged, 1000);
 
-  // Initial inject.
   ensureFab();
 })();
