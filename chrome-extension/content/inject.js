@@ -192,10 +192,14 @@
     const pipeIdx = cleaned.indexOf(" | ");
     if (pipeIdx !== -1) cleaned = cleaned.slice(0, pipeIdx).trim();
 
-    if (CONFIG.titleSuffixRe) cleaned = cleaned.replace(CONFIG.titleSuffixRe, "").trim();
-
+    // Site-name suffix comes off first — it's always the outermost tail.
+    // Makerworld's og:title is "<name> - Free 3D Print Model - MakerWorld";
+    // peeling the site name first exposes the inner boilerplate suffix
+    // to titleSuffixRe.
     const siteRe = new RegExp(`\\s*[·•\\-–—]\\s*${escapeRe(CONFIG.siteName)}\\s*$`, "i");
     cleaned = cleaned.replace(siteRe, "").trim();
+
+    if (CONFIG.titleSuffixRe) cleaned = cleaned.replace(CONFIG.titleSuffixRe, "").trim();
 
     if (designer) {
       // Greedy `[^|]*` lets us strip a doubled "by X by Y" tail as long as the
