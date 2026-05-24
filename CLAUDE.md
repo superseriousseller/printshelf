@@ -116,8 +116,13 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-05-24:** Queued status dropdown fix, non-image upload error on edit, profile rating filter 422 fix. Full manual QA 15/15 + automated 85/85. Two prod deploys.
+**Completed 2026-05-24:**
+- Queued status in print form dropdown (edit + create); dequeue correctly on status change
+- Non-image upload on edit form now returns 400 with error (was silently ignored)
+- Profile rating filter 422 fixed (empty string no longer crashes)
+- CLAUDE.md rewritten as full operating manual with status tracking + standing rules
+- Full manual QA 15/15 + automated 85/85 passing. Two prod deploys.
 
-**In progress:** Chrome extension scaffold exists in repo, not user-facing.
+**In progress:** Cam dogfooding printshelf.app — building up /u/cam organically.
 
-**Immediate next step:** Cam dogfoods printshelf.app. When /u/cam is post-worthy, draft Reddit launch post.
+**Immediate next step:** Keep dogfooding. When /u/cam looks post-worthy, draft Reddit launch post. Fix anything that feels rough in daily use before posting.
