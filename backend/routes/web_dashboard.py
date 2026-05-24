@@ -737,7 +737,7 @@ async def update_print(
     else:
         if status in {s.value for s in PrintStatus} - {"queued"}:
             p.status = status
-        p.queued = bool(queued)
+        p.queued = False
     p.rating = rating_int
     p.notes = notes.strip() or None
     p.print_date = _parse_date(print_date)

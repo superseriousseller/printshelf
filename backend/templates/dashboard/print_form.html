@@ -113,10 +113,6 @@
             <input type="date" name="print_date" value="{{ values.print_date or '' }}">
         </label>
         <label class="checkbox-inline">
-            <input type="checkbox" name="queued" value="1" {% if values.queued %}checked{% endif %}>
-            In queue (not yet printed)
-        </label>
-        <label class="checkbox-inline">
             <input type="checkbox" name="is_public" value="1" {% if values.is_public %}checked{% endif %}>
             Show on public profile
         </label>
