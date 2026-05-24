@@ -718,10 +718,20 @@ async def update_print(
 
     # Photo: uploaded file replaces existing; otherwise typed URL or keep existing
     resolved_photo_url, photo_errors = await _resolve_photo(photo_file, photo_url, existing=p.photo_url or "")
-    # photo errors on edit are silently dropped so the rest of the edit still applies;
-    # log them so we don't lose visibility.
-    for err in photo_errors:
-        _log.warning("photo error on edit (print=%s): %s", p.id, err)
+    if photo_errors:
+        values = {
+            "title": title, "designer": designer, "source_platform": source_platform,
+            "source_url": source_url, "thumbnail_url": thumbnail_url, "photo_url": photo_url,
+            "printer_id": printer_id, "filament_ids": fil_ids,
+            "status": "queued" if p.queued else p.status,
+            "rating": rating, "notes": notes, "print_date": print_date,
+            "queued": "1" if p.queued else "", "is_public": "1" if p.is_public else "",
+        }
+        return templates.TemplateResponse(
+            request, "dashboard/print_form.html",
+            _print_form_ctx(user, db, p, photo_errors, values),
+            status_code=400,
+        )
 
     p.title = title.strip()
     p.designer = designer.strip() or None
