@@ -55,7 +55,7 @@ def public_profile(
     db: Session = Depends(get_db),
     material: Optional[str] = None,
     status: Optional[str] = None,
-    rating: Optional[int] = None,
+    rating: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     user = db.query(User).filter(User.username == username).first()

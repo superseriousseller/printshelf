@@ -53,7 +53,7 @@ uploads/photos/            # Local upload fallback when R2 isn't configured (git
 
 - **Production (printshelf.app)**: scaffold + auth + JSON CRUD + Jinja public profiles. Web UI (signup/dashboard/upload/import) is still on `staging` waiting to merge to `main`.
 - **Staging (staging.printshelf.app)**: feature-complete for v1 web UI. All 85 QA checks passing.
-- **R2**: bucket created, custom domain wired. API token created. Env vars **except `R2_PUBLIC_URL_BASE`** are set on both Railway services. Adding that one var flips uploads from ephemeral local → durable R2.
+- **R2**: bucket created, custom domain wired. API token created. All 5 env vars (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT`, `R2_PUBLIC_URL_BASE`) are set on both Railway services.
 - **Open work**: see Tasks section.
 
 ## Build history (Council-driven)
@@ -112,11 +112,10 @@ Mirrors SS Book Tracker:
 
 ## Open tasks (when context resumes)
 
-1. **Add `R2_PUBLIC_URL_BASE=https://cdn.printshelf.app`** to both Railway services. (4 of 5 R2 vars are set; this one is missing.)
-2. **Verify R2 uploads on staging** — probe via QA suite or manual upload.
-3. **Merge staging → main** for production deploy of the web UI.
-4. **Chrome extension** (separate codebase under `chrome-extension/`). The wedge — one-click import from Makerworld/Printables/Cults3D/Thingiverse via the rendered DOM (no IP-rep problem since requests come from the user's browser).
-5. **Reddit post** — only after Cam has dogfooded the product and /u/cam looks post-worthy.
+1. **Verify R2 uploads on staging** — all 5 R2 vars confirmed set; probe via QA suite or manual upload to confirm R2 path is live.
+2. **Merge staging → main** for production deploy of the web UI.
+3. **Chrome extension** (separate codebase under `chrome-extension/`). The wedge — one-click import from Makerworld/Printables/Cults3D/Thingiverse via the rendered DOM (no IP-rep problem since requests come from the user's browser).
+4. **Reddit post** — only after Cam has dogfooded the product and /u/cam looks post-worthy.
 
 ## Things to avoid
 

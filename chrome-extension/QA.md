@@ -1,7 +1,8 @@
 # PrintShelf Chrome Extension — Manual QA Checklist
 
-> **Scope:** v0.1.0 — Makerworld only. The other three platforms ship after
-> this checklist is green.
+> **Scope:** v0.2.0 — Makerworld + Printables + Cults3D + Thingiverse.
+> Sections 0–12 are the full Makerworld pass. Section 14 is a quick
+> smoke test for the other three platforms.
 >
 > Plan on ~10–15 minutes. Run against **staging** (`staging.printshelf.app`)
 > unless explicitly testing local dev.
@@ -146,6 +147,32 @@ Copy your API key from `/dashboard#api-key` first.
 - [ ] In `chrome://extensions`, click **Reload** on the PrintShelf card → tabs
       with a Makerworld model page still have a working FAB after a
       page reload.
+
+## 14 · Other platforms — smoke test
+
+Goal: confirm the FAB appears, extracts a sensible title/designer/thumbnail,
+and saves successfully on each platform. ~2 minutes each.
+
+For each platform below:
+
+- [ ] Open any model page on the platform.
+- [ ] FAB appears bottom-right within ~1–2 s.
+- [ ] Click FAB → green "Saved to queue ✓" → toast with "View in PrintShelf →".
+- [ ] Click the link → on the edit page, confirm title/designer/thumbnail/source URL
+      are correct and **source platform = the right one** (printables / cults3d / thingiverse).
+
+Platforms:
+
+- [ ] **Printables** — e.g. `https://www.printables.com/model/<id>-<slug>`.
+- [ ] **Cults3D** — e.g. `https://cults3d.com/en/3d-model/<category>/<slug>`.
+- [ ] **Thingiverse** — e.g. `https://www.thingiverse.com/thing:<id>`.
+
+If a designer comes back blank for any platform, that platform's
+`designerSelectors` array in `content/inject.js` needs a tweak — the
+JSON-LD `author` and `<meta>` fallbacks usually catch it, but author-link
+DOM patterns drift.
+
+---
 
 ## 13 · Cleanup
 

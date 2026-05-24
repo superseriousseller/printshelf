@@ -418,7 +418,7 @@ def new_print(
         return r
     defaults = {
         "queued": "1" if queued == "true" else "",
-        "status": "printed",
+        "status": "queued" if queued == "true" else "printed",
         "source_platform": "manual",
         "is_public": "1",
     }
@@ -559,7 +559,10 @@ async def create_print(
         errors.append("Title is required (or paste a source URL we can pull a title from).")
     if source_platform not in {p.value for p in SourcePlatform}:
         errors.append("Invalid source platform.")
-    if status not in {s.value for s in PrintStatus}:
+    if status == "queued":
+        queued = "1"
+        status = "printed"
+    if status not in {s.value for s in PrintStatus} - {"queued"}:
         errors.append("Invalid status.")
 
     rating_int: Optional[int] = None
@@ -648,7 +651,7 @@ def edit_print(
         "thumbnail_url": p.thumbnail_url or "", "photo_url": p.photo_url or "",
         "printer_id": str(p.printer_id) if p.printer_id else "",
         "filament_ids": p.filament_ids or [],
-        "status": p.status, "rating": str(p.rating) if p.rating else "",
+        "status": "queued" if p.queued else p.status, "rating": str(p.rating) if p.rating else "",
         "notes": p.notes or "",
         "print_date": p.print_date.isoformat() if p.print_date else "",
         "queued": "1" if p.queued else "",
@@ -715,10 +718,20 @@ async def update_print(
 
     # Photo: uploaded file replaces existing; otherwise typed URL or keep existing
     resolved_photo_url, photo_errors = await _resolve_photo(photo_file, photo_url, existing=p.photo_url or "")
-    # photo errors on edit are silently dropped so the rest of the edit still applies;
-    # log them so we don't lose visibility.
-    for err in photo_errors:
-        _log.warning("photo error on edit (print=%s): %s", p.id, err)
+    if photo_errors:
+        values = {
+            "title": title, "designer": designer, "source_platform": source_platform,
+            "source_url": source_url, "thumbnail_url": thumbnail_url, "photo_url": photo_url,
+            "printer_id": printer_id, "filament_ids": fil_ids,
+            "status": "queued" if p.queued else p.status,
+            "rating": rating, "notes": notes, "print_date": print_date,
+            "queued": "1" if p.queued else "", "is_public": "1" if p.is_public else "",
+        }
+        return templates.TemplateResponse(
+            request, "dashboard/print_form.html",
+            _print_form_ctx(user, db, p, photo_errors, values),
+            status_code=400,
+        )
 
     p.title = title.strip()
     p.designer = designer.strip() or None
@@ -729,12 +742,15 @@ async def update_print(
     p.photo_url = resolved_photo_url or None
     p.printer_id = printer_id_int
     p.filament_ids = fil_ids
-    if status in {s.value for s in PrintStatus}:
-        p.status = status
+    if status == "queued":
+        p.queued = True
+    else:
+        if status in {s.value for s in PrintStatus} - {"queued"}:
+            p.status = status
+        p.queued = False
     p.rating = rating_int
     p.notes = notes.strip() or None
     p.print_date = _parse_date(print_date)
-    p.queued = bool(queued)
     p.is_public = bool(is_public)
     db.commit()
     return RedirectResponse("/dashboard/prints", status_code=303)
