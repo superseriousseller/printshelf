@@ -132,6 +132,16 @@
     return MODEL_PATH_RE.test(window.location.pathname);
   }
 
+  // ---------- HTML escaping ----------
+
+  const escapeHtml = (s) =>
+    String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
   // ---------- FAB UI ----------
 
   function buildFab() {
@@ -198,7 +208,16 @@
 
       if (resp && resp.ok) {
         setState("success", "Saved to queue", { icon: "✓" });
-        showToast(`Saved “${meta.title}” to your queue.`, "text");
+        if (resp.printUrl) {
+          showToast(
+            `Saved “${escapeHtml(meta.title)}” to your queue. ` +
+              `<a href="${escapeHtml(resp.printUrl)}" target="_blank" rel="noopener">View in PrintShelf →</a>`,
+            "html",
+            8000
+          );
+        } else {
+          showToast(`Saved “${meta.title}” to your queue.`, "text");
+        }
         setTimeout(() => setState("idle", "Add to PrintShelf"), 3500);
         return;
       }
@@ -249,21 +268,12 @@
     ensureFab();
   };
 
-  (function patchHistory() {
-    const { pushState, replaceState } = history;
-    history.pushState = function (...args) {
-      const r = pushState.apply(this, args);
-      window.dispatchEvent(new Event("printshelf:locationchange"));
-      return r;
-    };
-    history.replaceState = function (...args) {
-      const r = replaceState.apply(this, args);
-      window.dispatchEvent(new Event("printshelf:locationchange"));
-      return r;
-    };
-  })();
+  // popstate (Back / Forward) is a real DOM event and crosses the isolated
+  // world, so we catch it for free. pushState/replaceState patches only work
+  // for calls inside *our* world — Next.js router calls in the page world
+  // sail past them, so a 1 Hz URL poll is the reliable fallback.
   window.addEventListener("popstate", onUrlMaybeChanged);
-  window.addEventListener("printshelf:locationchange", onUrlMaybeChanged);
+  setInterval(onUrlMaybeChanged, 1000);
 
   // Initial inject.
   ensureFab();

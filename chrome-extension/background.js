@@ -58,7 +58,8 @@ async function addPrint(payload) {
   }
 
   if (res.ok) {
-    return { ok: true, print: data };
+    const printUrl = data && data.id ? `${apiBase}/dashboard/prints/${data.id}/edit` : null;
+    return { ok: true, print: data, printUrl };
   }
 
   if (res.status === 401) {
