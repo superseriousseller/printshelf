@@ -373,3 +373,36 @@ footer {
 .btn-full { width: 100%; justify-content: center; }
 .btn-primary.uploading { opacity: 0.7; cursor: not-allowed; }
 
+/* Clickable profile card — full-card link overlay */
+.print-card { position: relative; }
+.card-link {
+    position: absolute; inset: 0; z-index: 1;
+    border-radius: var(--radius);
+}
+.card-body a, .card-meta a { position: relative; z-index: 2; }
+
+/* badge-ok (success) on detail pages */
+.badge-ok { background: var(--success, #1a4731); color: #6ee7b7; }
+
+/* Print detail page */
+.print-detail-page { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+.detail-breadcrumb { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 24px; display: flex; gap: 8px; align-items: center; }
+.detail-breadcrumb a { color: var(--accent); text-decoration: none; }
+.detail-breadcrumb a:hover { text-decoration: underline; }
+.detail-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.detail-photo img { width: 100%; border-radius: var(--radius); border: 1px solid var(--border); display: block; }
+.thumb-fallback-lg { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; font-size: 5rem; opacity: 0.3; background: var(--bg-elev); border-radius: var(--radius); }
+.detail-info h1 { margin: 0 0 6px; font-size: 1.6rem; line-height: 1.3; }
+.detail-designer { margin: 0 0 16px; color: var(--text-dim); font-size: 0.95rem; }
+.detail-badges { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.detail-rating { color: #ffc857; font-size: 1.1rem; letter-spacing: 1px; }
+.detail-date, .detail-printer { color: var(--text-dim); font-size: 0.9rem; margin: 4px 0; }
+.detail-section-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 20px 0 8px; }
+.chip-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.detail-notes { margin-top: 20px; }
+.detail-notes p { color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0; }
+.detail-source { margin-top: 20px; font-size: 0.9rem; }
+.detail-source a { color: var(--accent); text-transform: capitalize; }
+@media (max-width: 680px) {
+    .detail-layout { grid-template-columns: 1fr; }
+}

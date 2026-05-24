@@ -45,10 +45,7 @@
         Source URL <span class="hint">(model page on Makerworld/Printables/etc — optional)</span>
         <input type="url" name="source_url" maxlength="1000" value="{{ values.source_url or '' }}" placeholder="https://www.printables.com/model/…">
     </label>
-    <label>
-        Thumbnail URL <span class="hint">(from the source platform — falls back when you have no photo)</span>
-        <input type="url" name="thumbnail_url" maxlength="1000" value="{{ values.thumbnail_url or '' }}">
-    </label>
+    <input type="hidden" name="thumbnail_url" value="{{ values.thumbnail_url or '' }}">
     <fieldset class="photo-picker">
         <legend>Your photo</legend>
         {% if print_ and print_.photo_url %}

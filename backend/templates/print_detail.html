@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{{ print_.title }} — {{ user.display_name or user.username }} on PrintShelf{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="{{ print_.title }}{% if print_.designer %} by {{ print_.designer }}{% endif %}{% if print_.notes %} — {{ print_.notes[:120] }}{% endif %}">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ print_.title }}">
+    {% set img = print_.photo_url or print_.thumbnail_url %}
+    {% if img %}<meta property="og:image" content="{{ img }}">{% endif %}
+    <meta property="og:url" content="{{ app_url }}/u/{{ user.username }}/prints/{{ print_.id }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="{{ app_url }}/u/{{ user.username }}/prints/{{ print_.id }}">
+{% endblock %}
+
+{% block content %}
+<div class="print-detail-page">
+    <nav class="detail-breadcrumb">
+        <a href="/u/{{ user.username }}">@{{ user.username }}</a>
+        <span>›</span>
+        <span>{{ print_.title }}</span>
+    </nav>
+
+    <div class="detail-layout">
+        <div class="detail-photo">
+            {% set img = print_.photo_url or print_.thumbnail_url %}
+            {% if img %}
+                <img src="{{ img }}" alt="{{ print_.title }}">
+            {% else %}
+                <div class="thumb-fallback-lg">🧊</div>
+            {% endif %}
+        </div>
+
+        <div class="detail-info">
+            <h1>{{ print_.title }}</h1>
+            {% if print_.designer %}<p class="detail-designer">by {{ print_.designer }}</p>{% endif %}
+
+            <div class="detail-badges">
+                {% if print_.rating %}
+                <span class="detail-rating">{% for _ in range(print_.rating) %}★{% endfor %}{% for _ in range(5 - print_.rating) %}☆{% endfor %}</span>
+                {% endif %}
+                {% if print_.status == "failed" %}<span class="badge badge-fail">Failed</span>
+                {% elif print_.status == "partial" %}<span class="badge badge-partial">Partial</span>
+                {% else %}<span class="badge badge-ok">Printed</span>{% endif %}
+            </div>
+
+            {% if print_.print_date %}
+            <p class="detail-date">Printed {{ print_.print_date.isoformat() }}</p>
+            {% endif %}
+
+            {% if printer %}
+            <p class="detail-printer">Printer: {{ printer.name }}</p>
+            {% endif %}
+
+            {% if filaments %}
+            <div class="detail-filaments">
+                <p class="detail-section-label">Filaments used</p>
+                <ul class="chip-list">
+                    {% for f in filaments %}
+                    <li class="chip">
+                        {% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span>{% endif %}
+                        {{ f.brand }} {{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if print_.notes %}
+            <div class="detail-notes">
+                <p class="detail-section-label">Notes</p>
+                <p>{{ print_.notes }}</p>
+            </div>
+            {% endif %}
+
+            {% if print_.source_url %}
+            <p class="detail-source"><a href="{{ print_.source_url }}" target="_blank" rel="noopener">View on {{ print_.source_platform }}</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
