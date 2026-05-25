@@ -7,6 +7,7 @@
 ### 🔄 In Progress
 - Chrome extension (`chrome-extension/`) — QA done (v0.2.0); title extraction fixes shipped, awaiting release to Chrome Web Store
 - Cam dogfooding printshelf.app — building up /u/cam organically
+- **Filament URL import + affiliate redirector** (session 4) — paste a product URL on `/dashboard/filaments/new`, pre-fill brand/material/color/price. Stores: Amazon, Bambu Lab Store, Polymaker, MatterHackers, Anycubic. Affiliate tag injected at click-time via env-var-driven `/dashboard/filaments/{id}/buy` redirector — bare URLs stored in DB, tags never persisted. No schema change.
 
 ### 📋 Todo
 - Reddit launch post — after /u/cam looks post-worthy

@@ -8,6 +8,21 @@
 </header>
 
 {% if errors %}<ul class="errors">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+{% if import_error %}<p class="notice notice-warn">{{ import_error }}</p>{% endif %}
+{% if import_notice %}<p class="notice {% if import_partial %}notice-warn{% else %}notice-ok{% endif %}">{{ import_notice }}</p>{% endif %}
+
+{% if not filament %}
+<form method="get" action="/dashboard/filaments/new" class="import-form">
+    <label class="import-url-label">
+        Import from a product URL
+        <div class="import-row">
+            <input type="url" name="import_url" placeholder="Amazon · Bambu Lab Store · Polymaker · MatterHackers · Anycubic">
+            <button type="submit" class="btn-secondary">Pre-fill form</button>
+        </div>
+        <span class="hint">Pastes brand, material, color, and price. Affiliate tag is applied at click-time — your saved URL stays clean.</span>
+    </label>
+</form>
+{% endif %}
 
 <form method="post" action="{% if filament %}/dashboard/filaments/{{ filament.id }}{% else %}/dashboard/filaments{% endif %}" class="dash-form">
     <div class="row">
@@ -54,6 +69,10 @@
     <label>
         Source URL <span class="hint">(where you bought it)</span>
         <input type="url" name="source_url" maxlength="1000" value="{{ values.source_url or '' }}" placeholder="https://…">
+    </label>
+    <label>
+        Price paid <span class="hint">(USD, optional — pulled from the product page when available)</span>
+        <input type="number" step="0.01" min="0" name="price_at_save" value="{{ values.price_at_save if values.price_at_save not in (None, '') else '' }}" placeholder="24.99">
     </label>
     <label>
         Notes
