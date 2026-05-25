@@ -109,12 +109,19 @@ def public_profile(
             first_photo = p.photo_url or p.thumbnail_url
             break
 
+    all_fil_ids = {fid for p in rows for fid in (p.filament_ids or [])}
+    fil_meta = {}
+    if all_fil_ids:
+        for f in db.query(Filament).filter(Filament.id.in_(all_fil_ids), Filament.user_id == user.id).all():
+            fil_meta[f.id] = f
+
     return templates.TemplateResponse(
         request,
         "profile.html",
         {
             "user": user,
             "prints": rows,
+            "fil_meta": fil_meta,
             "stats": _stats_for(db, user),
             "materials_present": sorted(materials_present),
             "active": {"material": material, "status": status, "rating": str(rating) if rating else None},

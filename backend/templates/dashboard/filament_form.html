@@ -26,10 +26,16 @@
             <input type="text" name="color_name" maxlength="100" value="{{ values.color_name or '' }}" placeholder="Galaxy Black, Jade White…">
         </label>
         <label>
-            Color hex <span class="hint">(e.g. #111111)</span>
-            <input type="text" name="color_hex" pattern="#?[0-9A-Fa-f]{6}" value="{{ values.color_hex or '' }}">
+            Color
+            <div class="color-pair">
+                <input type="color" id="cpicker" value="{{ values.color_hex or '#888888' }}">
+                <input type="text" id="chex" name="color_hex" pattern="#?[0-9A-Fa-f]{6}" value="{{ values.color_hex or '' }}" placeholder="#111111">
+            </div>
         </label>
     </div>
+    <script>
+    (function(){var p=document.getElementById('cpicker'),t=document.getElementById('chex');p.oninput=function(){t.value=p.value;};t.oninput=function(){if(/^#[0-9A-Fa-f]{6}$/.test(t.value))p.value=t.value;};})();
+    </script>
     <div class="row">
         <label>
             Diameter

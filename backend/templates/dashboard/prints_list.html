@@ -15,6 +15,20 @@
     </div>
 </header>
 
+<form method="get" action="/dashboard/prints" class="filter-bar">
+    {% if queued_filter %}<input type="hidden" name="queued" value="{{ queued_filter }}">{% endif %}
+    <input type="search" name="search" value="{{ search }}" placeholder="Search titles…" class="filter-search">
+    <select name="sort" onchange="this.form.submit()" class="filter-sort">
+        <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
+        <option value="oldest" {% if sort == "oldest" %}selected{% endif %}>Oldest</option>
+        <option value="title" {% if sort == "title" %}selected{% endif %}>Title A–Z</option>
+        <option value="rating" {% if sort == "rating" %}selected{% endif %}>Rating ↓</option>
+        <option value="date" {% if sort == "date" %}selected{% endif %}>Print date ↓</option>
+    </select>
+    <button type="submit" class="btn-secondary">Go</button>
+    {% if search %}<a href="/dashboard/prints{% if queued_filter %}?queued={{ queued_filter }}{% endif %}" class="clear-link">Clear</a>{% endif %}
+</form>
+
 {% if prints %}
 <ul class="prints-list">
     {% for p in prints %}

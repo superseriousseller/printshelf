@@ -24,7 +24,7 @@ from auth import (
     hash_password,
 )
 from email_service import send_password_reset
-from models import PasswordResetToken, User, get_db
+from models import Filament, PasswordResetToken, Print, Printer, User, get_db
 
 router = APIRouter(tags=["web-auth"])
 
@@ -251,7 +251,30 @@ def _valid_token(token: str, db: Session) -> Optional[PasswordResetToken]:
 # ---- Dashboard stub (real CRUD UI in Task #11) ----
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request, user: Optional[User] = Depends(get_current_user_web_optional)):
+def dashboard(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
     if user is None:
         return RedirectResponse("/login?next=/dashboard", status_code=303)
-    return templates.TemplateResponse(request, "dashboard.html", {"user": user, "current_user": user})
+    total_prints = db.query(Print).filter(Print.user_id == user.id, Print.queued == False).count()  # noqa: E712
+    queued = db.query(Print).filter(Print.user_id == user.id, Print.queued == True).count()  # noqa: E712
+    success = db.query(Print).filter(Print.user_id == user.id, Print.queued == False, Print.status == "printed").count()  # noqa: E712
+    filaments = db.query(Filament).filter(Filament.user_id == user.id).count()
+    printers = db.query(Printer).filter(Printer.user_id == user.id).count()
+    stats = {
+        "total_prints": total_prints,
+        "queued": queued,
+        "success_pct": round((success / total_prints) * 100) if total_prints > 0 else 0,
+        "filaments": filaments,
+        "printers": printers,
+    }
+    return templates.TemplateResponse(request, "dashboard.html", {
+        "user": user,
+        "current_user": user,
+        "stats": stats,
+        "sidebar_prints": total_prints,
+        "sidebar_queue": queued,
+        "sidebar_filaments": filaments,
+    })
