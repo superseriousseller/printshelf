@@ -253,6 +253,10 @@ def new_filament(
     import_notice: Optional[str] = None
     import_partial: bool = False
     if import_url:
+        # Even if scraping fails outright, we still keep the URL the user
+        # pasted — they can fill in the rest manually and the Buy link
+        # still works.
+        defaults["source_url"] = import_url.strip()
         try:
             result = extract_filament_url(import_url.strip())
         except ImportError_ as e:
@@ -265,21 +269,35 @@ def new_filament(
         if result:
             import_partial = bool(result.get("partial"))
             store = result.get("store") or "manual"
-            if import_partial:
+            if store == "manual":
+                # Unknown store — OG scraping may have salvaged something, but
+                # we have no brand defaults and the user can't expect auto-fill.
+                # Show the same yellow notice as the partial case.
+                import_partial = True
+                import_notice = (
+                    "Unknown store — we don't auto-detect brand/material for that site. "
+                    "URL saved; fill the fields in manually."
+                )
+            elif import_partial:
                 import_notice = (
                     f"Partial pre-fill from {store} — the page blocked metadata, "
                     f"please double-check the fields below."
                 )
             else:
                 import_notice = f"Pre-filled from {store}."
-            # Don't overwrite defaults with None/empty values
+            # Don't overwrite defaults with None/empty values.
             for k_src, k_dst in [
                 ("brand", "brand"), ("material", "material"),
-                ("color_name", "color_name"), ("source_url", "source_url"),
+                ("color_name", "color_name"),
             ]:
                 v = result.get(k_src)
                 if v:
                     defaults[k_dst] = v
+            # Always store the user's pasted URL — never the redirect target.
+            # MatterHackers (and others) 302 our scrape to a category/home page
+            # when bot detection fires; using `r.url` there would strip the
+            # deep product path and break the Buy redirector.
+            defaults["source_url"] = import_url.strip()
             if result.get("price") is not None:
                 defaults["price_at_save"] = result["price"]
     ctx = _filament_form_ctx(user, db, None, [], defaults)
