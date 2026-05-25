@@ -6,6 +6,7 @@
 
 ### 🔄 In Progress
 - Chrome extension (`chrome-extension/`) — QA done (v0.2.0); title extraction fixes shipped, awaiting release to Chrome Web Store
+- **Filament extension button (session 5, Phase 1+2)** — one-click "Add filament" on retailer product pages, starting with Polymaker. Phase 1: `POST /api/filaments/import-url` (Bearer auth). Phase 2: `chrome-extension/content/inject_filament.js` FAB → `background.js addFilament` → `POST /api/filaments` with `status=wishlist`. Phases 3+ (Anycubic, MatterHackers, Bambu, Amazon) deferred.
 - Cam dogfooding printshelf.app — building up /u/cam organically
 - Affiliate program signups (Amazon Associates, Bambu, Polymaker, MatterHackers, Anycubic) — set env vars on Railway prod as they come in: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
 
