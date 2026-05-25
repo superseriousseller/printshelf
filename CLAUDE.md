@@ -5,8 +5,9 @@
 ## Project Status
 
 ### 🔄 In Progress
-- Chrome extension (`chrome-extension/`) — QA done (v0.2.0); title extraction fixes shipped, awaiting merge/release
+- Chrome extension (`chrome-extension/`) — QA done (v0.2.0); title extraction fixes shipped, awaiting release to Chrome Web Store
 - Cam dogfooding printshelf.app — building up /u/cam organically
+- **Filament URL import + affiliate redirector** (session 4) — paste a product URL on `/dashboard/filaments/new`, pre-fill brand/material/color/price. Stores: Amazon, Bambu Lab Store, Polymaker, MatterHackers, Anycubic. Affiliate tag injected at click-time via env-var-driven `/dashboard/filaments/{id}/buy` redirector — bare URLs stored in DB, tags never persisted. No schema change.
 
 ### 📋 Todo
 - Reddit launch post — after /u/cam looks post-worthy
@@ -14,18 +15,20 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the fix
 
 ### ✅ Done (recent)
-- Print detail page (`/u/{username}/prints/{id}`) — photo, meta, filaments, notes, OG tags
-- Profile cards + dashboard rows fully clickable
-- Printables title extraction fixed in import_service.py (`_clean_title` strips "by Author | site")
-- Thumbnail URL field hidden from print form (was confusing)
-- Chrome extension title bugs fixed: JSON-LD name preferred over og:title; cleanTitle strips doubled "by X" (Thingiverse); Makerworld "- Free 3D Print Model" suffix stripped
-- 85/85 automated QA + 15/15 manual QA passing
+- Search + sort on prints list (title search, sort by newest/oldest/title/rating/date)
+- Sidebar counts — live Prints / Queue / Filaments badges in nav
+- Overview dashboard stats row (prints, queued, success %, filaments, printers)
+- Public profile cards — filament material chips with color swatches
+- Filament form color picker — native input[type=color] synced with hex field
+- Print detail page, clickable cards/rows, Printables title fix, thumbnail field hidden
+- Chrome extension v0.2.0 title bugs fixed (JSON-LD preferred, doubled attribution stripped)
 
 ### 🔧 Tech Debt
 - None flagged
 
 ### 📋 QA Log
-- **2026-05-24 (session 2)** — Design review pass. Print detail page, clickable cards/rows, title extraction fixes. Pushed to staging (build f5157ca). Chrome extension v0.2.0 QA: 3 title bugs found and fixed.
+- **2026-05-24 (session 3)** — 23/23 manual QA pass on build 38e52af. All 5 features green. Merged to prod (9c4053b).
+- **2026-05-24 (session 2)** — 15/15 manual QA. Print detail page, clickable cards, title fixes. Merged to prod.
 
 ---
 
@@ -117,14 +120,14 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-05-24 (session 2):**
-- Print detail page at `/u/{username}/prints/{id}` with full meta, OG tags, filament chips
-- Profile cards and dashboard rows made fully clickable
-- `import_service.py` `_clean_title` — strips "by Author | tagline" from Printables og:title
-- Thumbnail URL hidden from print form
-- Chrome extension: `readJsonLdName()` preferred over og:title; `cleanTitle(raw, designer)` strips doubled attribution and platform boilerplate; Makerworld `titleSuffixRe` strips "- Free 3D Print Model"
-- Chrome extension v0.2.0 QA passed after fixes
+**Completed 2026-05-24 (session 3):**
+- Search + sort on prints list (`list_prints` + `prints_list.html`)
+- Sidebar nav counts (`_ctx()` now accepts `db`, `_layout.html` shows badges)
+- Overview dashboard stats row (`web_auth.py /dashboard` + `dashboard.html`)
+- Public profile filament chips (`profile.py` passes `fil_meta`, `profile.html` renders chips)
+- Filament color picker (`filament_form.html`, inline JS sync, CSS `.color-pair`)
+- All 5 features merged to prod (build 9c4053b)
 
-**In progress:** Cam dogfooding printshelf.app. Chrome extension title fixes on staging/in-repo — not yet released to Chrome Web Store.
+**In progress:** Cam dogfooding printshelf.app. Chrome extension v0.2.0 not yet published to Chrome Web Store.
 
-**Immediate next step:** Confirm web app staging QA result and merge to main if passing. When /u/cam looks post-worthy, draft Reddit launch post.
+**Immediate next step:** Keep dogfooding. When /u/cam looks post-worthy, draft Reddit launch post. Publish Chrome extension v0.2.0 to Web Store when ready.

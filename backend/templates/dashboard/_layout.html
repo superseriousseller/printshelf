@@ -9,6 +9,8 @@
             <li><a href="/dashboard/prints?queued=true" {% if section == "queue" %}class="active"{% endif %}>Queue {% if sidebar_queue is defined and sidebar_queue > 0 %}<span class="nav-count">{{ sidebar_queue }}</span>{% endif %}</a></li>
             <li><a href="/dashboard/printers" {% if section == "printers" %}class="active"{% endif %}>Printers</a></li>
             <li><a href="/dashboard/filaments" {% if section == "filaments" %}class="active"{% endif %}>Filaments {% if sidebar_filaments is defined %}<span class="nav-count">{{ sidebar_filaments }}</span>{% endif %}</a></li>
+            <li class="sidebar-divider"></li>
+            <li><a href="/dashboard/account" {% if section == "account" %}class="active"{% endif %}>Account</a></li>
         </ul>
     </aside>
     <div class="dash-main">

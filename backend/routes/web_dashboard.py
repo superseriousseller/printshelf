@@ -29,6 +29,8 @@ from models import (
     get_db,
 )
 from import_service import ImportError_, extract as extract_url
+from filament_import_service import extract as extract_filament_url
+from affiliate import apply_affiliate
 from models import ImportCache
 from storage import MAX_UPLOAD_BYTES, UploadError, upload_image
 
@@ -240,15 +242,51 @@ def _filament_form_ctx(user: User, db: Optional[Session], filament: Optional[Fil
 @router.get("/filaments/new", response_class=HTMLResponse)
 def new_filament(
     request: Request,
+    import_url: Optional[str] = None,
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
     if (r := _require_user(user)) is not None:
         return r
-    return templates.TemplateResponse(
-        request, "dashboard/filament_form.html",
-        _filament_form_ctx(user, db, None, [], {"diameter": "1.75", "status": "own"}),
-    )
+    defaults: dict = {"diameter": "1.75", "status": "own"}
+    import_error: Optional[str] = None
+    import_notice: Optional[str] = None
+    import_partial: bool = False
+    if import_url:
+        try:
+            result = extract_filament_url(import_url.strip())
+        except ImportError_ as e:
+            import_error = str(e)
+            result = None
+        except Exception:
+            _log.exception("filament import failed for %s", import_url)
+            import_error = "Couldn't read that page — paste the fields manually."
+            result = None
+        if result:
+            import_partial = bool(result.get("partial"))
+            store = result.get("store") or "manual"
+            if import_partial:
+                import_notice = (
+                    f"Partial pre-fill from {store} — the page blocked metadata, "
+                    f"please double-check the fields below."
+                )
+            else:
+                import_notice = f"Pre-filled from {store}."
+            # Don't overwrite defaults with None/empty values
+            for k_src, k_dst in [
+                ("brand", "brand"), ("material", "material"),
+                ("color_name", "color_name"), ("source_url", "source_url"),
+            ]:
+                v = result.get(k_src)
+                if v:
+                    defaults[k_dst] = v
+            if result.get("price") is not None:
+                defaults["price_at_save"] = result["price"]
+    ctx = _filament_form_ctx(user, db, None, [], defaults)
+    ctx["import_error"] = import_error
+    ctx["import_notice"] = import_notice
+    ctx["import_partial"] = import_partial
+    return templates.TemplateResponse(request, "dashboard/filament_form.html", ctx)
 
 
 @router.post("/filaments")
@@ -261,6 +299,7 @@ def create_filament(
     diameter: str = Form("1.75"),
     status: str = Form("own"),
     source_url: str = Form(""),
+    price_at_save: str = Form(""),
     notes: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
@@ -274,6 +313,12 @@ def create_filament(
     except ValueError:
         diameter_f = 1.75
         errors.append("Diameter must be a number.")
+    price_f: Optional[float] = None
+    if price_at_save.strip():
+        try:
+            price_f = float(price_at_save.strip())
+        except ValueError:
+            errors.append("Price must be a number.")
     if status not in {s.value for s in FilamentStatus}:
         errors.append("Invalid status.")
     if not brand.strip() or not material.strip():
@@ -284,7 +329,7 @@ def create_filament(
             _filament_form_ctx(user, db, None, errors, {
                 "brand": brand, "material": material, "color_name": color_name,
                 "color_hex": color_hex, "diameter": diameter, "status": status,
-                "source_url": source_url, "notes": notes,
+                "source_url": source_url, "price_at_save": price_at_save, "notes": notes,
             }),
             status_code=400,
         )
@@ -292,7 +337,8 @@ def create_filament(
         user_id=user.id, brand=brand.strip(), material=material.strip(),
         color_name=color_name.strip() or None, color_hex=_normalize_hex(color_hex),
         diameter=diameter_f, status=status,
-        source_url=source_url.strip() or None, notes=notes.strip() or None,
+        source_url=source_url.strip() or None, price_at_save=price_f,
+        notes=notes.strip() or None,
     )
     db.add(f)
     db.commit()
@@ -317,7 +363,9 @@ def edit_filament(
             "brand": f.brand, "material": f.material,
             "color_name": f.color_name or "", "color_hex": f.color_hex or "",
             "diameter": str(f.diameter), "status": f.status,
-            "source_url": f.source_url or "", "notes": f.notes or "",
+            "source_url": f.source_url or "",
+            "price_at_save": f.price_at_save if f.price_at_save is not None else "",
+            "notes": f.notes or "",
         }),
     )
 
@@ -333,6 +381,7 @@ def update_filament(
     diameter: str = Form("1.75"),
     status: str = Form("own"),
     source_url: str = Form(""),
+    price_at_save: str = Form(""),
     notes: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
@@ -354,6 +403,13 @@ def update_filament(
     f.color_hex = _normalize_hex(color_hex)
     f.diameter = diameter_f
     f.source_url = source_url.strip() or None
+    if price_at_save.strip():
+        try:
+            f.price_at_save = float(price_at_save.strip())
+        except ValueError:
+            pass
+    else:
+        f.price_at_save = None
     f.notes = notes.strip() or None
     db.commit()
     return RedirectResponse("/dashboard/filaments", status_code=303)
@@ -372,6 +428,29 @@ def delete_filament(
         db.delete(f)
         db.commit()
     return RedirectResponse("/dashboard/filaments", status_code=303)
+
+
+@router.get("/filaments/{filament_id}/buy")
+def buy_filament(
+    filament_id: int,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    """302 to the filament's source_url with an affiliate tag applied.
+
+    Tags are sourced from env vars per `affiliate.py`; if none is set for
+    the store, we redirect to the bare URL. We only honor source_urls
+    that belong to the requesting user — no one can use this endpoint to
+    bounce traffic through another user's source links.
+    """
+    if (r := _require_user(user)) is not None:
+        return r
+    f = db.query(Filament).filter(Filament.id == filament_id, Filament.user_id == user.id).first()
+    if f is None or not f.source_url:
+        return RedirectResponse("/dashboard/filaments", status_code=303)
+    target = apply_affiliate(f.source_url)
+    _log.info("filament buy click filament_id=%s user=%s target=%s", f.id, user.id, target)
+    return RedirectResponse(target, status_code=302)
 
 
 # ============== Prints ==============
@@ -847,3 +926,61 @@ def delete_print(
         db.delete(p)
         db.commit()
     return RedirectResponse("/dashboard/prints", status_code=303)
+
+
+# ============== Account settings ==============
+
+@router.get("/account", response_class=HTMLResponse)
+def account_settings(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    values = {
+        "display_name": user.display_name or "",
+        "bio": user.bio or "",
+        "avatar_url": user.avatar_url or "",
+    }
+    return templates.TemplateResponse(
+        request, "dashboard/account_form.html",
+        _ctx(user, db=db, errors=[], saved=False, values=values),
+    )
+
+
+@router.post("/account", response_class=HTMLResponse)
+def save_account_settings(
+    request: Request,
+    display_name: str = Form(""),
+    bio: str = Form(""),
+    avatar_url: str = Form(""),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    errors = []
+    display_name = display_name.strip()
+    bio = bio.strip()
+    avatar_url = avatar_url.strip()
+    if len(display_name) > 100:
+        errors.append("Display name must be 100 characters or fewer.")
+    if avatar_url and not avatar_url.startswith(("http://", "https://")):
+        errors.append("Avatar URL must start with http:// or https://")
+    values = {"display_name": display_name, "bio": bio, "avatar_url": avatar_url}
+    if errors:
+        return templates.TemplateResponse(
+            request, "dashboard/account_form.html",
+            _ctx(user, db=db, errors=errors, saved=False, values=values),
+            status_code=400,
+        )
+    user.display_name = display_name or None
+    user.bio = bio or None
+    user.avatar_url = avatar_url or None
+    db.commit()
+    _log.info("account settings updated user_id=%s", user.id)
+    return templates.TemplateResponse(
+        request, "dashboard/account_form.html",
+        _ctx(user, db=db, errors=[], saved=True, values=values),
+    )

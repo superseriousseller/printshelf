@@ -37,19 +37,11 @@
     </a>
 </section>
 
-<details class="dash-apikey" id="api-key">
-    <summary>Chrome extension API key</summary>
-    <pre class="apikey">{{ user.api_key }}</pre>
-    <p class="hint">Use this as the Bearer token in the extension. Keep it secret.</p>
-</details>
+<p class="hint" style="margin-top:8px">Need your Chrome extension API key? Find it on the <a href="/dashboard/account#api-key">Account page</a>.</p>
 <script>
-  // Auto-expand and scroll when arriving from the extension (#api-key).
+  // Redirect #api-key anchor from overview → account page.
   (function () {
-    if (window.location.hash !== "#api-key") return;
-    var el = document.getElementById("api-key");
-    if (!el) return;
-    el.open = true;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (window.location.hash === "#api-key") window.location.replace("/dashboard/account#api-key");
   })();
 </script>
 {% endblock %}
