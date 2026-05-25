@@ -7,7 +7,7 @@
 ### 🔄 In Progress
 - Chrome extension (`chrome-extension/`) — QA done (v0.2.0); title extraction fixes shipped, awaiting release to Chrome Web Store
 - Cam dogfooding printshelf.app — building up /u/cam organically
-- **Filament URL import + affiliate redirector** (session 4) — paste a product URL on `/dashboard/filaments/new`, pre-fill brand/material/color/price. Stores: Amazon, Bambu Lab Store, Polymaker, MatterHackers, Anycubic. Affiliate tag injected at click-time via env-var-driven `/dashboard/filaments/{id}/buy` redirector — bare URLs stored in DB, tags never persisted. No schema change.
+- Affiliate program signups (Amazon Associates, Bambu, Polymaker, MatterHackers, Anycubic) — set env vars on Railway prod as they come in: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
 
 ### 📋 Todo
 - Reddit launch post — after /u/cam looks post-worthy
@@ -15,6 +15,9 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the fix
 
 ### ✅ Done (recent)
+- Filament URL import (Amazon, Bambu, Polymaker, MatterHackers, Anycubic) — paste a product URL, pre-fills brand/material/color/price from OG tags + JSON-LD
+- Affiliate redirector — `/dashboard/filaments/{id}/buy` injects per-store tag at click-time; bare URLs in DB
+- Hard-error vs soft-warn notice styling (red `notice-error` vs yellow `notice-warn`)
 - Search + sort on prints list (title search, sort by newest/oldest/title/rating/date)
 - Sidebar counts — live Prints / Queue / Filaments badges in nav
 - Overview dashboard stats row (prints, queued, success %, filaments, printers)
@@ -27,6 +30,7 @@
 - None flagged
 
 ### 📋 QA Log
+- **2026-05-25 (session 4)** — Filament URL import + affiliate redirector. Cam manual QA found 2 bugs on `9c34ce5` (MatterHackers source_url truncation, misleading green notice for unknown stores) → fixed in `68025be`. Notice-color polish in `ceed648`. Final sanity: 85/85 automated QA on staging + 5/5 manual spot checks. Merged to prod (382e9b6). The "Step 5b /buy strips MatterHackers URL" finding was investigated and proved to be MatterHackers's own server redirect chain, not our code.
 - **2026-05-24 (session 3)** — 23/23 manual QA pass on build 38e52af. All 5 features green. Merged to prod (9c4053b).
 - **2026-05-24 (session 2)** — 15/15 manual QA. Print detail page, clickable cards, title fixes. Merged to prod.
 
@@ -120,14 +124,16 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-05-24 (session 3):**
-- Search + sort on prints list (`list_prints` + `prints_list.html`)
-- Sidebar nav counts (`_ctx()` now accepts `db`, `_layout.html` shows badges)
-- Overview dashboard stats row (`web_auth.py /dashboard` + `dashboard.html`)
-- Public profile filament chips (`profile.py` passes `fil_meta`, `profile.html` renders chips)
-- Filament color picker (`filament_form.html`, inline JS sync, CSS `.color-pair`)
-- All 5 features merged to prod (build 9c4053b)
+**Completed 2026-05-25 (session 4):**
+- Filament URL import: `backend/filament_import_service.py` extracts brand/material/color/price from Amazon, Bambu Lab, Polymaker, MatterHackers, Anycubic via OG tags + JSON-LD. Falls back to slug-title or hard error.
+- Affiliate redirector: `backend/affiliate.py` injects per-store tag from env vars at click-time. `/dashboard/filaments/{id}/buy` does the 302.
+- Wired into `web_dashboard.py`: `GET /dashboard/filaments/new?import_url=...` pre-fills form; `price_at_save` now surfaced in form (was on model but hidden).
+- Notice styling: red `notice-error` (hard fail) vs yellow `notice-warn` (partial/unknown) vs green `notice-ok` (success).
+- All merged to prod (build 382e9b6).
 
-**In progress:** Cam dogfooding printshelf.app. Chrome extension v0.2.0 not yet published to Chrome Web Store.
+**In progress:**
+- Cam dogfooding printshelf.app
+- Affiliate signups pending — env vars to set on Railway prod when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
+- Chrome extension v0.2.0 not yet published to Web Store
 
-**Immediate next step:** Keep dogfooding. When /u/cam looks post-worthy, draft Reddit launch post. Publish Chrome extension v0.2.0 to Web Store when ready.
+**Immediate next step:** Sign up for affiliate programs, set env vars on Railway prod, click-test each store's Buy link to confirm tag lands. Then keep dogfooding toward Reddit launch.
