@@ -26,6 +26,15 @@ class ImportRequest(BaseModel):
     url: str = Field(min_length=8, max_length=2000)
 
 
+def _is_stale(row: "ImportCache") -> bool:
+    """Self-heal cache entries scraped before _clean_title shipped.
+
+    A " | " in the cached title means it carries page-title cruft
+    ("… | Printables.com"); a fresh scrape will store the cleaned form.
+    """
+    return bool(row.title and " | " in row.title)
+
+
 def _wire_response(result: dict, cached: bool) -> dict:
     """Normalize both cached and fresh paths to the camelCase wire format
     used by every other PrintShelf API endpoint."""
@@ -48,9 +57,10 @@ def import_url(
 ) -> dict:
     url = body.url.strip()
 
-    # Cache hit — return what we extracted last time
+    # Cache hit — return what we extracted last time, unless the row predates
+    # the title cleanup and is carrying " | Printables.com"-style cruft.
     row = db.query(ImportCache).filter(ImportCache.source_url == url).first()
-    if row and (datetime.utcnow() - row.fetched_at) < CACHE_TTL:
+    if row and (datetime.utcnow() - row.fetched_at) < CACHE_TTL and not _is_stale(row):
         return _wire_response({
             "platform": row.platform,
             "title": row.title,

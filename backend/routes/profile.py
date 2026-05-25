@@ -8,12 +8,12 @@ from collections import Counter
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from auth import get_current_user_web_optional
-from models import Print, User, get_db
+from models import Filament, Print, Printer, User, get_db
 
 router = APIRouter(tags=["profile"])
 
@@ -121,5 +121,55 @@ def public_profile(
             "first_photo": first_photo,
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
             "current_user": current_user,
+        },
+    )
+
+
+@router.get("/u/{username}/prints/{print_id}", response_class=HTMLResponse)
+def public_print_detail(
+    request: Request,
+    username: str,
+    print_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        return templates.TemplateResponse(
+            request, "404_user.html",
+            {"username": username, "current_user": current_user},
+            status_code=404,
+        )
+    p = db.query(Print).filter(
+        Print.id == print_id,
+        Print.user_id == user.id,
+        Print.is_public == True,   # noqa: E712
+        Print.queued == False,     # noqa: E712
+    ).first()
+    if p is None:
+        return RedirectResponse(f"/u/{username}", status_code=303)
+
+    filaments = []
+    if p.filament_ids:
+        filaments = db.query(Filament).filter(
+            Filament.id.in_(p.filament_ids), Filament.user_id == user.id
+        ).all()
+
+    printer = None
+    if p.printer_id:
+        printer = db.query(Printer).filter(
+            Printer.id == p.printer_id, Printer.user_id == user.id
+        ).first()
+
+    return templates.TemplateResponse(
+        request,
+        "print_detail.html",
+        {
+            "user": user,
+            "print_": p,
+            "filaments": filaments,
+            "printer": printer,
+            "current_user": current_user,
+            "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
         },
     )

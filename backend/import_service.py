@@ -116,6 +116,24 @@ def _title_from_url_slug(url: str) -> Optional[str]:
     return " ".join(out)
 
 
+def _clean_title(title: str) -> str:
+    """Strip platform site-name suffixes and trailing author attributions.
+
+    Printables og:title is "Model Name by Author | Download free STL | Printables.com".
+    We want just "Model Name".
+    """
+    had_pipe = " | " in title
+    pipe = title.find(" | ")
+    if pipe != -1:
+        title = title[:pipe].strip()
+    # Strip " by Author" only when the title had a "|" separator (platform-attribution pattern)
+    if had_pipe:
+        m = re.match(r"^(.*?)\s+by\s+\S.*$", title, re.IGNORECASE)
+        if m and m.group(1).strip():
+            title = m.group(1).strip()
+    return title
+
+
 def _extract_designer(soup: BeautifulSoup, title: Optional[str]) -> Optional[str]:
     # JSON-LD author / creator
     for script in soup.find_all("script", type="application/ld+json"):
@@ -195,7 +213,9 @@ def extract(url: str) -> dict:
         title = soup.title.string.strip()
     description = _og(soup, "description")
     thumbnail = _og(soup, "image")
-    designer = _extract_designer(soup, title)
+    designer = _extract_designer(soup, title)  # uses raw title to pull "by Author" attribution
+    if title:
+        title = _clean_title(title)
 
     if _looks_generic(platform, title, description, thumbnail):
         # Page metadata is JS-hydrated (Makerworld). Salvage the title

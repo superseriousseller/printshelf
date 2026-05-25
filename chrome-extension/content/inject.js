@@ -25,6 +25,8 @@
         'a[href*="/profile/"]',
         'a[href*="/user/"]',
       ],
+      // Makerworld's og:title is "<name> - Free 3D Print Model" — strip the boilerplate suffix.
+      titleSuffixRe: /\s*[-–—]\s*Free 3D Print Model\s*$/i,
     },
     {
       platform: "printables",
@@ -69,30 +71,68 @@
     return el ? trim(el.getAttribute("content")) : "";
   };
 
-  function readJsonLdAuthors() {
+  // Walk every JSON-LD <script>, including @graph children. Returns a flat
+  // list of node objects.
+  function readJsonLdNodes() {
     const out = [];
     const scripts = document.querySelectorAll('script[type="application/ld+json"]');
     for (const s of scripts) {
       try {
         const raw = JSON.parse(s.textContent || "null");
-        const nodes = Array.isArray(raw) ? raw : [raw];
-        for (const node of nodes) {
+        const stack = Array.isArray(raw) ? [...raw] : [raw];
+        while (stack.length) {
+          const node = stack.shift();
           if (!node || typeof node !== "object") continue;
-          const author = node.author || node.creator;
-          if (!author) continue;
-          if (Array.isArray(author)) {
-            for (const a of author) if (a && a.name) out.push(trim(a.name));
-          } else if (typeof author === "object" && author.name) {
-            out.push(trim(author.name));
-          } else if (typeof author === "string") {
-            out.push(trim(author));
-          }
+          out.push(node);
+          if (Array.isArray(node["@graph"])) stack.push(...node["@graph"]);
         }
       } catch {
         /* malformed JSON-LD — skip */
       }
     }
+    return out;
+  }
+
+  function readJsonLdAuthors() {
+    const out = [];
+    for (const node of readJsonLdNodes()) {
+      // Thingiverse uses brand.name for the uploader; others use author / creator.
+      const author = node.author || node.creator || node.brand;
+      if (!author) continue;
+      if (Array.isArray(author)) {
+        for (const a of author) if (a && a.name) out.push(trim(a.name));
+      } else if (typeof author === "object" && author.name) {
+        out.push(trim(author.name));
+      } else if (typeof author === "string") {
+        out.push(trim(author));
+      }
+    }
     return out.filter(Boolean);
+  }
+
+  // BreadcrumbList / ItemList / Person etc. nodes also carry `name` but it's
+  // never the model title — skip them when hunting for the product name.
+  const NAME_TYPE_BLOCKLIST = new Set([
+    "breadcrumblist",
+    "itemlist",
+    "person",
+    "organization",
+    "webpage",
+    "website",
+    "imageobject",
+    "siteNavigationElement".toLowerCase(),
+  ]);
+
+  function readJsonLdName() {
+    for (const node of readJsonLdNodes()) {
+      const t = Array.isArray(node["@type"]) ? node["@type"][0] : node["@type"];
+      if (t && NAME_TYPE_BLOCKLIST.has(String(t).toLowerCase())) continue;
+      if (node.name && typeof node.name === "string") {
+        const n = trim(node.name);
+        if (n) return n;
+      }
+    }
+    return "";
   }
 
   function extractDesigner() {
@@ -136,20 +176,55 @@
     return og || "";
   }
 
-  function stripSiteSuffix(s) {
-    if (!s) return "";
-    const safe = CONFIG.siteName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return s.replace(new RegExp(`\\s*[|·•\\-—]\\s*${safe}.*$`, "i"), "").trim();
+  const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // Normalize a raw title (from JSON-LD, og:title, h1, or document.title) by
+  // stripping the common forms of page-title pollution we've seen in QA:
+  //   • Trailing " | <anything>" — pipe-separated cruft (Printables: "| Download free STL model | Printables.com")
+  //   • A platform-specific dash suffix (Makerworld: " - Free 3D Print Model")
+  //   • The platform site name joined by a separator (" - Thingiverse")
+  //   • A trailing " by <…designer…>" attribution when designer is known
+  //     (handles Thingiverse's doubled "by CreativeTools.se by CreativeTools").
+  function cleanTitle(raw, designer) {
+    if (!raw) return "";
+    let cleaned = raw.trim();
+
+    const pipeIdx = cleaned.indexOf(" | ");
+    if (pipeIdx !== -1) cleaned = cleaned.slice(0, pipeIdx).trim();
+
+    // Site-name suffix comes off first — it's always the outermost tail.
+    // Makerworld's og:title is "<name> - Free 3D Print Model - MakerWorld";
+    // peeling the site name first exposes the inner boilerplate suffix
+    // to titleSuffixRe.
+    const siteRe = new RegExp(`\\s*[·•\\-–—]\\s*${escapeRe(CONFIG.siteName)}\\s*$`, "i");
+    cleaned = cleaned.replace(siteRe, "").trim();
+
+    if (CONFIG.titleSuffixRe) cleaned = cleaned.replace(CONFIG.titleSuffixRe, "").trim();
+
+    if (designer) {
+      // Greedy `[^|]*` lets us strip a doubled "by X by Y" tail as long as the
+      // designer string appears somewhere in it.
+      const byRe = new RegExp(`\\s+by\\s+[^|]*${escapeRe(designer)}[^|]*\\s*$`, "i");
+      const stripped = cleaned.replace(byRe, "").trim();
+      if (stripped.length >= 3) cleaned = stripped;
+    }
+
+    return cleaned;
   }
 
-  function extractTitle() {
+  function extractTitle(designer) {
+    // JSON-LD `name` is the cleanest source when present — sites populate it
+    // with the model name and nothing else. Skip non-product node types.
+    const ldName = readJsonLdName();
+    if (ldName) return cleanTitle(ldName, designer);
+
     const og = metaContent('meta[property="og:title"], meta[name="og:title"]');
-    if (og) return stripSiteSuffix(og);
+    if (og) return cleanTitle(og, designer);
 
     const h1 = document.querySelector("h1");
-    if (h1 && trim(h1.textContent)) return trim(h1.textContent);
+    if (h1 && trim(h1.textContent)) return cleanTitle(trim(h1.textContent), designer);
 
-    return stripSiteSuffix(trim(document.title));
+    return cleanTitle(trim(document.title), designer);
   }
 
   function canonicalUrl() {
@@ -168,9 +243,11 @@
   }
 
   function extract() {
+    // Designer first so extractTitle can strip a trailing " by <designer>".
+    const designer = extractDesigner();
     return {
-      title: extractTitle(),
-      designer: extractDesigner(),
+      title: extractTitle(designer),
+      designer,
       thumbnailUrl: extractThumbnail(),
       sourceUrl: canonicalUrl(),
       sourcePlatform: CONFIG.platform,
