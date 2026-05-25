@@ -847,3 +847,61 @@ def delete_print(
         db.delete(p)
         db.commit()
     return RedirectResponse("/dashboard/prints", status_code=303)
+
+
+# ============== Account settings ==============
+
+@router.get("/account", response_class=HTMLResponse)
+def account_settings(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    values = {
+        "display_name": user.display_name or "",
+        "bio": user.bio or "",
+        "avatar_url": user.avatar_url or "",
+    }
+    return templates.TemplateResponse(
+        request, "dashboard/account_form.html",
+        _ctx(user, db=db, errors=[], saved=False, values=values),
+    )
+
+
+@router.post("/account", response_class=HTMLResponse)
+def save_account_settings(
+    request: Request,
+    display_name: str = Form(""),
+    bio: str = Form(""),
+    avatar_url: str = Form(""),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    errors = []
+    display_name = display_name.strip()
+    bio = bio.strip()
+    avatar_url = avatar_url.strip()
+    if len(display_name) > 100:
+        errors.append("Display name must be 100 characters or fewer.")
+    if avatar_url and not avatar_url.startswith(("http://", "https://")):
+        errors.append("Avatar URL must start with http:// or https://")
+    values = {"display_name": display_name, "bio": bio, "avatar_url": avatar_url}
+    if errors:
+        return templates.TemplateResponse(
+            request, "dashboard/account_form.html",
+            _ctx(user, db=db, errors=errors, saved=False, values=values),
+            status_code=400,
+        )
+    user.display_name = display_name or None
+    user.bio = bio or None
+    user.avatar_url = avatar_url or None
+    db.commit()
+    _log.info("account settings updated user_id=%s", user.id)
+    return templates.TemplateResponse(
+        request, "dashboard/account_form.html",
+        _ctx(user, db=db, errors=[], saved=True, values=values),
+    )

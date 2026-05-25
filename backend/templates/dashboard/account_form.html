@@ -1,0 +1,45 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = "account" %}
+{% block title %}Account — PrintShelf{% endblock %}
+
+{% block dash %}
+<header class="dash-header">
+    <h1>Account</h1>
+</header>
+
+{% if errors %}<ul class="errors">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+{% if saved %}<p class="notice notice-ok">Saved.</p>{% endif %}
+
+<form method="post" action="/dashboard/account" class="dash-form">
+    <label>
+        Display name <span class="hint">(shown on your public profile — leave blank to use @{{ user.username }})</span>
+        <input type="text" name="display_name" maxlength="100" value="{{ values.display_name or '' }}" placeholder="{{ user.username }}">
+    </label>
+    <label>
+        Bio <span class="hint">(a sentence or two about you — shown on /u/{{ user.username }})</span>
+        <textarea name="bio" rows="3" maxlength="500" placeholder="3D printing nerd. Bambu P1S owner. I print functional parts and too many Benchys.">{{ values.bio or '' }}</textarea>
+    </label>
+    <label>
+        Avatar URL <span class="hint">(link to a profile photo — optional)</span>
+        <input type="url" name="avatar_url" maxlength="500" value="{{ values.avatar_url or '' }}" placeholder="https://…">
+    </label>
+    {% if values.avatar_url %}
+    <div class="avatar-preview">
+        <img src="{{ values.avatar_url }}" alt="avatar preview">
+        <span class="hint">Current avatar</span>
+    </div>
+    {% endif %}
+    <div class="form-actions">
+        <button type="submit" class="btn-primary">Save changes</button>
+        <a href="/u/{{ user.username }}" target="_blank">View public profile ↗</a>
+    </div>
+</form>
+
+<section class="dash-apikey" style="margin-top:32px">
+    <details id="api-key">
+        <summary>Chrome extension API key</summary>
+        <pre class="apikey">{{ user.api_key }}</pre>
+        <p class="hint">Use this as the Bearer token in the extension. Keep it secret.</p>
+    </details>
+</section>
+{% endblock %}

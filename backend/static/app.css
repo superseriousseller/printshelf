@@ -433,3 +433,8 @@ footer {
 
 /* Profile card filament chips */
 .card-filaments { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
+/* Account settings */
+.avatar-preview { display: flex; align-items: center; gap: 12px; margin-top: -8px; }
+.avatar-preview img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+.sidebar-divider { border-top: 1px solid var(--border); margin: 6px 4px; }
