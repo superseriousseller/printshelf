@@ -18,6 +18,44 @@
 (() => {
   const FAB_ID = "printshelf-fab";
 
+  // Hunt for a 6-digit hex within a label DOM subtree. Polymaker stores it
+  // in any of these places depending on the theme/product line:
+  //   - inline style attr on the label or a descendant
+  //     (style="background-color:#F4EFEB" or "--swatch-color:#F4EFEB")
+  //   - textContent of the label (the Panchroma swatches print
+  //     "Matte\nCotton\nWhite\n  #F4EFEB" into the label body)
+  function findHexInLabel(lbl) {
+    if (!lbl) return "";
+    // 1. Style attr on the label itself or any descendant.
+    const candidates = [lbl, ...lbl.querySelectorAll("[style]")];
+    for (const el of candidates) {
+      const m = (el.getAttribute("style") || "").match(/#[0-9A-Fa-f]{6}\b/);
+      if (m) return m[0].toLowerCase();
+    }
+    // 2. textContent fallback.
+    const m = (lbl.textContent || "").match(/#[0-9A-Fa-f]{6}\b/);
+    return m ? m[0].toLowerCase() : "";
+  }
+
+  // Polymaker's product description / spec table includes a "HEX Code: #XXXXXX"
+  // row for filaments. Use that as a page-wide fallback when the swatch label
+  // doesn't carry the hex itself (PolyLite line, etc.).
+  function findHexInPageDescription() {
+    // Common containers Shopify themes drop the description into.
+    const containers = document.querySelectorAll(
+      ".product__description, .product-single__description, " +
+        ".product-description, .rte, [itemprop='description']"
+    );
+    for (const c of containers) {
+      const text = c.textContent || "";
+      const m = text.match(/hex(?:\s*code)?\s*[:：]?\s*(#[0-9A-Fa-f]{6})\b/i);
+      if (m) return m[1].toLowerCase();
+    }
+    // Last-ditch: any "HEX Code: #XXXXXX" anywhere on the page.
+    const m = (document.body.textContent || "").match(/hex(?:\s*code)?\s*[:：]\s*(#[0-9A-Fa-f]{6})\b/i);
+    return m ? m[1].toLowerCase() : "";
+  }
+
   // Pull a clean color name + hex out of a label's combined textContent.
   // Polymaker's swatch labels concatenate the slug ("MatteCottonWhite"),
   // an inline hex string, and the proper name ("Matte Cotton White") — we
@@ -61,39 +99,42 @@
             'input[type="radio"][name^="Color"]:checked, ' +
             'input[type="radio"][name*="color" i]:checked'
         );
-        if (checked) {
-          let lbl = null;
-          if (checked.id) lbl = document.querySelector(`label[for="${CSS.escape(checked.id)}"]`);
-          if (lbl) {
-            // a. aria-label is almost always clean ("Matte Cotton White").
-            const aria = (lbl.getAttribute("aria-label") || "").trim();
-            if (aria) {
-              // aria might not include the hex — check inline style for it.
-              let hex = "";
-              const styled = lbl.querySelector("[style*='background']") || lbl;
-              const styleHex = (styled.getAttribute("style") || "").match(/#[0-9A-Fa-f]{6}/);
-              if (styleHex) hex = styleHex[0].toLowerCase();
-              return { name: aria, hex };
-            }
-            // b. visually-hidden span (Shopify accessibility pattern).
-            const vh = lbl.querySelector(".visually-hidden, .sr-only, .visuallyhidden");
-            if (vh && (vh.textContent || "").trim()) {
-              return cleanColorLabel(vh.textContent);
-            }
-            // c. Last resort: parse the combined textContent.
-            return cleanColorLabel(lbl.textContent);
+        let lbl = null;
+        if (checked && checked.id) {
+          lbl = document.querySelector(`label[for="${CSS.escape(checked.id)}"]`);
+        }
+        // Hunt the hex up-front so every name-source branch can reuse it.
+        const hexFromLabel = lbl ? findHexInLabel(lbl) : "";
+        const hex = hexFromLabel || findHexInPageDescription();
+
+        if (lbl) {
+          // a. aria-label is almost always clean ("Matte Cotton White").
+          const aria = (lbl.getAttribute("aria-label") || "").trim();
+          if (aria) return { name: aria, hex };
+          // b. visually-hidden span (Shopify accessibility pattern).
+          const vh = lbl.querySelector(".visually-hidden, .sr-only, .visuallyhidden");
+          if (vh && (vh.textContent || "").trim()) {
+            const cleaned = cleanColorLabel(vh.textContent);
+            return { name: cleaned.name, hex: hex || cleaned.hex };
           }
-          if (checked.value && checked.value.trim()) {
-            return cleanColorLabel(checked.value);
-          }
+          // c. Last resort: parse the combined textContent (carries slug+hex+name blob).
+          const cleaned = cleanColorLabel(lbl.textContent);
+          return { name: cleaned.name, hex: hex || cleaned.hex };
+        }
+        if (checked && checked.value && checked.value.trim()) {
+          const cleaned = cleanColorLabel(checked.value);
+          return { name: cleaned.name, hex: hex || cleaned.hex };
         }
         // 2. Visible "Color: <name>" pattern that Dawn themes render outside swatches.
         for (const legend of document.querySelectorAll(".product-form__input legend, .product-form__input .form__label")) {
           const text = (legend.textContent || "").trim();
           const m = text.match(/color\s*[:：]\s*(.+)$/i);
-          if (m) return cleanColorLabel(m[1]);
+          if (m) {
+            const cleaned = cleanColorLabel(m[1]);
+            return { name: cleaned.name, hex: hex || cleaned.hex };
+          }
         }
-        return { name: "", hex: "" };
+        return { name: "", hex };
       },
     },
   ];

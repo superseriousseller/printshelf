@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PrintShelf",
   "description": "One-click add 3D model pages and filament purchases to your PrintShelf library.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
