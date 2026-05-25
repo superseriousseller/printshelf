@@ -18,16 +18,43 @@
 (() => {
   const FAB_ID = "printshelf-fab";
 
+  // Pull a clean color name + hex out of a label's combined textContent.
+  // Polymaker's swatch labels concatenate the slug ("MatteCottonWhite"),
+  // an inline hex string, and the proper name ("Matte Cotton White") — we
+  // want only the proper name and the hex, separately.
+  function cleanColorLabel(raw) {
+    const text = String(raw || "");
+    const hexMatch = text.match(/#[0-9A-Fa-f]{6}\b/);
+    const hex = hexMatch ? hexMatch[0].toLowerCase() : "";
+    // Strip hex(es) and collapse whitespace.
+    const stripped = text.replace(/#[0-9A-Fa-f]{6}\b/g, " ").replace(/\s+/g, " ").trim();
+    // Prefer the longest "Proper Cased Words" sub-phrase ("Matte Cotton White").
+    // The lookbehind prevents matching mid-CamelCase — without it, the regex
+    // happily started at the trailing "White" of "MatteCottonWhite" and ate
+    // everything that followed.
+    const properPhrases = stripped.match(/(?<![A-Za-z])[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/g) || [];
+    if (properPhrases.length) {
+      properPhrases.sort((a, b) => b.length - a.length);
+      return { name: properPhrases[0], hex };
+    }
+    // No multi-word phrase — return the longest non-CamelCase-concat word.
+    const singleWord = stripped.match(/(?<![A-Za-z])[A-Z][a-z]+(?![A-Za-z])/g) || [];
+    if (singleWord.length) {
+      singleWord.sort((a, b) => b.length - a.length);
+      return { name: singleWord[0], hex };
+    }
+    return { name: stripped, hex };
+  }
+
   const STORES = [
     {
       store: "polymaker",
       hosts: ["us.polymaker.com", "polymaker.com", "shop.polymaker.com"],
       // Shopify storefronts use /products/<slug> for product pages.
       pathPattern: /^\/products\/[^/]+/i,
-      // Best-effort: pull the active swatch's accessible label. Polymaker's
-      // theme renders swatches as radio inputs with associated <label>s.
-      readColorName: () => {
-        // 1. Checked swatch input → look up its label.
+      // Returns { name, hex } for the currently-selected color variant.
+      readVariant: () => {
+        // 1. Checked swatch input → look up its associated <label>.
         const checked = document.querySelector(
           'fieldset.product-form__input--swatch input[type="radio"]:checked, ' +
             '.product-form__input--swatch input[type="radio"]:checked, ' +
@@ -35,20 +62,38 @@
             'input[type="radio"][name*="color" i]:checked'
         );
         if (checked) {
-          if (checked.id) {
-            const lbl = document.querySelector(`label[for="${CSS.escape(checked.id)}"]`);
-            const text = lbl ? (lbl.getAttribute("aria-label") || lbl.textContent || "") : "";
-            if (text.trim()) return text.trim();
+          let lbl = null;
+          if (checked.id) lbl = document.querySelector(`label[for="${CSS.escape(checked.id)}"]`);
+          if (lbl) {
+            // a. aria-label is almost always clean ("Matte Cotton White").
+            const aria = (lbl.getAttribute("aria-label") || "").trim();
+            if (aria) {
+              // aria might not include the hex — check inline style for it.
+              let hex = "";
+              const styled = lbl.querySelector("[style*='background']") || lbl;
+              const styleHex = (styled.getAttribute("style") || "").match(/#[0-9A-Fa-f]{6}/);
+              if (styleHex) hex = styleHex[0].toLowerCase();
+              return { name: aria, hex };
+            }
+            // b. visually-hidden span (Shopify accessibility pattern).
+            const vh = lbl.querySelector(".visually-hidden, .sr-only, .visuallyhidden");
+            if (vh && (vh.textContent || "").trim()) {
+              return cleanColorLabel(vh.textContent);
+            }
+            // c. Last resort: parse the combined textContent.
+            return cleanColorLabel(lbl.textContent);
           }
-          if (checked.value && checked.value.trim()) return checked.value.trim();
+          if (checked.value && checked.value.trim()) {
+            return cleanColorLabel(checked.value);
+          }
         }
-        // 2. Visible "Color: <name>" pattern that Dawn themes render.
+        // 2. Visible "Color: <name>" pattern that Dawn themes render outside swatches.
         for (const legend of document.querySelectorAll(".product-form__input legend, .product-form__input .form__label")) {
           const text = (legend.textContent || "").trim();
           const m = text.match(/color\s*[:：]\s*(.+)$/i);
-          if (m) return m[1].trim();
+          if (m) return cleanColorLabel(m[1]);
         }
-        return "";
+        return { name: "", hex: "" };
       },
     },
   ];
@@ -72,10 +117,12 @@
   }
 
   function extract() {
+    const variant = CONFIG.readVariant ? CONFIG.readVariant() : { name: "", hex: "" };
     return {
       sourceUrl: window.location.href,
       store: CONFIG.store,
-      colorName: CONFIG.readColorName() || null,
+      colorName: (variant.name || "").trim() || null,
+      colorHex: (variant.hex || "").trim() || null,
     };
   }
 
@@ -166,7 +213,14 @@
       }
 
       setState("error", "Try again", { icon: "!" });
-      const errText = (resp && resp.error) || "Save failed.";
+      // Belt-and-suspenders: humanizeError() in background.js already
+      // stringifies object-shaped errors (FastAPI's structured 402 detail),
+      // but coerce here too in case a future code path leaks an object.
+      const rawErr = resp && resp.error;
+      const errText =
+        typeof rawErr === "string" ? rawErr :
+        rawErr ? JSON.stringify(rawErr) :
+        "Save failed.";
       if (resp && resp.needsApiKey) {
         showToast(
           `${escapeHtml(errText)} <a href="#" data-open-options>Open settings</a>`,

@@ -20,6 +20,22 @@
 
 const DEFAULT_API_BASE = "https://printshelf.app";
 
+// FastAPI's HTTPException(detail=<object>) returns `detail` as a dict for
+// structured errors like upgrade_required. Coerce it into a string we can
+// show in a toast.
+function humanizeError(detail, fallback) {
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (detail && typeof detail === "object") {
+    if (detail.error === "upgrade_required") {
+      const r = detail.resource || "items";
+      return `Free-tier ${r} cap reached (${detail.current}/${detail.limit}). Upgrade on printshelf.app.`;
+    }
+    if (detail.message) return String(detail.message);
+    if (detail.error) return String(detail.error);
+  }
+  return fallback;
+}
+
 const getConfig = () =>
   new Promise((resolve) => {
     chrome.storage.sync.get(["apiKey", "apiBase"], (out) => {
@@ -75,10 +91,10 @@ async function addPrint(payload) {
   }
   if (res.status === 402) {
     const detail = data && (data.detail || data.error || data.message);
-    return { ok: false, status: 402, error: detail || "Free tier limit reached. Upgrade on printshelf.app." };
+    return { ok: false, status: 402, error: humanizeError(detail, "Free tier limit reached. Upgrade on printshelf.app.") };
   }
   const serverMsg = data && (data.detail || data.error || data.message);
-  return { ok: false, status: res.status, error: serverMsg || `Server returned ${res.status}` };
+  return { ok: false, status: res.status, error: humanizeError(serverMsg, `Server returned ${res.status}`) };
 }
 
 async function addFilament(payload) {
@@ -114,8 +130,10 @@ async function addFilament(payload) {
   }
 
   // 2) Variant-aware override: the user's currently-selected color beats the
-  //    server's default-variant scrape.
+  //    server's default-variant scrape. colorHex only comes from the DOM —
+  //    the server scrape doesn't currently extract hex codes.
   const colorName = (payload.colorName && payload.colorName.trim()) || (meta && meta.colorName) || null;
+  const colorHex = (payload.colorHex && payload.colorHex.trim()) || null;
   const brand = meta && meta.brand;
   const material = meta && meta.material;
 
@@ -133,6 +151,7 @@ async function addFilament(payload) {
     brand,
     material,
     color_name: colorName,
+    color_hex: colorHex,
     source_url: sourceUrl,
     price_at_save: meta && typeof meta.price === "number" ? meta.price : null,
     status: "want",
@@ -171,10 +190,10 @@ async function addFilament(payload) {
   }
   if (res.status === 402) {
     const detail = data && (data.detail || data.error || data.message);
-    return { ok: false, status: 402, error: detail || "Free tier limit reached. Upgrade on printshelf.app." };
+    return { ok: false, status: 402, error: humanizeError(detail, "Free tier limit reached. Upgrade on printshelf.app.") };
   }
   const serverMsg = data && (data.detail || data.error || data.message);
-  return { ok: false, status: res.status, error: serverMsg || `Server returned ${res.status}` };
+  return { ok: false, status: res.status, error: humanizeError(serverMsg, `Server returned ${res.status}`) };
 }
 
 async function flashBadge(result) {
