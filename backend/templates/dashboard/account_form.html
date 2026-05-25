@@ -21,14 +21,22 @@
     </label>
     <label>
         Avatar URL <span class="hint">(link to a profile photo — optional)</span>
-        <input type="url" name="avatar_url" maxlength="500" value="{{ values.avatar_url or '' }}" placeholder="https://…">
+        <input type="url" id="avatar_url" name="avatar_url" maxlength="500" value="{{ values.avatar_url or '' }}" placeholder="https://…">
     </label>
-    {% if values.avatar_url %}
-    <div class="avatar-preview">
-        <img src="{{ values.avatar_url }}" alt="avatar preview">
-        <span class="hint">Current avatar</span>
+    <div class="avatar-preview" id="avatar-preview" style="{% if not values.avatar_url %}display:none{% endif %}">
+        <img id="avatar-preview-img" src="{{ values.avatar_url or '' }}" alt="avatar preview">
+        <span class="hint">Avatar preview</span>
     </div>
-    {% endif %}
+    <script>
+    (function(){
+        var inp=document.getElementById('avatar_url'),box=document.getElementById('avatar-preview'),img=document.getElementById('avatar-preview-img');
+        inp.addEventListener('input',function(){
+            var v=inp.value.trim();
+            if(v.startsWith('http://')||v.startsWith('https://')){img.src=v;box.style.display='flex';}
+            else{box.style.display='none';}
+        });
+    })();
+    </script>
     <div class="form-actions">
         <button type="submit" class="btn-primary">Save changes</button>
         <a href="/u/{{ user.username }}" target="_blank">View public profile ↗</a>
