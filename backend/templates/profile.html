@@ -76,6 +76,11 @@
                 {% if p.rating %}<span class="rating">{% for _ in range(p.rating) %}★{% endfor %}{% for _ in range(5 - p.rating) %}☆{% endfor %}</span>{% endif %}
                 {% if p.source_url %}<a class="source" href="{{ p.source_url }}" target="_blank" rel="noopener">{{ p.source_platform }}</a>{% endif %}
             </div>
+            {% if p.filament_ids %}
+            <div class="card-filaments">
+                {% for fid in p.filament_ids %}{% if fid in fil_meta %}{% set f = fil_meta[fid] %}<span class="chip">{% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span>{% endif %}{{ f.material }}</span>{% endif %}{% endfor %}
+            </div>
+            {% endif %}
         </div>
     </article>
     {% endfor %}

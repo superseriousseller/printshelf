@@ -5,26 +5,27 @@
 ## Project Status
 
 ### 🔄 In Progress
-- Chrome extension (`chrome-extension/`) — scaffold in repo, not user-facing yet
+- Chrome extension (`chrome-extension/`) — QA done (v0.2.0); title extraction fixes shipped, awaiting merge/release
+- Cam dogfooding printshelf.app — building up /u/cam organically
 
 ### 📋 Todo
-- Cam dogfoods the app; get /u/cam looking post-worthy
-- Reddit launch post — after dogfooding
+- Reddit launch post — after /u/cam looks post-worthy
 - Stripe / paid tier — free-tier cap logging in place; ship when cap-hits justify it
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the fix
 
 ### ✅ Done (recent)
-- Full web UI shipped to prod 2026-05-24: signup, dashboard, upload, URL import
-- R2 photo storage live on both services — cdn.printshelf.app confirmed
-- Print form queued status in dropdown; non-queued status correctly dequeues
-- Profile rating filter 422 fixed; non-image upload on edit returns 400 with error
+- Print detail page (`/u/{username}/prints/{id}`) — photo, meta, filaments, notes, OG tags
+- Profile cards + dashboard rows fully clickable
+- Printables title extraction fixed in import_service.py (`_clean_title` strips "by Author | site")
+- Thumbnail URL field hidden from print form (was confusing)
+- Chrome extension title bugs fixed: JSON-LD name preferred over og:title; cleanTitle strips doubled "by X" (Thingiverse); Makerworld "- Free 3D Print Model" suffix stripped
 - 85/85 automated QA + 15/15 manual QA passing
 
 ### 🔧 Tech Debt
 - None flagged
 
 ### 📋 QA Log
-- **2026-05-24** — 15-section manual QA. Bugs found/fixed: queued dropdown missing, non-image upload silent on edit, profile rating 422. 85/85 auto + 15/15 manual ✅ Merged to prod.
+- **2026-05-24 (session 2)** — Design review pass. Print detail page, clickable cards/rows, title extraction fixes. Pushed to staging (build f5157ca). Chrome extension v0.2.0 QA: 3 title bugs found and fixed.
 
 ---
 
@@ -116,13 +117,14 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-05-24:**
-- Queued status in print form dropdown (edit + create); dequeue correctly on status change
-- Non-image upload on edit form now returns 400 with error (was silently ignored)
-- Profile rating filter 422 fixed (empty string no longer crashes)
-- CLAUDE.md rewritten as full operating manual with status tracking + standing rules
-- Full manual QA 15/15 + automated 85/85 passing. Two prod deploys.
+**Completed 2026-05-24 (session 2):**
+- Print detail page at `/u/{username}/prints/{id}` with full meta, OG tags, filament chips
+- Profile cards and dashboard rows made fully clickable
+- `import_service.py` `_clean_title` — strips "by Author | tagline" from Printables og:title
+- Thumbnail URL hidden from print form
+- Chrome extension: `readJsonLdName()` preferred over og:title; `cleanTitle(raw, designer)` strips doubled attribution and platform boilerplate; Makerworld `titleSuffixRe` strips "- Free 3D Print Model"
+- Chrome extension v0.2.0 QA passed after fixes
 
-**In progress:** Cam dogfooding printshelf.app — building up /u/cam organically.
+**In progress:** Cam dogfooding printshelf.app. Chrome extension title fixes on staging/in-repo — not yet released to Chrome Web Store.
 
-**Immediate next step:** Keep dogfooding. When /u/cam looks post-worthy, draft Reddit launch post. Fix anything that feels rough in daily use before posting.
+**Immediate next step:** Confirm web app staging QA result and merge to main if passing. When /u/cam looks post-worthy, draft Reddit launch post.

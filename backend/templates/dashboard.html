@@ -8,6 +8,16 @@
     <p class="dash-subtitle">Your public profile lives at <a href="/u/{{ user.username }}">/u/{{ user.username }}</a>.</p>
 </header>
 
+{% if stats and stats.total_prints > 0 %}
+<section class="dash-stats">
+    <div class="stat-item"><span class="stat-value">{{ stats.total_prints }}</span><span class="stat-label">prints</span></div>
+    <div class="stat-item"><span class="stat-value">{{ stats.queued }}</span><span class="stat-label">queued</span></div>
+    <div class="stat-item"><span class="stat-value">{{ stats.success_pct }}%</span><span class="stat-label">success</span></div>
+    <div class="stat-item"><span class="stat-value">{{ stats.filaments }}</span><span class="stat-label">filaments</span></div>
+    <div class="stat-item"><span class="stat-value">{{ stats.printers }}</span><span class="stat-label">printers</span></div>
+</section>
+{% endif %}
+
 <section class="dash-cards">
     <a class="dash-card" href="/dashboard/prints/new">
         <h3>+ Log a print</h3>

@@ -13,6 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import nullslast
 from sqlalchemy.orm import Session
 
 from auth import get_current_user_web_optional
@@ -46,8 +47,13 @@ def _require_user(user: Optional[User]) -> Optional[RedirectResponse]:
     return None
 
 
-def _ctx(user: User, **extra) -> dict:
-    return {"current_user": user, "user": user, **extra}
+def _ctx(user: User, db: Optional[Session] = None, **extra) -> dict:
+    base = {"current_user": user, "user": user, **extra}
+    if db is not None:
+        base["sidebar_prints"] = db.query(Print).filter(Print.user_id == user.id, Print.queued == False).count()  # noqa: E712
+        base["sidebar_queue"] = db.query(Print).filter(Print.user_id == user.id, Print.queued == True).count()  # noqa: E712
+        base["sidebar_filaments"] = db.query(Filament).filter(Filament.user_id == user.id).count()
+    return base
 
 
 def _parse_int_list(raw: list[str]) -> list[int]:
@@ -98,7 +104,7 @@ def list_printers(
     )
     return templates.TemplateResponse(
         request, "dashboard/printers_list.html",
-        _ctx(user, printers=printers),
+        _ctx(user, db=db, printers=printers),
     )
 
 
@@ -106,12 +112,13 @@ def list_printers(
 def new_printer(
     request: Request,
     user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
 ):
     if (r := _require_user(user)) is not None:
         return r
     return templates.TemplateResponse(
         request, "dashboard/printer_form.html",
-        _ctx(user, printer=None, errors=[], values={}),
+        _ctx(user, db=db, printer=None, errors=[], values={}),
     )
 
 
@@ -129,7 +136,7 @@ def create_printer(
     if not name.strip():
         return templates.TemplateResponse(
             request, "dashboard/printer_form.html",
-            _ctx(user, printer=None, errors=["Name is required."], values={"name": name, "brand": brand, "model": model}),
+            _ctx(user, db=db, printer=None, errors=["Name is required."], values={"name": name, "brand": brand, "model": model}),
             status_code=400,
         )
     p = Printer(user_id=user.id, name=name.strip(), brand=brand.strip() or None, model=model.strip() or None)
@@ -152,7 +159,7 @@ def edit_printer(
         return RedirectResponse("/dashboard/printers", status_code=303)
     return templates.TemplateResponse(
         request, "dashboard/printer_form.html",
-        _ctx(user, printer=p, errors=[], values={"name": p.name, "brand": p.brand or "", "model": p.model or ""}),
+        _ctx(user, db=db, printer=p, errors=[], values={"name": p.name, "brand": p.brand or "", "model": p.model or ""}),
     )
 
 
@@ -174,7 +181,7 @@ def update_printer(
     if not name.strip():
         return templates.TemplateResponse(
             request, "dashboard/printer_form.html",
-            _ctx(user, printer=p, errors=["Name is required."], values={"name": name, "brand": brand, "model": model}),
+            _ctx(user, db=db, printer=p, errors=["Name is required."], values={"name": name, "brand": brand, "model": model}),
             status_code=400,
         )
     p.name = name.strip()
@@ -215,13 +222,14 @@ def list_filaments(
     )
     return templates.TemplateResponse(
         request, "dashboard/filaments_list.html",
-        _ctx(user, filaments=filaments, statuses=[s.value for s in FilamentStatus]),
+        _ctx(user, db=db, filaments=filaments, statuses=[s.value for s in FilamentStatus]),
     )
 
 
-def _filament_form_ctx(user: User, filament: Optional[Filament], errors: list, values: dict) -> dict:
+def _filament_form_ctx(user: User, db: Optional[Session], filament: Optional[Filament], errors: list, values: dict) -> dict:
     return _ctx(
         user,
+        db=db,
         filament=filament,
         errors=errors,
         values=values,
@@ -233,12 +241,13 @@ def _filament_form_ctx(user: User, filament: Optional[Filament], errors: list, v
 def new_filament(
     request: Request,
     user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
 ):
     if (r := _require_user(user)) is not None:
         return r
     return templates.TemplateResponse(
         request, "dashboard/filament_form.html",
-        _filament_form_ctx(user, None, [], {"diameter": "1.75", "status": "own"}),
+        _filament_form_ctx(user, db, None, [], {"diameter": "1.75", "status": "own"}),
     )
 
 
@@ -272,7 +281,7 @@ def create_filament(
     if errors:
         return templates.TemplateResponse(
             request, "dashboard/filament_form.html",
-            _filament_form_ctx(user, None, errors, {
+            _filament_form_ctx(user, db, None, errors, {
                 "brand": brand, "material": material, "color_name": color_name,
                 "color_hex": color_hex, "diameter": diameter, "status": status,
                 "source_url": source_url, "notes": notes,
@@ -304,7 +313,7 @@ def edit_filament(
         return RedirectResponse("/dashboard/filaments", status_code=303)
     return templates.TemplateResponse(
         request, "dashboard/filament_form.html",
-        _filament_form_ctx(user, f, [], {
+        _filament_form_ctx(user, db, f, [], {
             "brand": f.brand, "material": f.material,
             "color_name": f.color_name or "", "color_hex": f.color_hex or "",
             "diameter": str(f.diameter), "status": f.status,
@@ -371,6 +380,8 @@ def delete_filament(
 def list_prints(
     request: Request,
     queued: Optional[str] = None,
+    search: Optional[str] = None,
+    sort: Optional[str] = None,
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -384,14 +395,23 @@ def list_prints(
     elif queued == "false":
         q = q.filter(Print.queued == False)  # noqa: E712
         queued_filter = "false"
-    rows = q.order_by(Print.created_at.desc()).all()
-    # Build a lookup for printer + filament names to render in the list
+    search_val = (search or "").strip()
+    if search_val:
+        q = q.filter(Print.title.ilike(f"%{search_val}%"))
+    sort_map = {
+        "oldest": Print.created_at.asc(),
+        "title": Print.title.asc(),
+        "rating": nullslast(Print.rating.desc()),
+        "date": nullslast(Print.print_date.desc()),
+    }
+    rows = q.order_by(sort_map.get(sort or "", Print.created_at.desc())).all()
     printer_names = {p.id: p.name for p in db.query(Printer).filter(Printer.user_id == user.id).all()}
     fil_meta = {f.id: f for f in db.query(Filament).filter(Filament.user_id == user.id).all()}
     return templates.TemplateResponse(
         request, "dashboard/prints_list.html",
-        _ctx(user, prints=rows, queued_filter=queued_filter,
-             printer_names=printer_names, fil_meta=fil_meta),
+        _ctx(user, db=db, prints=rows, queued_filter=queued_filter,
+             printer_names=printer_names, fil_meta=fil_meta,
+             search=search_val, sort=sort or "newest"),
     )
 
 
@@ -399,7 +419,7 @@ def _print_form_ctx(user: User, db: Session, p: Optional[Print], errors: list, v
     printers = db.query(Printer).filter(Printer.user_id == user.id).order_by(Printer.name).all()
     filaments = db.query(Filament).filter(Filament.user_id == user.id).order_by(Filament.brand, Filament.material).all()
     return _ctx(
-        user, print_=p, errors=errors, values=values,
+        user, db=db, print_=p, errors=errors, values=values,
         printers=printers, filaments=filaments,
         platforms=[p.value for p in SourcePlatform],
         statuses=[s.value for s in PrintStatus],
@@ -768,9 +788,8 @@ def photo_upload_form(
     p = db.query(Print).filter(Print.id == print_id, Print.user_id == user.id).first()
     if p is None:
         return RedirectResponse("/dashboard/prints", status_code=303)
-    return templates.TemplateResponse(request, "dashboard/photo_upload.html", {
-        "print_": p, "error": None, "current_user": user,
-    })
+    return templates.TemplateResponse(request, "dashboard/photo_upload.html",
+        _ctx(user, db=db, print_=p, error=None))
 
 
 @router.post("/prints/{print_id}/photo")
@@ -789,9 +808,8 @@ async def photo_upload_submit(
 
     resolved, errors = await _resolve_photo(photo_file, "", existing=p.photo_url or "")
     if errors:
-        return templates.TemplateResponse(request, "dashboard/photo_upload.html", {
-            "print_": p, "error": errors[0], "current_user": user,
-        }, status_code=400)
+        return templates.TemplateResponse(request, "dashboard/photo_upload.html",
+            _ctx(user, db=db, print_=p, error=errors[0]), status_code=400)
 
     p.photo_url = resolved or p.photo_url
     db.commit()

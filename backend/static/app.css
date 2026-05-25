@@ -407,3 +407,29 @@ footer {
 @media (max-width: 680px) {
     .detail-layout { grid-template-columns: 1fr; }
 }
+
+/* Sidebar counts */
+.nav-count { background: var(--bg-card); color: var(--text-dim); font-size: 0.75rem; padding: 1px 7px; border-radius: 10px; margin-left: 4px; }
+.dash-sidebar a.active .nav-count { background: var(--accent-soft); color: var(--accent); }
+
+/* Overview stats */
+.dash-stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
+.stat-item { background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; text-align: center; min-width: 80px; flex: 1; }
+.stat-value { display: block; font-size: 2rem; font-weight: 700; color: var(--accent); line-height: 1; }
+.stat-label { display: block; font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Prints list filter bar */
+.filter-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+.filter-search { flex: 1; min-width: 160px; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; font-family: inherit; }
+.filter-search:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.filter-sort { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 0.9rem; font-family: inherit; cursor: pointer; }
+.clear-link { font-size: 0.85rem; color: var(--text-dim); }
+.clear-link:hover { color: var(--text); }
+
+/* Color picker in filament form */
+.color-pair { display: flex; gap: 8px; align-items: center; }
+.color-pair input[type="color"] { width: 44px; height: 38px; padding: 2px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; flex-shrink: 0; }
+.color-pair input[type="text"] { flex: 1; }
+
+/* Profile card filament chips */
+.card-filaments { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
