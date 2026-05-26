@@ -29,8 +29,7 @@
                 {% if f.source_url %}<a href="/dashboard/filaments/{{ f.id }}/buy" target="_blank" rel="noopener nofollow sponsored">Buy</a>{% endif %}
                 <a href="/dashboard/filaments/{{ f.id }}/edit">Edit</a>
                 <form method="post" action="/dashboard/filaments/{{ f.id }}/delete" class="inline-form delete-form">
-                    <button type="button" class="linklike danger delete-btn">Delete</button>
-                    <span class="delete-confirm" hidden>Delete? <button type="submit" class="linklike danger">Yes</button> · <button type="button" class="linklike cancel-delete">Cancel</button></span>
+                    <button type="button" class="linklike danger delete-btn" data-label="{{ f.brand }} {{ f.material }}{% if f.color_name %} {{ f.color_name }}{% endif %}">Delete</button>
                 </form>
             </td>
         </tr>

@@ -18,16 +18,32 @@
     </div>
 </div>
 <script>
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('delete-btn')) {
-        var form = e.target.closest('.delete-form');
-        e.target.hidden = true;
-        form.querySelector('.delete-confirm').hidden = false;
-    } else if (e.target.classList.contains('cancel-delete')) {
-        var form = e.target.closest('.delete-form');
-        form.querySelector('.delete-btn').hidden = false;
-        form.querySelector('.delete-confirm').hidden = true;
-    }
-});
+(function() {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.hidden = true;
+    overlay.innerHTML = '<div class="modal-box"><p id="del-msg">Delete this?</p><div class="modal-actions"><button id="del-cancel" class="btn-secondary">Cancel</button><button id="del-confirm" class="btn-danger">Delete</button></div></div>';
+    document.body.appendChild(overlay);
+
+    var pending = null;
+
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-btn')) {
+            pending = e.target.closest('.delete-form');
+            var label = e.target.dataset.label;
+            document.getElementById('del-msg').textContent = label ? 'Delete "' + label + '"?' : 'Delete this?';
+            overlay.hidden = false;
+        }
+    });
+
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+    document.getElementById('del-cancel').addEventListener('click', close);
+    document.getElementById('del-confirm').addEventListener('click', function() {
+        if (pending) { pending.submit(); }
+        close();
+    });
+
+    function close() { pending = null; overlay.hidden = true; }
+})();
 </script>
 {% endblock %}

@@ -25,8 +25,7 @@
             <td class="actions">
                 <a href="/dashboard/printers/{{ p.id }}/edit">Edit</a>
                 <form method="post" action="/dashboard/printers/{{ p.id }}/delete" class="inline-form delete-form">
-                    <button type="button" class="linklike danger delete-btn">Delete</button>
-                    <span class="delete-confirm" hidden>Delete? <button type="submit" class="linklike danger">Yes</button> · <button type="button" class="linklike cancel-delete">Cancel</button></span>
+                    <button type="button" class="linklike danger delete-btn" data-label="{{ p.name }}">Delete</button>
                 </form>
             </td>
         </tr>

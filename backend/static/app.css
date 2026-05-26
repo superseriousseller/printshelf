@@ -104,7 +104,13 @@ a:hover { text-decoration: underline; }
 .inline-form { display: inline; }
 .linklike.danger { color: #ff7c7c; }
 .linklike.danger:hover { color: #ff5c5c; }
-.delete-confirm { font-size: 0.9rem; white-space: nowrap; color: var(--text-dim); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 900; }
+.modal-overlay[hidden] { display: none; }
+.modal-box { background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; max-width: 340px; width: 90%; }
+.modal-box p { margin: 0 0 22px; font-size: 1rem; color: var(--text); }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-danger { background: #c0392b; color: #fff; padding: 8px 16px; border-radius: 6px; border: 0; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+.btn-danger:hover { background: #a93226; }
 
 /* Forms */
 .dash-form { background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; display: flex; flex-direction: column; gap: 16px; max-width: 760px; }
