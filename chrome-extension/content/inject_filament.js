@@ -145,6 +145,19 @@
 
   // ---------- Helpers ----------
 
+  // After the extension is reloaded (e.g. dev-mode "Reload" in chrome://extensions),
+  // already-injected content scripts on open tabs become orphans: chrome.runtime
+  // still appears to exist but has no .id and any sendMessage call throws
+  // "Cannot read properties of undefined (reading 'sendMessage')". Detecting this
+  // lets us show a clean "refresh this page" message instead of the cryptic error.
+  function isOrphanedExtensionContext() {
+    try {
+      return !chrome || !chrome.runtime || !chrome.runtime.id;
+    } catch {
+      return true;
+    }
+  }
+
   const escapeHtml = (s) =>
     String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -211,6 +224,16 @@
     };
 
     btn.addEventListener("click", async () => {
+      if (isOrphanedExtensionContext()) {
+        setState("error", "Refresh page", { icon: "!" });
+        showToast(
+          "PrintShelf was reloaded — refresh this page to re-enable the button.",
+          "text",
+          8000
+        );
+        setTimeout(() => setState("idle", "Add filament to PrintShelf"), 5000);
+        return;
+      }
       const meta = extract();
       setState("loading", "Adding…", { disabled: true });
 
@@ -219,7 +242,10 @@
         resp = await chrome.runtime.sendMessage({ type: "addFilament", payload: meta });
       } catch (err) {
         setState("error", "Try again", { icon: "!" });
-        showToast(`Extension error: ${err.message || err}`, "text");
+        const msg = /Extension context invalidated|undefined.*sendMessage/i.test(String(err && err.message || err))
+          ? "PrintShelf was reloaded — refresh this page to re-enable the button."
+          : `Extension error: ${err.message || err}`;
+        showToast(msg, "text", 8000);
         setTimeout(() => setState("idle", "Add filament to PrintShelf"), 3500);
         return;
       }
