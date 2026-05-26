@@ -143,6 +143,14 @@
   const CONFIG = STORES.find((s) => s.hosts.includes(HOST));
   if (!CONFIG) return; // host not in our list — should never happen given the manifest match.
 
+  // One-shot console log on inject so you can verify the loaded version in
+  // devtools without opening chrome://extensions: `chrome.runtime.getManifest().version`
+  // works too but this is zero-typing.
+  try {
+    const v = chrome.runtime && chrome.runtime.getManifest && chrome.runtime.getManifest().version;
+    if (v) console.log(`[PrintShelf] filament content script v${v} active on ${HOST}`);
+  } catch { /* orphaned context — fine, we'll handle it on click */ }
+
   // ---------- Helpers ----------
 
   // After the extension is reloaded (e.g. dev-mode "Reload" in chrome://extensions),
