@@ -71,8 +71,9 @@
             {% endif %}
             <a href="/dashboard/prints/{{ p.id }}/photo">{% if p.photo_url %}📷{% else %}+ Photo{% endif %}</a>
             <a href="/dashboard/prints/{{ p.id }}/edit">Edit</a>
-            <form method="post" action="/dashboard/prints/{{ p.id }}/delete" class="inline-form" onsubmit="return confirm('Delete {{ p.title }}?');">
-                <button type="submit" class="linklike danger">Delete</button>
+            <form method="post" action="/dashboard/prints/{{ p.id }}/delete" class="inline-form delete-form">
+                <button type="button" class="linklike danger delete-btn">Delete</button>
+                <span class="delete-confirm" hidden>Delete? <button type="submit" class="linklike danger">Yes</button> · <button type="button" class="linklike cancel-delete">Cancel</button></span>
             </form>
         </div>
     </li>

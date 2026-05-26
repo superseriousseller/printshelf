@@ -24,8 +24,9 @@
             <td>{{ p.model or "—" }}</td>
             <td class="actions">
                 <a href="/dashboard/printers/{{ p.id }}/edit">Edit</a>
-                <form method="post" action="/dashboard/printers/{{ p.id }}/delete" class="inline-form" onsubmit="return confirm('Delete {{ p.name }}?');">
-                    <button type="submit" class="linklike danger">Delete</button>
+                <form method="post" action="/dashboard/printers/{{ p.id }}/delete" class="inline-form delete-form">
+                    <button type="button" class="linklike danger delete-btn">Delete</button>
+                    <span class="delete-confirm" hidden>Delete? <button type="submit" class="linklike danger">Yes</button> · <button type="button" class="linklike cancel-delete">Cancel</button></span>
                 </form>
             </td>
         </tr>

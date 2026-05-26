@@ -17,4 +17,17 @@
         {% block dash %}{% endblock %}
     </div>
 </div>
+<script>
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('delete-btn')) {
+        var form = e.target.closest('.delete-form');
+        e.target.hidden = true;
+        form.querySelector('.delete-confirm').hidden = false;
+    } else if (e.target.classList.contains('cancel-delete')) {
+        var form = e.target.closest('.delete-form');
+        form.querySelector('.delete-btn').hidden = false;
+        form.querySelector('.delete-confirm').hidden = true;
+    }
+});
+</script>
 {% endblock %}
