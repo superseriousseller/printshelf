@@ -3,6 +3,7 @@
 Free tier: 10 filaments. Status enforced via the FilamentStatus enum at the
 DB layer (column is a String for migration flexibility; we validate here).
 """
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,8 +11,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
+from filament_import_service import extract as extract_filament_url
+from import_service import ImportError_
 from limits import enforce_filament_limit
 from models import Filament, FilamentStatus, User, get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/filaments", tags=["filaments"])
 
@@ -153,3 +158,40 @@ def delete_filament(
     f = _own_or_404(db, user, filament_id)
     db.delete(f)
     db.commit()
+
+
+class FilamentImportRequest(BaseModel):
+    url: str = Field(min_length=8, max_length=2000)
+
+
+@router.post("/import-url")
+def import_filament_url(
+    body: FilamentImportRequest,
+    user: User = Depends(get_current_user),  # noqa: ARG001 — auth required, user unused
+) -> dict:
+    """Scrape a filament product page and return structured metadata.
+
+    Used by the Chrome extension when DOM extraction misses fields, and
+    available as a public JSON API. No caching for v1 — filament URL
+    scrapes are infrequent and the model-page ImportCache table has a
+    different shape.
+    """
+    url = body.url.strip()
+    try:
+        result = extract_filament_url(url)
+    except ImportError_ as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("filament import-url failed for %s", url)
+        raise HTTPException(status_code=500, detail="Import failed")
+    return {
+        "store": result.get("store"),
+        "brand": result.get("brand"),
+        "material": result.get("material"),
+        "colorName": result.get("color_name"),
+        "price": result.get("price"),
+        "sourceUrl": result.get("source_url"),
+        "thumbnailUrl": result.get("thumbnail_url"),
+        "title": result.get("title"),
+        "partial": bool(result.get("partial")),
+    }

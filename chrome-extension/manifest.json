@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "PrintShelf",
-  "description": "One-click add 3D model pages to your PrintShelf print queue.",
-  "version": "0.2.2",
+  "description": "One-click add 3D model pages and filament purchases to your PrintShelf library.",
+  "version": "0.3.4",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -34,7 +34,10 @@
     "https://cults3d.com/*",
     "https://www.cults3d.com/*",
     "https://thingiverse.com/*",
-    "https://www.thingiverse.com/*"
+    "https://www.thingiverse.com/*",
+    "https://us.polymaker.com/*",
+    "https://polymaker.com/*",
+    "https://shop.polymaker.com/*"
   ],
   "content_scripts": [
     {
@@ -49,6 +52,16 @@
         "https://www.thingiverse.com/*"
       ],
       "js": ["content/inject.js"],
+      "css": ["content/common.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://us.polymaker.com/*",
+        "https://polymaker.com/*",
+        "https://shop.polymaker.com/*"
+      ],
+      "js": ["content/inject_filament.js"],
       "css": ["content/common.css"],
       "run_at": "document_idle"
     }
