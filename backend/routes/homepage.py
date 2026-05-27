@@ -64,3 +64,17 @@ def homepage(
             "featured": featured,
         },
     )
+
+
+@router.get("/privacy", response_class=HTMLResponse)
+def privacy_policy(
+    request: Request,
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Privacy policy page. Linked from the Chrome Web Store listing and
+    from the extension's options page. Kept terse and accurate — the
+    Council flagged that an over-researched GDPR/CCPA draft is a rabbit
+    hole for a solo product at this stage."""
+    return templates.TemplateResponse(
+        request, "privacy.html", {"current_user": current_user},
+    )

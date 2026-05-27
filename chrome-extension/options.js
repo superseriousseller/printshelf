@@ -92,7 +92,19 @@ async function test() {
   }
 }
 
+function setVersionFooter() {
+  const node = el("ps-version");
+  if (!node) return;
+  try {
+    const v = chrome.runtime.getManifest().version;
+    node.textContent = `PrintShelf extension v${v}`;
+  } catch {
+    node.textContent = "PrintShelf extension";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  setVersionFooter();
   load();
   el("ps-api-base-preset").addEventListener("change", (e) => applyPreset(e.target.value));
   el("ps-save").addEventListener("click", save);
