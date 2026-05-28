@@ -100,7 +100,19 @@ async function saveKey() {
   refreshStatusFromStorage();
 }
 
+function setVersionFooter() {
+  const node = el("ps-version");
+  if (!node) return;
+  try {
+    const v = chrome.runtime.getManifest().version;
+    node.textContent = `v${v}`;
+  } catch {
+    node.textContent = "";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  setVersionFooter();
   refreshStatusFromStorage();
   el("ps-save").addEventListener("click", saveKey);
   el("ps-test").addEventListener("click", () => testConnection());

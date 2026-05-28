@@ -5,10 +5,10 @@
 ## Project Status
 
 ### 🔄 In Progress
-- Chrome extension (`chrome-extension/`) — QA done (v0.2.0); title extraction fixes shipped, awaiting release to Chrome Web Store
-- **Filament extension button (session 5, Phase 1+2)** — one-click "Add filament" on retailer product pages, starting with Polymaker. Phase 1: `POST /api/filaments/import-url` (Bearer auth). Phase 2: `chrome-extension/content/inject_filament.js` FAB → `background.js addFilament` → `POST /api/filaments` with `status=wishlist`. Phases 3+ (Anycubic, MatterHackers, Bambu, Amazon) deferred.
+- Chrome extension (`chrome-extension/`) — v0.3.4 in repo (filament button on Polymaker + model pages); neither v0.2.x nor v0.3.x published to the Chrome Web Store yet
 - Cam dogfooding printshelf.app — building up /u/cam organically
 - Affiliate program signups (Amazon Associates, Bambu, Polymaker, MatterHackers, Anycubic) — set env vars on Railway prod as they come in: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
+- Extension Phases 3+ — add Anycubic, MatterHackers, Bambu, Amazon to `STORES` in `inject_filament.js`. Each needs its own swatch selectors. Architecture proven on Polymaker.
 
 ### 📋 Todo
 - Reddit launch post — after /u/cam looks post-worthy
@@ -16,6 +16,8 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the fix
 
 ### ✅ Done (recent)
+- Filament Chrome extension button (Polymaker, v0.3.4) — one-click "Add filament" on `/products/*` pages. Reads selected-variant color name + hex from the DOM (Polymaker packs both into the swatch label's textContent); falls back to "HEX Code: #…" in the product description for the PolyLite line. Server-side `POST /api/filaments/import-url` provides brand/material/price. Status defaults to `want`.
+- Delete-confirm modal — replaced native `confirm()` across filaments / printers / prints lists with a centered modal overlay (Cam's parallel work).
 - Filament URL import (Amazon, Bambu, Polymaker, MatterHackers, Anycubic) — paste a product URL, pre-fills brand/material/color/price from OG tags + JSON-LD
 - Affiliate redirector — `/dashboard/filaments/{id}/buy` injects per-store tag at click-time; bare URLs in DB
 - Hard-error vs soft-warn notice styling (red `notice-error` vs yellow `notice-warn`)
@@ -31,6 +33,7 @@
 - None flagged
 
 ### 📋 QA Log
+- **2026-05-25 (session 5)** — Filament extension button (Polymaker only). Four QA rounds: v0.3.0 (`fd024d8`) shipped feature; v0.3.1 (`1ae3943`) fixed toast `[object Object]` + malformed `color_name`; v0.3.2 (`4eecd6a`) fixed empty `color_hex`; v0.3.3-4 added orphan-context toast + version-log polish. Final QA on v0.3.2: all 3 variants (Panchroma Matte Cotton White #f4efeb, PolyLite Black #030305, Panchroma Matte Lavender Purple #9572bf) saved with correct color_name + color_hex; page-wide hex fallback rejected 15+ stray CSS hexes on PolyDryer Box XL. Merged to prod (3501e5e).
 - **2026-05-25 (session 4)** — Filament URL import + affiliate redirector. Cam manual QA found 2 bugs on `9c34ce5` (MatterHackers source_url truncation, misleading green notice for unknown stores) → fixed in `68025be`. Notice-color polish in `ceed648`. Final sanity: 85/85 automated QA on staging + 5/5 manual spot checks. Merged to prod (382e9b6). The "Step 5b /buy strips MatterHackers URL" finding was investigated and proved to be MatterHackers's own server redirect chain, not our code.
 - **2026-05-24 (session 3)** — 23/23 manual QA pass on build 38e52af. All 5 features green. Merged to prod (9c4053b).
 - **2026-05-24 (session 2)** — 15/15 manual QA. Print detail page, clickable cards, title fixes. Merged to prod.
@@ -125,16 +128,16 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-05-25 (session 4):**
-- Filament URL import: `backend/filament_import_service.py` extracts brand/material/color/price from Amazon, Bambu Lab, Polymaker, MatterHackers, Anycubic via OG tags + JSON-LD. Falls back to slug-title or hard error.
-- Affiliate redirector: `backend/affiliate.py` injects per-store tag from env vars at click-time. `/dashboard/filaments/{id}/buy` does the 302.
-- Wired into `web_dashboard.py`: `GET /dashboard/filaments/new?import_url=...` pre-fills form; `price_at_save` now surfaced in form (was on model but hidden).
-- Notice styling: red `notice-error` (hard fail) vs yellow `notice-warn` (partial/unknown) vs green `notice-ok` (success).
-- All merged to prod (build 382e9b6).
+**Completed 2026-05-25 (session 5):**
+- Backend `POST /api/filaments/import-url` (in `routes/filaments.py`) — Bearer auth, wraps `extract_filament_url()`, returns camelCase JSON.
+- Chrome extension v0.3.4: new `content/inject_filament.js` FAB on `shop.polymaker.com/products/*` (also `us.polymaker.com` + `polymaker.com`). Reads selected-variant color name + hex from DOM; falls back to "HEX Code: #…" in product description. Background worker `addFilament` orchestrates import-url → /api/filaments with `status=want`.
+- Helpers: `cleanColorLabel()` (lookbehind regex stops mid-CamelCase greed), `findHexInLabel()`, `findHexInPageDescription()`, `isOrphanedExtensionContext()`, `humanizeError()` for FastAPI structured 402 detail dicts.
+- Delete-confirm modal across filaments/printers/prints (Cam's parallel work).
+- All merged to prod (build 3501e5e).
 
 **In progress:**
 - Cam dogfooding printshelf.app
 - Affiliate signups pending — env vars to set on Railway prod when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
-- Chrome extension v0.2.0 not yet published to Web Store
+- Chrome extension not yet published to Web Store (v0.2.x or v0.3.x)
 
-**Immediate next step:** Sign up for affiliate programs, set env vars on Railway prod, click-test each store's Buy link to confirm tag lands. Then keep dogfooding toward Reddit launch.
+**Immediate next step:** Extension Phases 3+ — add `STORES` entries for Anycubic (Shopify, easy), MatterHackers (legacy CMS, medium), Bambu (SPA, needs MutationObserver), Amazon (hardest, brittle selectors). Architecture proven on Polymaker; each new store is selector wiring + a smoke test. OR: sign up for affiliate programs and click-test each `/buy` link before doing more extension work — affiliate revenue is gated on signup, not on extension reach.

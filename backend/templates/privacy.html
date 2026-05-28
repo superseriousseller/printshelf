@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy — PrintShelf{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="What data PrintShelf collects, how it's used, and what we don't do with it.">
+    <meta name="robots" content="index,follow">
+{% endblock %}
+
+{% block content %}
+<article class="legal-page">
+    <h1>Privacy Policy</h1>
+    <p class="legal-updated">Last updated: 2026-05-27</p>
+
+    <p>
+        PrintShelf (printshelf.app) is a 3D print tracking service. This page
+        explains what data we collect, why, and what we don't do with it. The
+        same policy covers the PrintShelf Chrome extension. Plain language; if
+        anything is unclear, email <a href="mailto:hello@printshelf.app">hello@printshelf.app</a>.
+    </p>
+
+    <h2>What we collect</h2>
+    <ul>
+        <li><strong>Account data</strong> — email, password (hashed with bcrypt), username, display name, optional bio and avatar.</li>
+        <li><strong>Content you create</strong> — prints, filaments, printers, queue items, photos, ratings, notes, and the URLs you import from.</li>
+        <li><strong>API key</strong> — generated per account so the Chrome extension can save items to your library. Stored in <code>chrome.storage.sync</code> on your device and sent to PrintShelf as a Bearer token.</li>
+        <li><strong>Operational logs</strong> — request paths, error stack traces, and timing for debugging. We do not log API keys or request bodies.</li>
+    </ul>
+
+    <h2>What the Chrome extension does</h2>
+    <ul>
+        <li>On model platform pages (Makerworld, Printables, Cults3D, Thingiverse) and on Polymaker product pages, the extension injects an "Add to PrintShelf" button.</li>
+        <li>When you click that button, the extension reads metadata from the page you're currently viewing (title, designer, thumbnail URL, selected filament color/hex) and sends it to <code>printshelf.app</code> over HTTPS authenticated with your API key.</li>
+        <li>The extension does not read or transmit page content from any other site. It does not track which pages you visit, does not run analytics, and does not contact any third-party server.</li>
+        <li>Your API key never leaves your device except to authenticate requests to PrintShelf's own API.</li>
+    </ul>
+
+    <h2>What we don't do</h2>
+    <ul>
+        <li>We don't sell or share your data with advertisers, brokers, or any third party for marketing.</li>
+        <li>We don't track your browsing history.</li>
+        <li>We don't read or transmit any data from sites the extension doesn't have explicit permission for.</li>
+        <li>We don't use third-party analytics (no Google Analytics, no Mixpanel, no Segment).</li>
+    </ul>
+
+    <h2>Third-party services we use</h2>
+    <ul>
+        <li><strong>Railway</strong> — hosts the application and database.</li>
+        <li><strong>Cloudflare R2</strong> — stores uploaded photos at <code>cdn.printshelf.app</code>.</li>
+        <li><strong>Sentry</strong> — optional error reporting in production; we configure it to strip request bodies and personal identifiers.</li>
+    </ul>
+    <p>
+        When the extension imports product metadata, we make a server-side
+        request to the retailer's public product page (e.g. polymaker.com) to
+        read its Open Graph and JSON-LD tags. That request comes from
+        PrintShelf's servers, not from your browser, and contains no information
+        identifying you.
+    </p>
+
+    <h2>Affiliate links</h2>
+    <p>
+        PrintShelf may earn a commission when you click the "Buy" link on a
+        filament item, if the retailer has an affiliate program we participate
+        in. The affiliate tag is added at click-time; bare URLs are stored in
+        our database. We never modify the destination retailer or product
+        beyond the affiliate parameter.
+    </p>
+
+    <h2>Data retention &amp; deletion</h2>
+    <ul>
+        <li>Your account and all content remain on PrintShelf until you delete them.</li>
+        <li>You can delete individual prints, filaments, or printers at any time from your dashboard.</li>
+        <li>To delete your entire account, email <a href="mailto:hello@printshelf.app">hello@printshelf.app</a>. We will purge your data within 30 days.</li>
+        <li>The Chrome extension stores your API key locally; uninstalling the extension removes it from your device.</li>
+    </ul>
+
+    <h2>Children</h2>
+    <p>
+        PrintShelf is not directed at children under 13. If you believe a child
+        has created an account, email us and we'll remove it.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+        If we materially change this policy, we'll update the "Last updated"
+        date at the top of this page and post a notice in the dashboard.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+        Questions or requests: <a href="mailto:hello@printshelf.app">hello@printshelf.app</a>.
+    </p>
+</article>
+{% endblock %}
