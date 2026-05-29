@@ -189,7 +189,7 @@ def main() -> int:
     print()
     print(f"Done. Created {created} print(s). API key for {user_cfg['username']!r}:")
     print(f"  {api_key}")
-    print(f"View at: {args.base.replace('/api', '')}/u/{user_cfg['username']}")
+    print(f"View at: {args.base.replace('/api', '')}/@{user_cfg['username']}")
     return 0
 
 

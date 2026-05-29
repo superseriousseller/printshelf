@@ -8,9 +8,9 @@
     <meta property="og:title" content="{{ user.display_name or user.username }} on PrintShelf">
     <meta property="og:description" content="{{ stats.total }} prints · {{ stats.success_pct }}% success rate{% if stats.favorite_material %} · {{ stats.favorite_material }} favorite{% endif %}">
     {% if first_photo %}<meta property="og:image" content="{{ first_photo }}">{% endif %}
-    <meta property="og:url" content="{{ app_url }}/u/{{ user.username }}">
+    <meta property="og:url" content="{{ app_url }}/@{{ user.username }}">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="canonical" href="{{ app_url }}/u/{{ user.username }}">
+    <link rel="canonical" href="{{ app_url }}/@{{ user.username }}">
 {% endblock %}
 
 {% block content %}
@@ -50,7 +50,7 @@
                 {% for r in [5, 4, 3, 2, 1] %}<option value="{{ r }}" {% if r|string == active.rating %}selected{% endif %}>{{ r }}+ stars</option>{% endfor %}
             </select>
         </label>
-        {% if active.material or active.status or active.rating %}<a class="clear-link" href="/u/{{ user.username }}">Clear</a>{% endif %}
+        {% if active.material or active.status or active.rating %}<a class="clear-link" href="/@{{ user.username }}">Clear</a>{% endif %}
     </form>
 </section>
 
@@ -58,7 +58,7 @@
 <section class="print-grid">
     {% for p in prints %}
     <article class="print-card">
-        <a href="/u/{{ user.username }}/prints/{{ p.id }}" class="card-link" aria-label="{{ p.title }}"></a>
+        <a href="/@{{ user.username }}/prints/{{ p.id }}" class="card-link" aria-label="{{ p.title }}"></a>
         <div class="thumb">
             {% set img = p.photo_url or p.thumbnail_url %}
             {% if img %}
@@ -88,7 +88,7 @@
 {% else %}
 <section class="empty">
     {% if active.material or active.status or active.rating %}
-        <p>No prints match those filters. <a href="/u/{{ user.username }}">Show everything</a>.</p>
+        <p>No prints match those filters. <a href="/@{{ user.username }}">Show everything</a>.</p>
     {% else %}
         <p>{{ user.display_name or user.username }} hasn't published any prints yet. Check back soon.</p>
     {% endif %}

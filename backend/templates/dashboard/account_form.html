@@ -16,7 +16,7 @@
         <input type="text" name="display_name" maxlength="100" value="{{ values.display_name or '' }}" placeholder="{{ user.username }}">
     </label>
     <label>
-        Bio <span class="hint">(a sentence or two about you — shown on /u/{{ user.username }})</span>
+        Bio <span class="hint">(a sentence or two about you — shown on /@{{ user.username }})</span>
         <textarea name="bio" rows="3" maxlength="500" placeholder="3D printing nerd. Bambu P1S owner. I print functional parts and too many Benchys.">{{ values.bio or '' }}</textarea>
     </label>
     <label>
@@ -39,7 +39,7 @@
     </script>
     <div class="form-actions">
         <button type="submit" class="btn-primary">Save changes</button>
-        <a href="/u/{{ user.username }}" target="_blank">View public profile ↗</a>
+        <a href="/@{{ user.username }}" target="_blank">View public profile ↗</a>
     </div>
 </form>
 

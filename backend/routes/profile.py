@@ -1,7 +1,8 @@
 """Server-rendered public profile pages.
 
-The viral surface — /u/{username} renders a print wall that's SEO-indexable
+The viral surface — /@{username} renders a print wall that's SEO-indexable
 and shareable. No auth required; only `is_public=True` prints are shown.
+Legacy /u/{username} routes 301-redirect to the new canonical URLs.
 """
 import os
 from collections import Counter
@@ -48,7 +49,17 @@ def _stats_for(db: Session, user: User) -> dict:
     return {"total": total, "success_pct": success_pct, "favorite_material": favorite_material}
 
 
-@router.get("/u/{username}", response_class=HTMLResponse)
+@router.get("/u/{username}")
+def legacy_profile_redirect(username: str):
+    return RedirectResponse(url=f"/@{username}", status_code=301)
+
+
+@router.get("/u/{username}/prints/{print_id}")
+def legacy_print_detail_redirect(username: str, print_id: int):
+    return RedirectResponse(url=f"/@{username}/prints/{print_id}", status_code=301)
+
+
+@router.get("/@{username}", response_class=HTMLResponse)
 def public_profile(
     request: Request,
     username: str,
@@ -132,7 +143,7 @@ def public_profile(
     )
 
 
-@router.get("/u/{username}/prints/{print_id}", response_class=HTMLResponse)
+@router.get("/@{username}/prints/{print_id}", response_class=HTMLResponse)
 def public_print_detail(
     request: Request,
     username: str,
@@ -154,7 +165,7 @@ def public_print_detail(
         Print.queued == False,     # noqa: E712
     ).first()
     if p is None:
-        return RedirectResponse(f"/u/{username}", status_code=303)
+        return RedirectResponse(f"/@{username}", status_code=303)
 
     filaments = []
     if p.filament_ids:
