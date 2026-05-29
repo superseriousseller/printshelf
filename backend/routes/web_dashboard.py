@@ -81,6 +81,40 @@ def _parse_date(s: str) -> Optional[date]:
         return None
 
 
+def _parse_float(s: str) -> Optional[float]:
+    s = (s or "").strip()
+    if not s:
+        return None
+    try:
+        v = float(s)
+        return v if v > 0 else None
+    except ValueError:
+        return None
+
+
+def _parse_int(s: str, min_val: Optional[int] = None, max_val: Optional[int] = None) -> Optional[int]:
+    s = (s or "").strip()
+    if not s:
+        return None
+    try:
+        v = int(s)
+        if min_val is not None and v < min_val:
+            return None
+        if max_val is not None and v > max_val:
+            return None
+        return v
+    except ValueError:
+        return None
+
+
+def _parse_supports(s: str) -> Optional[bool]:
+    if s == "yes":
+        return True
+    if s == "no":
+        return False
+    return None
+
+
 def _normalize_hex(value: Optional[str]) -> Optional[str]:
     if not value:
         return None
@@ -637,6 +671,11 @@ async def create_print(
     print_date: str = Form(""),
     queued: str = Form(""),
     is_public: str = Form(""),
+    layer_height: str = Form(""),
+    infill_pct: str = Form(""),
+    supports: str = Form(""),
+    print_time_mins: str = Form(""),
+    filament_used_g: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -715,6 +754,12 @@ async def create_print(
     resolved_photo_url, photo_errors = await _resolve_photo(photo_file, photo_url, existing="")
     errors.extend(photo_errors)
 
+    layer_height_f = _parse_float(layer_height)
+    infill_pct_i = _parse_int(infill_pct, min_val=0, max_val=100)
+    supports_b = _parse_supports(supports)
+    print_time_i = _parse_int(print_time_mins, min_val=1)
+    filament_used_f = _parse_float(filament_used_g)
+
     if errors:
         values = {
             "title": title, "designer": designer, "source_platform": source_platform,
@@ -722,6 +767,9 @@ async def create_print(
             "printer_id": printer_id, "filament_ids": fil_ids, "status": status,
             "rating": rating, "notes": notes, "print_date": print_date,
             "queued": queued, "is_public": is_public,
+            "layer_height": layer_height, "infill_pct": infill_pct,
+            "supports": supports, "print_time_mins": print_time_mins,
+            "filament_used_g": filament_used_g,
         }
         return templates.TemplateResponse(
             request, "dashboard/print_form.html",
@@ -743,6 +791,11 @@ async def create_print(
         queued=bool(queued),
         is_public=bool(is_public),
         print_date=_parse_date(print_date),
+        layer_height=layer_height_f,
+        infill_pct=infill_pct_i,
+        supports=supports_b,
+        print_time_mins=print_time_i,
+        filament_used_g=filament_used_f,
     )
     db.add(p)
     db.commit()
@@ -773,6 +826,11 @@ def edit_print(
         "print_date": p.print_date.isoformat() if p.print_date else "",
         "queued": "1" if p.queued else "",
         "is_public": "1" if p.is_public else "",
+        "layer_height": str(p.layer_height) if p.layer_height is not None else "",
+        "infill_pct": str(p.infill_pct) if p.infill_pct is not None else "",
+        "supports": ("yes" if p.supports is True else ("no" if p.supports is False else "")),
+        "print_time_mins": str(p.print_time_mins) if p.print_time_mins is not None else "",
+        "filament_used_g": str(p.filament_used_g) if p.filament_used_g is not None else "",
     }
     return templates.TemplateResponse(
         request, "dashboard/print_form.html",
@@ -799,6 +857,11 @@ async def update_print(
     print_date: str = Form(""),
     queued: str = Form(""),
     is_public: str = Form(""),
+    layer_height: str = Form(""),
+    infill_pct: str = Form(""),
+    supports: str = Form(""),
+    print_time_mins: str = Form(""),
+    filament_used_g: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -869,6 +932,11 @@ async def update_print(
     p.notes = notes.strip() or None
     p.print_date = _parse_date(print_date)
     p.is_public = bool(is_public)
+    p.layer_height = _parse_float(layer_height)
+    p.infill_pct = _parse_int(infill_pct, min_val=0, max_val=100)
+    p.supports = _parse_supports(supports)
+    p.print_time_mins = _parse_int(print_time_mins, min_val=1)
+    p.filament_used_g = _parse_float(filament_used_g)
     db.commit()
     return RedirectResponse("/dashboard/prints", status_code=303)
 

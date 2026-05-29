@@ -424,6 +424,10 @@ footer {
 .detail-date, .detail-printer { color: var(--text-dim); font-size: 0.9rem; margin: 4px 0; }
 .detail-section-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 20px 0 8px; }
 .chip-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.detail-settings { margin-top: 20px; }
+.settings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 20px; }
+.settings-list li { font-size: 0.9rem; color: var(--text); }
+.setting-key { color: var(--text-dim); font-size: 0.8rem; margin-right: 4px; }
 .detail-notes { margin-top: 20px; }
 .detail-notes p { color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0; }
 .detail-source { margin-top: 20px; font-size: 0.9rem; }

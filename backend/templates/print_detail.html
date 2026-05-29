@@ -66,6 +66,24 @@
             </div>
             {% endif %}
 
+            {% if print_.layer_height or print_.infill_pct is not none or print_.supports is not none or print_.print_time_mins or print_.filament_used_g %}
+            <div class="detail-settings">
+                <p class="detail-section-label">Print settings</p>
+                <ul class="settings-list">
+                    {% if print_.layer_height %}<li><span class="setting-key">Layer height</span> {{ print_.layer_height }}mm</li>{% endif %}
+                    {% if print_.infill_pct is not none %}<li><span class="setting-key">Infill</span> {{ print_.infill_pct }}%</li>{% endif %}
+                    {% if print_.supports is not none %}<li><span class="setting-key">Supports</span> {{ "Yes" if print_.supports else "No" }}</li>{% endif %}
+                    {% if print_.print_time_mins %}
+                    <li><span class="setting-key">Print time</span>
+                        {% set h = print_.print_time_mins // 60 %}{% set m = print_.print_time_mins % 60 %}
+                        {% if h %}{{ h }}h {% endif %}{% if m %}{{ m }}m{% endif %}
+                    </li>
+                    {% endif %}
+                    {% if print_.filament_used_g %}<li><span class="setting-key">Filament used</span> {{ print_.filament_used_g }}g</li>{% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
             {% if print_.notes %}
             <div class="detail-notes">
                 <p class="detail-section-label">Notes</p>
