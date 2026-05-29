@@ -182,6 +182,61 @@ def public_print_detail(
             Printer.id == p.printer_id, Printer.user_id == user.id
         ).first()
 
+    # --- Related prints by filament (same brand + material, other users) ---
+    related_by_filament = []
+    filament_label = None
+    for fil in filaments:
+        if not (fil.brand and fil.material):
+            continue
+        other_fil_ids = {
+            r.id for r in db.query(Filament.id).filter(
+                Filament.brand == fil.brand,
+                Filament.material == fil.material,
+                Filament.user_id != user.id,
+            ).all()
+        }
+        if not other_fil_ids:
+            continue
+        candidates = db.query(Print).filter(
+            Print.is_public == True,   # noqa: E712
+            Print.queued == False,     # noqa: E712
+            Print.user_id != user.id,
+        ).order_by(Print.created_at.desc()).limit(300).all()
+        related_by_filament = [
+            c for c in candidates
+            if any(fid in other_fil_ids for fid in (c.filament_ids or []))
+        ][:6]
+        if related_by_filament:
+            filament_label = f"{fil.brand} {fil.material}"
+            break
+
+    # --- Related prints by printer (same brand + model, other users) ---
+    related_by_printer = []
+    printer_label = None
+    if printer and printer.brand and printer.model:
+        other_printer_ids = [
+            r.id for r in db.query(Printer.id).filter(
+                Printer.brand == printer.brand,
+                Printer.model == printer.model,
+                Printer.user_id != user.id,
+            ).all()
+        ]
+        if other_printer_ids:
+            related_by_printer = db.query(Print).filter(
+                Print.printer_id.in_(other_printer_ids),
+                Print.is_public == True,   # noqa: E712
+                Print.queued == False,     # noqa: E712
+            ).order_by(Print.created_at.desc()).limit(6).all()
+            printer_label = f"{printer.brand} {printer.model}"
+
+    # Username lookup for related print cards
+    related_user_ids = {rp.user_id for rp in related_by_filament + related_by_printer}
+    users_by_id = {}
+    if related_user_ids:
+        users_by_id = {
+            u.id: u for u in db.query(User).filter(User.id.in_(related_user_ids)).all()
+        }
+
     return templates.TemplateResponse(
         request,
         "print_detail.html",
@@ -190,6 +245,11 @@ def public_print_detail(
             "print_": p,
             "filaments": filaments,
             "printer": printer,
+            "related_by_filament": related_by_filament,
+            "filament_label": filament_label,
+            "related_by_printer": related_by_printer,
+            "printer_label": printer_label,
+            "users_by_id": users_by_id,
             "current_user": current_user,
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
         },
