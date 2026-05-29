@@ -25,19 +25,19 @@
     </label>
 
     <fieldset class="dash-socials">
-        <legend>Social links <span class="hint">(shown on your public profile)</span></legend>
-        {% for key, label, placeholder in [
-            ("makerworld", "MakerWorld", "https://makerworld.com/en/@you"),
-            ("printables", "Printables", "https://www.printables.com/@you"),
-            ("instagram", "Instagram", "https://www.instagram.com/you"),
-            ("tiktok", "TikTok", "https://www.tiktok.com/@you"),
-            ("youtube", "YouTube", "https://www.youtube.com/@you"),
-            ("x", "X", "https://x.com/you"),
-            ("thingiverse", "Thingiverse", "https://www.thingiverse.com/you"),
+        <legend>Social links <span class="hint">(enter your handle — we'll build the link)</span></legend>
+        {% for key, label in [
+            ("makerworld", "MakerWorld"),
+            ("printables", "Printables"),
+            ("instagram", "Instagram"),
+            ("tiktok", "TikTok"),
+            ("youtube", "YouTube"),
+            ("x", "X"),
+            ("thingiverse", "Thingiverse"),
         ] %}
         <label>
             {{ label }}
-            <input type="url" name="social_{{ key }}" maxlength="300" value="{{ values['social_' ~ key] or '' }}" placeholder="{{ placeholder }}">
+            <input type="text" name="social_{{ key }}" maxlength="300" value="{{ values['social_' ~ key] or '' }}" placeholder="{{ user.username }}">
         </label>
         {% endfor %}
     </fieldset>
