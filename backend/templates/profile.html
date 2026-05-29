@@ -34,6 +34,13 @@
             <li><strong>{{ stats.success_pct }}%</strong> success</li>
             {% if stats.favorite_material %}<li><strong>{{ stats.favorite_material }}</strong> favorite</li>{% endif %}
         </ul>
+        {% if printers %}
+        <div class="machines">
+            {% for p in printers %}
+            <span class="machine-chip">{{ ((p.brand ~ " " ~ p.model) if p.brand and p.model else p.model or p.brand or p.name) | trim }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 </section>
 
