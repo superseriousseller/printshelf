@@ -23,6 +23,24 @@
         Avatar URL <span class="hint">(link to a profile photo — optional)</span>
         <input type="url" id="avatar_url" name="avatar_url" maxlength="500" value="{{ values.avatar_url or '' }}" placeholder="https://…">
     </label>
+
+    <fieldset class="dash-socials">
+        <legend>Social links <span class="hint">(shown on your public profile)</span></legend>
+        {% for key, label, placeholder in [
+            ("makerworld", "MakerWorld", "https://makerworld.com/en/@you"),
+            ("printables", "Printables", "https://www.printables.com/@you"),
+            ("instagram", "Instagram", "https://www.instagram.com/you"),
+            ("tiktok", "TikTok", "https://www.tiktok.com/@you"),
+            ("youtube", "YouTube", "https://www.youtube.com/@you"),
+            ("x", "X", "https://x.com/you"),
+            ("thingiverse", "Thingiverse", "https://www.thingiverse.com/you"),
+        ] %}
+        <label>
+            {{ label }}
+            <input type="url" name="social_{{ key }}" maxlength="300" value="{{ values['social_' ~ key] or '' }}" placeholder="{{ placeholder }}">
+        </label>
+        {% endfor %}
+    </fieldset>
     <div class="avatar-preview" id="avatar-preview" style="{% if not values.avatar_url %}display:none{% endif %}">
         <img id="avatar-preview-img" src="{{ values.avatar_url or '' }}" alt="avatar preview">
         <span class="hint">Avatar preview</span>

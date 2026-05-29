@@ -956,15 +956,26 @@ def account_settings(
 ):
     if (r := _require_user(user)) is not None:
         return r
+    s = user.socials or {}
     values = {
         "display_name": user.display_name or "",
         "bio": user.bio or "",
         "avatar_url": user.avatar_url or "",
+        "social_makerworld": s.get("makerworld", ""),
+        "social_printables": s.get("printables", ""),
+        "social_instagram": s.get("instagram", ""),
+        "social_tiktok": s.get("tiktok", ""),
+        "social_youtube": s.get("youtube", ""),
+        "social_x": s.get("x", ""),
+        "social_thingiverse": s.get("thingiverse", ""),
     }
     return templates.TemplateResponse(
         request, "dashboard/account_form.html",
         _ctx(user, db=db, errors=[], saved=False, values=values),
     )
+
+
+_SOCIAL_KEYS = ["makerworld", "printables", "instagram", "tiktok", "youtube", "x", "thingiverse"]
 
 
 @router.post("/account", response_class=HTMLResponse)
@@ -973,6 +984,13 @@ def save_account_settings(
     display_name: str = Form(""),
     bio: str = Form(""),
     avatar_url: str = Form(""),
+    social_makerworld: str = Form(""),
+    social_printables: str = Form(""),
+    social_instagram: str = Form(""),
+    social_tiktok: str = Form(""),
+    social_youtube: str = Form(""),
+    social_x: str = Form(""),
+    social_thingiverse: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -982,20 +1000,40 @@ def save_account_settings(
     display_name = display_name.strip()
     bio = bio.strip()
     avatar_url = avatar_url.strip()
+
+    raw_socials = {
+        "makerworld": social_makerworld.strip(),
+        "printables": social_printables.strip(),
+        "instagram": social_instagram.strip(),
+        "tiktok": social_tiktok.strip(),
+        "youtube": social_youtube.strip(),
+        "x": social_x.strip(),
+        "thingiverse": social_thingiverse.strip(),
+    }
+
     if len(display_name) > 100:
         errors.append("Display name must be 100 characters or fewer.")
     if avatar_url and not avatar_url.startswith(("http://", "https://")):
         errors.append("Avatar URL must start with http:// or https://")
-    values = {"display_name": display_name, "bio": bio, "avatar_url": avatar_url}
+    for key, url in raw_socials.items():
+        if url and not url.startswith("https://"):
+            errors.append(f"{key.capitalize()} URL must start with https://")
+
+    values = {
+        "display_name": display_name, "bio": bio, "avatar_url": avatar_url,
+        **{f"social_{k}": v for k, v in raw_socials.items()},
+    }
     if errors:
         return templates.TemplateResponse(
             request, "dashboard/account_form.html",
             _ctx(user, db=db, errors=errors, saved=False, values=values),
             status_code=400,
         )
+
     user.display_name = display_name or None
     user.bio = bio or None
     user.avatar_url = avatar_url or None
+    user.socials = {k: v for k, v in raw_socials.items() if v} or None
     db.commit()
     _log.info("account settings updated user_id=%s", user.id)
     return templates.TemplateResponse(

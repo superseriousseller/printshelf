@@ -67,6 +67,7 @@ class User(Base):
     # Profile
     avatar_url = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
+    socials = Column(JSON, nullable=True)  # {"makerworld": url, "instagram": url, ...}
 
     # Subscription
     tier = Column(String(20), default="free", nullable=False)
@@ -91,6 +92,7 @@ class User(Base):
             "displayName": self.display_name or self.username,
             "avatarUrl": self.avatar_url,
             "bio": self.bio,
+            "socials": self.socials or {},
             "tier": self.tier or "free",
             "createdAt": self.created_at.isoformat() if self.created_at else None,
         }
