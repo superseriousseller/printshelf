@@ -104,6 +104,37 @@
         <p class="hint">No filaments in your library yet. <a href="/dashboard/filaments/new">Add one</a> to attach it here.</p>
         {% endif %}
     </fieldset>
+    <fieldset class="dash-socials">
+        <legend>Print settings <span class="hint">(optional — shown on the public print page)</span></legend>
+        <div class="row">
+            <label>
+                Layer height <span class="hint">mm</span>
+                <input type="number" name="layer_height" min="0.05" max="0.8" step="0.05" value="{{ values.layer_height or '' }}" placeholder="0.20">
+            </label>
+            <label>
+                Infill <span class="hint">%</span>
+                <input type="number" name="infill_pct" min="0" max="100" step="5" value="{{ values.infill_pct or '' }}" placeholder="15">
+            </label>
+            <label>
+                Supports
+                <select name="supports">
+                    <option value="" {% if values.supports == '' %}selected{% endif %}>—</option>
+                    <option value="yes" {% if values.supports == 'yes' %}selected{% endif %}>Yes</option>
+                    <option value="no" {% if values.supports == 'no' %}selected{% endif %}>No</option>
+                </select>
+            </label>
+        </div>
+        <div class="row">
+            <label>
+                Print time <span class="hint">minutes</span>
+                <input type="number" name="print_time_mins" min="1" step="1" value="{{ values.print_time_mins or '' }}" placeholder="90">
+            </label>
+            <label>
+                Filament used <span class="hint">grams</span>
+                <input type="number" name="filament_used_g" min="0.1" step="0.1" value="{{ values.filament_used_g or '' }}" placeholder="45">
+            </label>
+        </div>
+    </fieldset>
     <div class="row">
         <label>
             Print date

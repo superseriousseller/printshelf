@@ -129,14 +129,15 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-05-29 (session 6):**
-- Chrome Web Store submission (v0.3.5) — fixed the upload-blocking manifest `description` (136 → 119 chars; 132 limit), confirmed real 16/48/128 icons (old 128 was a 306-byte placeholder), built the upload zip, and filled the dashboard: single-purpose, storage + combined host-permission justifications, No remote code, data disclosure (Authentication info + Website content), all three certifications, privacy URL https://printshelf.app/privacy. Submitted, pending review.
-- All committed on `staging` (icon/manifest commits `2901571`, `e18d754`); tree clean.
-- URL migration `/u/{username}` → `/@{username}` — canonical routes updated in `profile.py`, all templates + `qa.py` updated, 301 redirects in place for legacy links. Needs staging deploy + QA before merging.
+**Completed 2026-05-29 (session 7):**
+- `/@username` URL migration — 301 redirects from `/u/` keep old links working. All on prod.
+- Social links on profiles — MakerWorld, Printables, Instagram, TikTok, YouTube, X, Thingiverse. Enter handle or full URL; pill badges on `/@username`. On prod.
+- Printers on public profile — machine chips (brand + model) below stats row. On prod.
+- "Others with this filament/printer" discovery — print detail pages show up to 6 cross-user related prints by filament brand+material and printer brand+model. On prod.
 
 **In progress:**
-- Chrome extension v0.3.5 **pending Web Store review** — watch for approval or a policy-cited rejection email.
-- Cam dogfooding printshelf.app
+- Chrome extension v0.3.5 **pending Web Store review** — watch for approval or policy-cited rejection email.
+- Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate signups pending — env vars to set on Railway prod when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
 
-**Immediate next step:** Deploy URL migration to staging and run QA (verify `/@cam` loads, `/u/cam` 301-redirects, all internal links use `/@`). Then merge both icon/manifest commits and URL migration to main together. Meanwhile: Extension Phases 3+ OR affiliate signups.
+**Immediate next step:** Print settings metadata (layer height, infill %, supports) OR Extension Phases 3+ (Anycubic → Shopify/easy, MatterHackers → legacy CMS/medium, Bambu → SPA/MutationObserver, Amazon → hardest) OR affiliate signups + click-test `/buy` links. Reddit launch post when `/@PluggedIn3d` looks post-worthy.

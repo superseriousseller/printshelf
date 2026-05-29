@@ -202,6 +202,13 @@ class Print(Base):
     queued = Column(Boolean, default=False, nullable=False, index=True)
     is_public = Column(Boolean, default=True, nullable=False, index=True)
 
+    # Print settings
+    layer_height = Column(Float, nullable=True)      # mm, e.g. 0.20
+    infill_pct = Column(Integer, nullable=True)      # %, e.g. 15
+    supports = Column(Boolean, nullable=True)        # True/False/None (not set)
+    print_time_mins = Column(Integer, nullable=True) # total minutes
+    filament_used_g = Column(Float, nullable=True)   # grams
+
     print_date = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -226,6 +233,11 @@ class Print(Base):
             "isPublic": self.is_public,
             "printDate": self.print_date.isoformat() if self.print_date else None,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "layerHeight": self.layer_height,
+            "infillPct": self.infill_pct,
+            "supports": self.supports,
+            "printTimeMins": self.print_time_mins,
+            "filamentUsedG": self.filament_used_g,
         }
 
 
