@@ -8,15 +8,15 @@
     <meta property="og:title" content="{{ print_.title }}">
     {% set img = print_.photo_url or print_.thumbnail_url %}
     {% if img %}<meta property="og:image" content="{{ img }}">{% endif %}
-    <meta property="og:url" content="{{ app_url }}/u/{{ user.username }}/prints/{{ print_.id }}">
+    <meta property="og:url" content="{{ app_url }}/@{{ user.username }}/prints/{{ print_.id }}">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="canonical" href="{{ app_url }}/u/{{ user.username }}/prints/{{ print_.id }}">
+    <link rel="canonical" href="{{ app_url }}/@{{ user.username }}/prints/{{ print_.id }}">
 {% endblock %}
 
 {% block content %}
 <div class="print-detail-page">
     <nav class="detail-breadcrumb">
-        <a href="/u/{{ user.username }}">@{{ user.username }}</a>
+        <a href="/@{{ user.username }}">@{{ user.username }}</a>
         <span>›</span>
         <span>{{ print_.title }}</span>
     </nav>

@@ -21,7 +21,7 @@
         <div class="hero-cta">
             {% if current_user %}
                 <a href="/dashboard" class="btn-primary btn-lg">Open your dashboard</a>
-                <a href="/u/{{ current_user.username }}" class="btn-ghost btn-lg">See your shelf</a>
+                <a href="/@{{ current_user.username }}" class="btn-ghost btn-lg">See your shelf</a>
             {% else %}
                 <a href="/signup" class="btn-primary btn-lg">Start your shelf — free</a>
                 <a href="/login" class="btn-ghost btn-lg">Log in</a>
@@ -33,7 +33,7 @@
     {% if featured %}
     <div class="hero-gallery">
         {% for f in featured %}
-        <a class="home-card" href="/u/{{ f.username }}">
+        <a class="home-card" href="/@{{ f.username }}">
             <div class="home-thumb">
                 <img src="{{ f.thumbnail }}" alt="{{ f.title }}" loading="lazy">
                 {% if f.status == "failed" %}<span class="badge-pill badge-fail">Failed</span>
@@ -73,7 +73,7 @@
         <li>
             <span class="step-num">3</span>
             <h3>Share your shelf</h3>
-            <p>Every account gets a public URL — <code>printshelf.app/u/your-handle</code>. Show off the prints you're proud of, link it on Reddit, send it to your friends.</p>
+            <p>Every account gets a public URL — <code>printshelf.app/@your-handle</code>. Show off the prints you're proud of, link it on Reddit, send it to your friends.</p>
         </li>
     </ol>
 </section>

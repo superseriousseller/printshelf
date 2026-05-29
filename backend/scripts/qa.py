@@ -101,8 +101,8 @@ def run(base: str) -> int:
     r = httpx.get(f"{base}/static/app.css", timeout=20)
     qa.check("GET /static/app.css returns 200", r.status_code == 200, f"got {r.status_code}")
 
-    r = httpx.get(f"{base}/u/nonexistent-{int(time.time())}", timeout=20)
-    qa.check("GET /u/<unknown> returns 404", r.status_code == 404, f"got {r.status_code}")
+    r = httpx.get(f"{base}/@nonexistent-{int(time.time())}", timeout=20)
+    qa.check("GET /@<unknown> returns 404", r.status_code == 404, f"got {r.status_code}")
     qa.check("404 page renders shelf-not-found copy", "shelf is empty" in r.text.lower() or "shelf not found" in r.text.lower(), "")
 
     # =========================================================
@@ -496,18 +496,18 @@ def run(base: str) -> int:
     # =========================================================
     qa.section("Public profile + homepage gallery")
 
-    r = httpx.get(f"{base}/u/{handle}", timeout=20)
-    qa.check(f"GET /u/{handle} (200)", r.status_code == 200, f"got {r.status_code}")
+    r = httpx.get(f"{base}/@{handle}", timeout=20)
+    qa.check(f"GET /@{handle} (200)", r.status_code == 200, f"got {r.status_code}")
     qa.check("profile shows QA Dragon", "QA Dragon" in r.text, "")
     qa.check("profile has og:title meta", 'property="og:title"' in r.text, "")
     qa.check("profile has og:description meta", 'property="og:description"' in r.text, "")
 
     # Material filter
-    r = httpx.get(f"{base}/u/{handle}?material=PETG", timeout=20)
+    r = httpx.get(f"{base}/@{handle}?material=PETG", timeout=20)
     qa.check("profile material filter works", r.status_code == 200, f"got {r.status_code}")
 
     # Status filter
-    r = httpx.get(f"{base}/u/{handle}?status=printed", timeout=20)
+    r = httpx.get(f"{base}/@{handle}?status=printed", timeout=20)
     qa.check("profile status filter works", r.status_code == 200, f"got {r.status_code}")
 
     # Homepage gallery should contain at least one print (the public ones we added)

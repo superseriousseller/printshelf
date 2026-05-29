@@ -60,7 +60,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
 
-    # Public-facing identity (used in /u/{username})
+    # Public-facing identity (used in /@{username})
     username = Column(String(50), unique=True, nullable=False, index=True)
     display_name = Column(String(100), nullable=True)
 

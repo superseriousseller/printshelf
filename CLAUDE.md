@@ -5,17 +5,18 @@
 ## Project Status
 
 ### 🔄 In Progress
-- Chrome extension (`chrome-extension/`) — v0.3.4 in repo (filament button on Polymaker + model pages); neither v0.2.x nor v0.3.x published to the Chrome Web Store yet
-- Cam dogfooding printshelf.app — building up /u/cam organically
+- Chrome extension (`chrome-extension/`) — **v0.3.5 submitted to Chrome Web Store 2026-05-29, pending review** (filament button on Polymaker + model pages). First review may be slow: host permissions + Authentication-info/Website-content data disclosure trigger in-depth review.
+- Cam dogfooding printshelf.app — building up /@cam organically
 - Affiliate program signups (Amazon Associates, Bambu, Polymaker, MatterHackers, Anycubic) — set env vars on Railway prod as they come in: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
 - Extension Phases 3+ — add Anycubic, MatterHackers, Bambu, Amazon to `STORES` in `inject_filament.js`. Each needs its own swatch selectors. Architecture proven on Polymaker.
 
 ### 📋 Todo
-- Reddit launch post — after /u/cam looks post-worthy
+- Reddit launch post — after /@cam looks post-worthy
 - Stripe / paid tier — free-tier cap logging in place; ship when cap-hits justify it
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the fix
 
 ### ✅ Done (recent)
+- Chrome Web Store submission (v0.3.5, 2026-05-29) — trimmed manifest `description` to 119 chars (132 limit), replaced placeholder icons with real 16/48/128 PNGs, declared single-purpose + permission justifications + data disclosure (Authentication info + Website content), No remote code, privacy policy at /privacy. Paste-ready listing copy lives in `chrome-extension/PUBLISH.md`.
 - Filament Chrome extension button (Polymaker, v0.3.4) — one-click "Add filament" on `/products/*` pages. Reads selected-variant color name + hex from the DOM (Polymaker packs both into the swatch label's textContent); falls back to "HEX Code: #…" in the product description for the PolyLite line. Server-side `POST /api/filaments/import-url` provides brand/material/price. Status defaults to `want`.
 - Delete-confirm modal — replaced native `confirm()` across filaments / printers / prints lists with a centered modal overlay (Cam's parallel work).
 - Filament URL import (Amazon, Bambu, Polymaker, MatterHackers, Anycubic) — paste a product URL, pre-fills brand/material/color/price from OG tags + JSON-LD
@@ -128,16 +129,14 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-05-25 (session 5):**
-- Backend `POST /api/filaments/import-url` (in `routes/filaments.py`) — Bearer auth, wraps `extract_filament_url()`, returns camelCase JSON.
-- Chrome extension v0.3.4: new `content/inject_filament.js` FAB on `shop.polymaker.com/products/*` (also `us.polymaker.com` + `polymaker.com`). Reads selected-variant color name + hex from DOM; falls back to "HEX Code: #…" in product description. Background worker `addFilament` orchestrates import-url → /api/filaments with `status=want`.
-- Helpers: `cleanColorLabel()` (lookbehind regex stops mid-CamelCase greed), `findHexInLabel()`, `findHexInPageDescription()`, `isOrphanedExtensionContext()`, `humanizeError()` for FastAPI structured 402 detail dicts.
-- Delete-confirm modal across filaments/printers/prints (Cam's parallel work).
-- All merged to prod (build 3501e5e).
+**Completed 2026-05-29 (session 6):**
+- Chrome Web Store submission (v0.3.5) — fixed the upload-blocking manifest `description` (136 → 119 chars; 132 limit), confirmed real 16/48/128 icons (old 128 was a 306-byte placeholder), built the upload zip, and filled the dashboard: single-purpose, storage + combined host-permission justifications, No remote code, data disclosure (Authentication info + Website content), all three certifications, privacy URL https://printshelf.app/privacy. Submitted, pending review.
+- All committed on `staging` (icon/manifest commits `2901571`, `e18d754`); tree clean.
+- URL migration `/u/{username}` → `/@{username}` — canonical routes updated in `profile.py`, all templates + `qa.py` updated, 301 redirects in place for legacy links. Needs staging deploy + QA before merging.
 
 **In progress:**
+- Chrome extension v0.3.5 **pending Web Store review** — watch for approval or a policy-cited rejection email.
 - Cam dogfooding printshelf.app
 - Affiliate signups pending — env vars to set on Railway prod when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
-- Chrome extension not yet published to Web Store (v0.2.x or v0.3.x)
 
-**Immediate next step:** Extension Phases 3+ — add `STORES` entries for Anycubic (Shopify, easy), MatterHackers (legacy CMS, medium), Bambu (SPA, needs MutationObserver), Amazon (hardest, brittle selectors). Architecture proven on Polymaker; each new store is selector wiring + a smoke test. OR: sign up for affiliate programs and click-test each `/buy` link before doing more extension work — affiliate revenue is gated on signup, not on extension reach.
+**Immediate next step:** Deploy URL migration to staging and run QA (verify `/@cam` loads, `/u/cam` 301-redirects, all internal links use `/@`). Then merge both icon/manifest commits and URL migration to main together. Meanwhile: Extension Phases 3+ OR affiliate signups.

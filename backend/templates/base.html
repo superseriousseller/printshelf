@@ -14,7 +14,7 @@
         <nav class="topnav">
             {% if current_user %}
                 <a href="/dashboard">Dashboard</a>
-                <a href="/u/{{ current_user.username }}">My shelf</a>
+                <a href="/@{{ current_user.username }}">My shelf</a>
                 <form method="post" action="/logout" style="display:inline">
                     <button type="submit" class="linklike">Log out</button>
                 </form>

@@ -5,7 +5,7 @@
 {% block dash %}
 <header class="dash-header">
     <h1>Welcome back, {{ user.display_name or user.username }}</h1>
-    <p class="dash-subtitle">Your public profile lives at <a href="/u/{{ user.username }}">/u/{{ user.username }}</a>.</p>
+    <p class="dash-subtitle">Your public profile lives at <a href="/@{{ user.username }}">/@{{ user.username }}</a>.</p>
 </header>
 
 {% if stats and stats.total_prints > 0 %}
