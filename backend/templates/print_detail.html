@@ -79,4 +79,52 @@
         </div>
     </div>
 </div>
+
+{% if related_by_filament %}
+<section class="related-section">
+    <h3 class="related-heading">More {{ filament_label }} prints</h3>
+    <div class="related-grid">
+        {% for rp in related_by_filament %}
+        {% set ruser = users_by_id.get(rp.user_id) %}
+        {% if ruser %}
+        <a class="related-card" href="/@{{ ruser.username }}/prints/{{ rp.id }}">
+            <div class="related-thumb">
+                {% set img = rp.photo_url or rp.thumbnail_url %}
+                {% if img %}<img src="{{ img }}" alt="{{ rp.title }}" loading="lazy">
+                {% else %}<div class="thumb-fallback">🧊</div>{% endif %}
+            </div>
+            <div class="related-info">
+                <p class="related-title">{{ rp.title }}</p>
+                <p class="related-user">@{{ ruser.username }}</p>
+            </div>
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if related_by_printer %}
+<section class="related-section">
+    <h3 class="related-heading">More prints on a {{ printer_label }}</h3>
+    <div class="related-grid">
+        {% for rp in related_by_printer %}
+        {% set ruser = users_by_id.get(rp.user_id) %}
+        {% if ruser %}
+        <a class="related-card" href="/@{{ ruser.username }}/prints/{{ rp.id }}">
+            <div class="related-thumb">
+                {% set img = rp.photo_url or rp.thumbnail_url %}
+                {% if img %}<img src="{{ img }}" alt="{{ rp.title }}" loading="lazy">
+                {% else %}<div class="thumb-fallback">🧊</div>{% endif %}
+            </div>
+            <div class="related-info">
+                <p class="related-title">{{ rp.title }}</p>
+                <p class="related-user">@{{ ruser.username }}</p>
+            </div>
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 {% endblock %}

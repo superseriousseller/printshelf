@@ -428,6 +428,17 @@ footer {
 .detail-notes p { color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0; }
 .detail-source { margin-top: 20px; font-size: 0.9rem; }
 .detail-source a { color: var(--accent); text-transform: capitalize; }
+.related-section { max-width: 1000px; margin: 32px auto 0; padding: 0 24px; }
+.related-heading { font-size: 1rem; font-weight: 600; margin: 0 0 14px; color: var(--text-dim); }
+.related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.related-card { display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--bg-card); text-decoration: none; transition: border-color .15s; }
+.related-card:hover { border-color: var(--accent); }
+.related-thumb { aspect-ratio: 1/1; overflow: hidden; background: var(--bg-elev); }
+.related-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.related-thumb .thumb-fallback { font-size: 2rem; height: 100%; display: flex; align-items: center; justify-content: center; opacity: 0.3; }
+.related-info { padding: 8px 10px; }
+.related-title { margin: 0 0 2px; font-size: 0.82rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.related-user { margin: 0; font-size: 0.75rem; color: var(--text-dim); }
 @media (max-width: 680px) {
     .detail-layout { grid-template-columns: 1fr; }
 }
