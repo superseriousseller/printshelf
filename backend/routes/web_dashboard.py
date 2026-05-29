@@ -948,6 +948,36 @@ def delete_print(
 
 # ============== Account settings ==============
 
+_SOCIAL_URL_TEMPLATES = {
+    "makerworld":  "https://makerworld.com/en/@{handle}",
+    "printables":  "https://www.printables.com/@{handle}",
+    "instagram":   "https://www.instagram.com/{handle}",
+    "tiktok":      "https://www.tiktok.com/@{handle}",
+    "youtube":     "https://www.youtube.com/@{handle}",
+    "x":           "https://x.com/{handle}",
+    "thingiverse": "https://www.thingiverse.com/{handle}",
+}
+
+
+def _social_to_url(platform: str, value: str) -> str:
+    """Accept a bare handle or full URL; always return a full https URL."""
+    v = value.strip().rstrip("/")
+    if not v:
+        return ""
+    if v.startswith("https://") or v.startswith("http://"):
+        return v
+    handle = v.lstrip("@")
+    tmpl = _SOCIAL_URL_TEMPLATES.get(platform, "")
+    return tmpl.format(handle=handle) if tmpl else v
+
+
+def _url_to_handle(value: str) -> str:
+    """Strip the platform base URL; return just the bare handle (no @)."""
+    v = value.strip().rstrip("/")
+    if v.startswith("https://") or v.startswith("http://"):
+        v = v.split("/")[-1]
+    return v.lstrip("@")
+
 @router.get("/account", response_class=HTMLResponse)
 def account_settings(
     request: Request,
@@ -956,10 +986,12 @@ def account_settings(
 ):
     if (r := _require_user(user)) is not None:
         return r
+    s = user.socials or {}
     values = {
         "display_name": user.display_name or "",
         "bio": user.bio or "",
         "avatar_url": user.avatar_url or "",
+        **{f"social_{k}": _url_to_handle(s.get(k, "")) for k in _SOCIAL_URL_TEMPLATES},
     }
     return templates.TemplateResponse(
         request, "dashboard/account_form.html",
@@ -973,6 +1005,13 @@ def save_account_settings(
     display_name: str = Form(""),
     bio: str = Form(""),
     avatar_url: str = Form(""),
+    social_makerworld: str = Form(""),
+    social_printables: str = Form(""),
+    social_instagram: str = Form(""),
+    social_tiktok: str = Form(""),
+    social_youtube: str = Form(""),
+    social_x: str = Form(""),
+    social_thingiverse: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -982,20 +1021,40 @@ def save_account_settings(
     display_name = display_name.strip()
     bio = bio.strip()
     avatar_url = avatar_url.strip()
+
+    raw_handles = {
+        "makerworld": social_makerworld.strip(),
+        "printables": social_printables.strip(),
+        "instagram": social_instagram.strip(),
+        "tiktok": social_tiktok.strip(),
+        "youtube": social_youtube.strip(),
+        "x": social_x.strip(),
+        "thingiverse": social_thingiverse.strip(),
+    }
+
     if len(display_name) > 100:
         errors.append("Display name must be 100 characters or fewer.")
     if avatar_url and not avatar_url.startswith(("http://", "https://")):
         errors.append("Avatar URL must start with http:// or https://")
-    values = {"display_name": display_name, "bio": bio, "avatar_url": avatar_url}
+
+    # Normalise handles → full URLs for storage
+    resolved_socials = {k: _social_to_url(k, v) for k, v in raw_handles.items()}
+
+    values = {
+        "display_name": display_name, "bio": bio, "avatar_url": avatar_url,
+        **{f"social_{k}": v for k, v in raw_handles.items()},
+    }
     if errors:
         return templates.TemplateResponse(
             request, "dashboard/account_form.html",
             _ctx(user, db=db, errors=errors, saved=False, values=values),
             status_code=400,
         )
+
     user.display_name = display_name or None
     user.bio = bio or None
     user.avatar_url = avatar_url or None
+    user.socials = {k: v for k, v in resolved_socials.items() if v} or None
     db.commit()
     _log.info("account settings updated user_id=%s", user.id)
     return templates.TemplateResponse(
