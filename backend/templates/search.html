@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{% if q %}{{ q }} — Search{% else %}Search{% endif %} — PrintShelf{% endblock %}
+
+{% block content %}
+<div class="search-page">
+    <form class="search-form" method="get" action="/search">
+        <input class="search-input" type="search" name="q" value="{{ q or '' }}" placeholder="Search users and prints…" autofocus>
+        <button type="submit" class="btn-primary">Search</button>
+    </form>
+
+    {% if q %}
+        {% if not users and not prints %}
+        <p class="search-empty">No results for <strong>{{ q }}</strong>.</p>
+        {% endif %}
+
+        {% if users %}
+        <section class="search-section">
+            <h2 class="search-section-heading">People <span class="search-count">{{ users|length }}</span></h2>
+            <div class="search-users">
+                {% for u in users %}
+                <a class="search-user-card" href="/@{{ u.username }}">
+                    <div class="search-avatar">
+                        {% if u.avatar_url %}<img src="{{ u.avatar_url }}" alt="{{ u.username }}">
+                        {% else %}<div class="avatar-fallback">{{ (u.display_name or u.username)[0]|upper }}</div>{% endif %}
+                    </div>
+                    <div class="search-user-info">
+                        <p class="search-user-name">{{ u.display_name or u.username }}</p>
+                        <p class="search-user-handle">@{{ u.username }}</p>
+                        {% if u.bio %}<p class="search-user-bio">{{ u.bio[:100] }}{% if u.bio|length > 100 %}…{% endif %}</p>{% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if prints %}
+        <section class="search-section">
+            <h2 class="search-section-heading">Prints <span class="search-count">{{ prints|length }}{% if prints|length == 24 %}+{% endif %}</span></h2>
+            <div class="search-prints">
+                {% for item in prints %}
+                {% set p = item.print %}
+                <a class="related-card" href="/@{{ item.username }}/prints/{{ p.id }}">
+                    <div class="related-thumb">
+                        {% set img = p.photo_url or p.thumbnail_url %}
+                        {% if img %}<img src="{{ img }}" alt="{{ p.title }}" loading="lazy">
+                        {% else %}<div class="thumb-fallback">🧊</div>{% endif %}
+                    </div>
+                    <div class="related-info">
+                        <p class="related-title">{{ p.title }}</p>
+                        <p class="related-user">@{{ item.username }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

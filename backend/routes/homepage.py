@@ -13,6 +13,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from auth import get_current_user_web_optional
+from sqlalchemy import or_
+
 from models import Print, User, get_db
 
 router = APIRouter(tags=["homepage"])
@@ -63,6 +65,46 @@ def homepage(
             "current_user": current_user,
             "featured": featured,
         },
+    )
+
+
+@router.get("/search", response_class=HTMLResponse)
+def search(
+    request: Request,
+    q: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    query = (q or "").strip()
+    users, prints, users_by_id = [], [], {}
+
+    if query:
+        pattern = f"%{query}%"
+        users = (
+            db.query(User)
+            .filter(or_(User.username.ilike(pattern), User.display_name.ilike(pattern)))
+            .order_by(User.username)
+            .limit(10)
+            .all()
+        )
+        print_rows = (
+            db.query(Print, User.username)
+            .join(User, Print.user_id == User.id)
+            .filter(
+                Print.is_public == True,   # noqa: E712
+                Print.queued == False,     # noqa: E712
+                or_(Print.title.ilike(pattern), Print.designer.ilike(pattern)),
+            )
+            .order_by(Print.created_at.desc())
+            .limit(24)
+            .all()
+        )
+        prints = [{"print": p, "username": uname} for p, uname in print_rows]
+
+    return templates.TemplateResponse(
+        request,
+        "search.html",
+        {"current_user": current_user, "q": query, "users": users, "prints": prints},
     )
 
 
