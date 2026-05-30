@@ -11,6 +11,9 @@
 <body>
     <header class="topbar">
         <a class="brand" href="/">PrintShelf</a>
+        <form class="nav-search" method="get" action="/search">
+            <input type="search" name="q" placeholder="Search…" value="{{ request.query_params.get('q', '') if request.url.path == '/search' else '' }}">
+        </form>
         <nav class="topnav">
             {% if current_user %}
                 <a href="/dashboard">Dashboard</a>
