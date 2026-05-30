@@ -1,0 +1,41 @@
+{% extends "dashboard/_layout.html" %}
+{% block title %}Feed — PrintShelf{% endblock %}
+
+{% block dash %}
+<div class="dash-header">
+    <h2>Feed</h2>
+</div>
+
+{% if feed_items %}
+<section class="print-grid">
+    {% for item in feed_items %}
+    {% set p = item.print %}
+    {% set u = item.user %}
+    <article class="print-card">
+        <a href="/@{{ u.username }}/prints/{{ p.id }}" class="card-link" aria-label="{{ p.title }}"></a>
+        <div class="thumb">
+            {% set img = p.photo_url or p.thumbnail_url %}
+            {% if img %}<img src="{{ img }}" alt="{{ p.title }}" loading="lazy">
+            {% else %}<div class="thumb-fallback">🧊</div>{% endif %}
+            {% if p.status == "failed" %}<span class="badge badge-fail">Failed</span>
+            {% elif p.status == "partial" %}<span class="badge badge-partial">Partial</span>{% endif %}
+        </div>
+        <div class="card-body">
+            <p class="feed-user"><a href="/@{{ u.username }}">@{{ u.display_name or u.username }}</a></p>
+            <h3>{{ p.title }}</h3>
+            {% if p.designer %}<p class="designer">by {{ p.designer }}</p>{% endif %}
+            <div class="card-meta">
+                {% if p.rating %}<span class="rating">{% for _ in range(p.rating) %}★{% endfor %}{% for _ in range(5 - p.rating) %}☆{% endfor %}</span>{% endif %}
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<div class="feed-empty">
+    <p>Nothing here yet.</p>
+    <p>Follow some makers to see their prints in your feed.</p>
+    <a href="/search" class="btn-primary">Find people to follow</a>
+</div>
+{% endif %}
+{% endblock %}
