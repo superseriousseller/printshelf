@@ -9,12 +9,12 @@ from collections import Counter
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from auth import get_current_user_web_optional
-from models import Filament, Print, Printer, User, get_db
+from models import Filament, Follow, Print, Printer, User, get_db
 
 router = APIRouter(tags=["profile"])
 
@@ -128,6 +128,16 @@ def public_profile(
 
     printers = db.query(Printer).filter(Printer.user_id == user.id).order_by(Printer.created_at).all()
 
+    follower_count = db.query(Follow).filter(Follow.following_id == user.id).count()
+    following_count = db.query(Follow).filter(Follow.follower_id == user.id).count()
+    is_following = (
+        current_user is not None
+        and current_user.id != user.id
+        and db.query(Follow).filter(
+            Follow.follower_id == current_user.id, Follow.following_id == user.id
+        ).first() is not None
+    )
+
     return templates.TemplateResponse(
         request,
         "profile.html",
@@ -142,6 +152,9 @@ def public_profile(
             "first_photo": first_photo,
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
             "current_user": current_user,
+            "follower_count": follower_count,
+            "following_count": following_count,
+            "is_following": is_following,
         },
     )
 
@@ -254,3 +267,39 @@ def public_print_detail(
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
         },
     )
+
+
+@router.post("/@{username}/follow")
+def follow_user(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    target = db.query(User).filter(User.username == username).first()
+    if target and target.id != current_user.id:
+        exists = db.query(Follow).filter(
+            Follow.follower_id == current_user.id, Follow.following_id == target.id
+        ).first()
+        if not exists:
+            db.add(Follow(follower_id=current_user.id, following_id=target.id))
+            db.commit()
+    return RedirectResponse(url=f"/@{username}", status_code=303)
+
+
+@router.post("/@{username}/unfollow")
+def unfollow_user(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    target = db.query(User).filter(User.username == username).first()
+    if target:
+        db.query(Follow).filter(
+            Follow.follower_id == current_user.id, Follow.following_id == target.id
+        ).delete()
+        db.commit()
+    return RedirectResponse(url=f"/@{username}", status_code=303)

@@ -21,6 +21,7 @@ from limits import enforce_filament_limit, enforce_print_limit
 from models import (
     Filament,
     FilamentStatus,
+    Follow,
     Print,
     PrintStatus,
     Printer,
@@ -1128,4 +1129,39 @@ def save_account_settings(
     return templates.TemplateResponse(
         request, "dashboard/account_form.html",
         _ctx(user, db=db, errors=[], saved=True, values=values),
+    )
+
+
+# ============== Feed ==============
+
+@router.get("/feed", response_class=HTMLResponse)
+def feed(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    following_ids = [
+        row.following_id
+        for row in db.query(Follow.following_id).filter(Follow.follower_id == user.id).all()
+    ]
+    feed_items = []
+    if following_ids:
+        rows = (
+            db.query(Print, User)
+            .join(User, Print.user_id == User.id)
+            .filter(
+                Print.user_id.in_(following_ids),
+                Print.is_public == True,   # noqa: E712
+                Print.queued == False,     # noqa: E712
+            )
+            .order_by(Print.created_at.desc())
+            .limit(50)
+            .all()
+        )
+        feed_items = [{"print": p, "user": u} for p, u in rows]
+    return templates.TemplateResponse(
+        request, "dashboard/feed.html",
+        _ctx(user, db=db, section="feed", feed_items=feed_items),
     )

@@ -315,6 +315,9 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
 .profile-meta .stats strong { color: var(--text); font-size: 1.15rem; margin-right: 4px; }
 .machines { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
 .machine-chip { display: inline-block; padding: 3px 10px; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-dim); font-size: 0.8rem; }
+.profile-follow-meta { display: flex; gap: 18px; margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); }
+.profile-follow-meta strong { color: var(--text); margin-right: 3px; }
+.follow-btn { min-width: 90px; }
 .socials { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 12px; }
 .social-link { display: inline-block; padding: 3px 10px; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-dim); font-size: 0.8rem; text-decoration: none; transition: border-color .15s, color .15s; }
 .social-link:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
@@ -470,6 +473,14 @@ footer {
 @media (max-width: 680px) {
     .detail-layout { grid-template-columns: 1fr; }
 }
+
+/* Feed */
+.feed-empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+.feed-empty p { margin: 0 0 8px; }
+.feed-empty .btn-primary { margin-top: 16px; display: inline-block; }
+.feed-user { margin: 0 0 4px; font-size: 0.8rem; color: var(--text-dim); position: relative; z-index: 2; }
+.feed-user a { color: var(--accent); text-decoration: none; }
+.feed-user a:hover { text-decoration: underline; }
 
 /* Sidebar counts */
 .nav-count { background: var(--bg-card); color: var(--text-dim); font-size: 0.75rem; padding: 1px 7px; border-radius: 10px; margin-left: 4px; }

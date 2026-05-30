@@ -41,6 +41,21 @@
             {% endfor %}
         </div>
         {% endif %}
+        <div class="profile-follow-meta">
+            <span><strong>{{ follower_count }}</strong> {{ "follower" if follower_count == 1 else "followers" }}</span>
+            <span><strong>{{ following_count }}</strong> following</span>
+        </div>
+        {% if current_user and current_user.id != user.id %}
+            {% if is_following %}
+            <form method="post" action="/@{{ user.username }}/unfollow" style="margin-top:10px">
+                <button type="submit" class="btn-secondary follow-btn">Unfollow</button>
+            </form>
+            {% else %}
+            <form method="post" action="/@{{ user.username }}/follow" style="margin-top:10px">
+                <button type="submit" class="btn-primary follow-btn">Follow</button>
+            </form>
+            {% endif %}
+        {% endif %}
     </div>
 </section>
 

@@ -245,6 +245,20 @@ Index("ix_prints_user_queued", Print.user_id, Print.queued)
 Index("ix_prints_user_created", Print.user_id, Print.created_at.desc())
 
 
+# ============== Follow ==============
+
+class Follow(Base):
+    __tablename__ = "follows"
+
+    id = Column(Integer, primary_key=True, index=True)
+    follower_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    following_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+Index("ix_follows_pair", Follow.follower_id, Follow.following_id, unique=True)
+
+
 # ============== Community Filament (shared autocomplete DB) ==============
 
 class CommunityFilament(Base):
