@@ -331,10 +331,11 @@ def queue_print(
         return RedirectResponse(f"/@{username}/prints/{print_id}", status_code=303)
 
     # Free-tier cap check
+    from fastapi import HTTPException
     try:
-        enforce_print_limit(db, current_user.id)
-    except Exception:
-        return RedirectResponse("/dashboard/prints?limit=true", status_code=303)
+        enforce_print_limit(db, current_user)
+    except HTTPException:
+        return RedirectResponse("/dashboard/prints?queued=true&cap=1", status_code=303)
 
     queued = Print(
         user_id=current_user.id,

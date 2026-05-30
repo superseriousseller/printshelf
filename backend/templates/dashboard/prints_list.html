@@ -15,6 +15,8 @@
     </div>
 </header>
 
+{% if cap_hit %}<p class="notice notice-warn">You've reached the free-tier print limit. Upgrade to Pro to add more — or clear some prints first.</p>{% endif %}
+
 <form method="get" action="/dashboard/prints" class="filter-bar">
     {% if queued_filter %}<input type="hidden" name="queued" value="{{ queued_filter }}">{% endif %}
     <input type="search" name="search" value="{{ search }}" placeholder="Search titles…" class="filter-search">

@@ -519,6 +519,7 @@ def list_prints(
     queued: Optional[str] = None,
     search: Optional[str] = None,
     sort: Optional[str] = None,
+    cap: Optional[str] = None,
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -548,7 +549,7 @@ def list_prints(
         request, "dashboard/prints_list.html",
         _ctx(user, db=db, prints=rows, queued_filter=queued_filter,
              printer_names=printer_names, fil_meta=fil_meta,
-             search=search_val, sort=sort or "newest"),
+             search=search_val, sort=sort or "newest", cap_hit=cap == "1"),
     )
 
 

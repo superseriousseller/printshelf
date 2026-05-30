@@ -68,7 +68,7 @@ def signup_submit(
     display_name: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    ip = request.client.host if request.client else "unknown"
+    ip = rate_limiter.client_ip(request)
     if not rate_limiter.check(ip, "signup", max_attempts=5, window_secs=300):
         raise HTTPException(status_code=429, detail="Too many signup attempts. Try again in a few minutes.")
     values = {"email": email, "username": username, "display_name": display_name}
@@ -129,7 +129,7 @@ def login_submit(
     next: str = Form("/dashboard"),
     db: Session = Depends(get_db),
 ):
-    ip = request.client.host if request.client else "unknown"
+    ip = rate_limiter.client_ip(request)
     if not rate_limiter.check(ip, "login", max_attempts=10, window_secs=300):
         return templates.TemplateResponse(
             request, "login.html",
@@ -179,7 +179,7 @@ def forgot_password_submit(
     email: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    ip = request.client.host if request.client else "unknown"
+    ip = rate_limiter.client_ip(request)
     if not rate_limiter.check(ip, "forgot-password", max_attempts=5, window_secs=300):
         return templates.TemplateResponse(request, "forgot_password.html", {"sent": True, "current_user": None})
     user = db.query(User).filter(User.email == email.lower().strip()).first()
