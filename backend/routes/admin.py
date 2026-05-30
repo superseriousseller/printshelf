@@ -34,7 +34,8 @@ def admin_dashboard(
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     if not _is_admin(current_user):
-        return RedirectResponse("/login", status_code=303)
+        # Authenticated but not admin → home. Unauthenticated → login.
+        return RedirectResponse("/" if current_user else "/login", status_code=303)
 
     now = datetime.utcnow()
     ago_7d = now - timedelta(days=7)
