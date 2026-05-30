@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from auth import get_current_user_web_optional
 from limits import enforce_filament_limit, enforce_print_limit
 from models import (
+    AffiliateClick,
     Filament,
     FilamentStatus,
     Follow,
@@ -501,8 +502,12 @@ def buy_filament(
     f = db.query(Filament).filter(Filament.id == filament_id, Filament.user_id == user.id).first()
     if f is None or not f.source_url:
         return RedirectResponse("/dashboard/filaments", status_code=303)
+    from filament_import_service import detect_store
+    store = detect_store(f.source_url)
     target = apply_affiliate(f.source_url)
-    _log.info("filament buy click filament_id=%s user=%s target=%s", f.id, user.id, target)
+    db.add(AffiliateClick(user_id=user.id, filament_id=f.id, store=store or None))
+    db.commit()
+    _log.info("filament buy click filament_id=%s user=%s store=%s target=%s", f.id, user.id, store, target)
     return RedirectResponse(target, status_code=302)
 
 

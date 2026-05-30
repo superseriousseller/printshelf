@@ -170,7 +170,7 @@ def create_user(
 
     if db.query(User).filter(User.email == email_n).first():
         raise HTTPException(status_code=409, detail="Email already registered")
-    if db.query(User).filter(User.username == username_n).first():
+    if db.query(User).filter(User.username.ilike(username_n)).first():
         raise HTTPException(status_code=409, detail="Username taken")
 
     user = User(
