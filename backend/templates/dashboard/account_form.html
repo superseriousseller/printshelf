@@ -10,7 +10,7 @@
 {% if errors %}<ul class="errors">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
 {% if saved %}<p class="notice notice-ok">Saved.</p>{% endif %}
 
-<form method="post" action="/dashboard/account" class="dash-form">
+<form method="post" action="/dashboard/account" class="dash-form" enctype="multipart/form-data">
     <label>
         Display name <span class="hint">(shown on your public profile — leave blank to use @{{ user.username }})</span>
         <input type="text" name="display_name" maxlength="100" value="{{ values.display_name or '' }}" placeholder="{{ user.username }}">
@@ -20,7 +20,11 @@
         <textarea name="bio" rows="3" maxlength="500" placeholder="3D printing nerd. Bambu P1S owner. I print functional parts and too many Benchys.">{{ values.bio or '' }}</textarea>
     </label>
     <label>
-        Avatar URL <span class="hint">(link to a profile photo — optional)</span>
+        Avatar <span class="hint">(upload a photo or paste a URL)</span>
+        <input type="file" name="avatar_file" accept="image/jpeg,image/png,image/webp,image/gif">
+    </label>
+    <label>
+        Avatar URL <span class="hint">(optional — used if no file uploaded)</span>
         <input type="url" id="avatar_url" name="avatar_url" maxlength="500" value="{{ values.avatar_url or '' }}" placeholder="https://…">
     </label>
 
@@ -55,6 +59,21 @@
         });
     })();
     </script>
+    <fieldset class="dash-section">
+        <legend>Change password <span class="hint">(leave blank to keep current password)</span></legend>
+        <label>
+            Current password
+            <input type="password" name="current_password" autocomplete="current-password">
+        </label>
+        <label>
+            New password <span class="hint">(min 8 characters)</span>
+            <input type="password" name="new_password" autocomplete="new-password" minlength="8">
+        </label>
+        <label>
+            Confirm new password
+            <input type="password" name="new_password_confirm" autocomplete="new-password">
+        </label>
+    </fieldset>
     <div class="form-actions">
         <button type="submit" class="btn-primary">Save changes</button>
         <a href="/@{{ user.username }}" target="_blank">View public profile ↗</a>
@@ -68,4 +87,12 @@
         <p class="hint">Use this as the Bearer token in the extension. Keep it secret.</p>
     </details>
 </section>
+<script>
+(function(){
+    var d=document.getElementById('api-key');
+    function maybeOpen(){ if(location.hash==='#api-key'){ d.open=true; d.scrollIntoView({behavior:'smooth',block:'start'}); } }
+    maybeOpen();
+    window.addEventListener('hashchange', maybeOpen);
+})();
+</script>
 {% endblock %}

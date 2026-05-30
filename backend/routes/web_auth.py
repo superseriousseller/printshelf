@@ -8,7 +8,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
@@ -25,6 +25,7 @@ from auth import (
 )
 from email_service import send_password_reset
 from models import Filament, PasswordResetToken, Print, Printer, User, get_db
+import rate_limiter
 
 router = APIRouter(tags=["web-auth"])
 
@@ -67,6 +68,9 @@ def signup_submit(
     display_name: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    ip = rate_limiter.client_ip(request)
+    if not rate_limiter.check(ip, "signup", max_attempts=5, window_secs=300):
+        raise HTTPException(status_code=429, detail="Too many signup attempts. Try again in a few minutes.")
     values = {"email": email, "username": username, "display_name": display_name}
     errors: list[str] = []
 
@@ -111,9 +115,10 @@ def login_form(
     next: str = "/dashboard",
     user: Optional[User] = Depends(get_current_user_web_optional),
 ):
+    safe_next = next if next.startswith("/") and not next.startswith("//") else "/dashboard"
     if user:
-        return RedirectResponse(next, status_code=303)
-    return templates.TemplateResponse(request, "login.html", {"errors": [], "values": {}, "next": next, "current_user": None})
+        return RedirectResponse(safe_next, status_code=303)
+    return templates.TemplateResponse(request, "login.html", {"errors": [], "values": {}, "next": safe_next, "current_user": None})
 
 
 @router.post("/login")
@@ -124,6 +129,13 @@ def login_submit(
     next: str = Form("/dashboard"),
     db: Session = Depends(get_db),
 ):
+    ip = rate_limiter.client_ip(request)
+    if not rate_limiter.check(ip, "login", max_attempts=10, window_secs=300):
+        return templates.TemplateResponse(
+            request, "login.html",
+            {"errors": ["Too many login attempts. Try again in a few minutes."], "values": {"email": email}, "next": next, "current_user": None},
+            status_code=429,
+        )
     user = authenticate_user(db, email, password)
     if user is None:
         return templates.TemplateResponse(
@@ -167,6 +179,9 @@ def forgot_password_submit(
     email: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    ip = rate_limiter.client_ip(request)
+    if not rate_limiter.check(ip, "forgot-password", max_attempts=5, window_secs=300):
+        return templates.TemplateResponse(request, "forgot_password.html", {"sent": True, "current_user": None})
     user = db.query(User).filter(User.email == email.lower().strip()).first()
     if user:
         token = secrets.token_urlsafe(48)[:64]

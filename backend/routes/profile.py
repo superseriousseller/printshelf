@@ -10,6 +10,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from limits import enforce_print_limit
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -303,3 +304,50 @@ def unfollow_user(
         ).delete()
         db.commit()
     return RedirectResponse(url=f"/@{username}", status_code=303)
+
+
+@router.post("/@{username}/prints/{print_id}/queue")
+def queue_print(
+    username: str,
+    print_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Add someone else's print to the current user's queue."""
+    if current_user is None:
+        return RedirectResponse(f"/login?next=/@{username}/prints/{print_id}", status_code=303)
+
+    source = db.query(Print).filter(
+        Print.id == print_id,
+        Print.user_id == db.query(User.id).filter(User.username == username).scalar_subquery(),
+        Print.is_public == True,   # noqa: E712
+        Print.queued == False,     # noqa: E712
+    ).first()
+    if source is None:
+        return RedirectResponse(f"/@{username}/prints/{print_id}", status_code=303)
+
+    # Don't queue your own print
+    if source.user_id == current_user.id:
+        return RedirectResponse(f"/@{username}/prints/{print_id}", status_code=303)
+
+    # Free-tier cap check
+    from fastapi import HTTPException
+    try:
+        enforce_print_limit(db, current_user)
+    except HTTPException:
+        return RedirectResponse("/dashboard/prints?queued=true&cap=1", status_code=303)
+
+    queued = Print(
+        user_id=current_user.id,
+        title=source.title,
+        designer=source.designer,
+        source_platform=source.source_platform,
+        source_url=source.source_url,
+        thumbnail_url=source.thumbnail_url,
+        status="queued",
+        queued=True,
+        is_public=False,
+    )
+    db.add(queued)
+    db.commit()
+    return RedirectResponse("/dashboard/prints?queued=true", status_code=303)
