@@ -18,9 +18,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('users', sa.Column('email_verified', sa.Boolean(), nullable=False, server_default='0'))
+    op.add_column('users', sa.Column('email_verified', sa.Boolean(), nullable=False, server_default=sa.text('false')))
     # Grandfather all existing users as verified so they aren't locked out
-    op.execute("UPDATE users SET email_verified = 1 WHERE email_verified = 0")
+    op.execute("UPDATE users SET email_verified = TRUE WHERE email_verified = FALSE")
 
     op.create_table(
         'email_verification_tokens',

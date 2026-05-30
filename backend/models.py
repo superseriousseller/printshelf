@@ -9,7 +9,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     create_engine, Column, Integer, String, Float, Boolean,
-    DateTime, Date, Text, ForeignKey, Index, JSON,
+    DateTime, Date, Text, ForeignKey, Index, JSON, text,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -75,7 +75,7 @@ class User(Base):
     stripe_subscription_id = Column(String(100), nullable=True, index=True)
 
     # Email verification
-    email_verified = Column(Boolean, default=False, nullable=False, server_default="0")
+    email_verified = Column(Boolean, default=False, nullable=False, server_default=text('false'))
 
     # Chrome extension auth — regeneratable from settings
     api_key = Column(String(64), unique=True, nullable=False, index=True)
