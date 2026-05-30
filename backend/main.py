@@ -39,6 +39,7 @@ from routes import web_dashboard as web_dashboard_routes
 from routes import homepage as homepage_routes
 from routes import uploads as uploads_routes
 from routes import imports as imports_routes
+from routes import admin as admin_routes
 
 # --- Logging ---
 logging.basicConfig(
@@ -103,6 +104,7 @@ app.include_router(uploads_routes.router)
 app.include_router(imports_routes.router)
 app.include_router(web_auth_routes.router)
 app.include_router(web_dashboard_routes.router)
+app.include_router(admin_routes.router)
 
 # Serve /static/* (CSS, future favicon etc.)
 from fastapi.staticfiles import StaticFiles  # noqa: E402
