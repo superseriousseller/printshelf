@@ -1074,11 +1074,12 @@ def account_settings(
 
 
 @router.post("/account", response_class=HTMLResponse)
-def save_account_settings(
+async def save_account_settings(
     request: Request,
     display_name: str = Form(""),
     bio: str = Form(""),
     avatar_url: str = Form(""),
+    avatar_file: Optional[UploadFile] = File(None),
     social_makerworld: str = Form(""),
     social_printables: str = Form(""),
     social_instagram: str = Form(""),
@@ -1086,11 +1087,15 @@ def save_account_settings(
     social_youtube: str = Form(""),
     social_x: str = Form(""),
     social_thingiverse: str = Form(""),
+    current_password: str = Form(""),
+    new_password: str = Form(""),
+    new_password_confirm: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
     if (r := _require_user(user)) is not None:
         return r
+    from auth import hash_password, verify_password
     errors = []
     display_name = display_name.strip()
     bio = bio.strip()
@@ -1111,6 +1116,28 @@ def save_account_settings(
     if avatar_url and not avatar_url.startswith(("http://", "https://")):
         errors.append("Avatar URL must start with http:// or https://")
 
+    # Avatar file upload — takes precedence over URL field if provided
+    if avatar_file and avatar_file.filename:
+        uploaded_url, upload_errors = await _resolve_photo(avatar_file, "", existing=user.avatar_url or "")
+        if upload_errors:
+            errors.extend(upload_errors)
+        elif uploaded_url:
+            avatar_url = uploaded_url
+
+    # Password change — only if any password field is filled
+    new_password_hash = None
+    if current_password or new_password or new_password_confirm:
+        if not current_password:
+            errors.append("Enter your current password to change it.")
+        elif not verify_password(current_password, user.password_hash):
+            errors.append("Current password is incorrect.")
+        elif len(new_password) < 8:
+            errors.append("New password must be at least 8 characters.")
+        elif new_password != new_password_confirm:
+            errors.append("New passwords don't match.")
+        else:
+            new_password_hash = hash_password(new_password)
+
     # Normalise handles → full URLs for storage
     resolved_socials = {k: _social_to_url(k, v) for k, v in raw_handles.items()}
 
@@ -1129,6 +1156,8 @@ def save_account_settings(
     user.bio = bio or None
     user.avatar_url = avatar_url or None
     user.socials = {k: v for k, v in resolved_socials.items() if v} or None
+    if new_password_hash:
+        user.password_hash = new_password_hash
     db.commit()
     _log.info("account settings updated user_id=%s", user.id)
     return templates.TemplateResponse(
