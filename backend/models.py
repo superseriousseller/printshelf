@@ -74,6 +74,9 @@ class User(Base):
     stripe_customer_id = Column(String(100), nullable=True, unique=True, index=True)
     stripe_subscription_id = Column(String(100), nullable=True, index=True)
 
+    # Email verification
+    email_verified = Column(Boolean, default=False, nullable=False, server_default="0")
+
     # Chrome extension auth — regeneratable from settings
     api_key = Column(String(64), unique=True, nullable=False, index=True)
 
@@ -307,6 +310,21 @@ Index("ix_community_filaments_brand_material", CommunityFilament.brand, Communit
 
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+
+    user = relationship("User")
+
+
+# ============== Email Verification Token ==============
+
+class EmailVerificationToken(Base):
+    __tablename__ = "email_verification_tokens"
 
     id = Column(Integer, primary_key=True, index=True)
     token = Column(String(64), unique=True, nullable=False, index=True)

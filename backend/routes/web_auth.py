@@ -23,8 +23,8 @@ from auth import (
     get_current_user_web_optional,
     hash_password,
 )
-from email_service import send_password_reset
-from models import Filament, PasswordResetToken, Print, Printer, User, get_db
+from email_service import send_password_reset, send_verification_email
+from models import EmailVerificationToken, Filament, PasswordResetToken, Print, Printer, User, get_db
 import rate_limiter
 
 router = APIRouter(tags=["web-auth"])
@@ -34,6 +34,20 @@ templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
 
 _PROD = os.environ.get("APP_ENV", "development") in {"production", "staging"}
 _COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days, matches JWT expiry
+
+
+def _send_verification(db: Session, user: User) -> None:
+    """Create a fresh verification token and send the email. Silent on failure."""
+    from datetime import timedelta
+    token = secrets.token_urlsafe(48)[:64]
+    record = EmailVerificationToken(
+        token=token,
+        user_id=user.id,
+        expires_at=datetime.utcnow() + timedelta(hours=24),
+    )
+    db.add(record)
+    db.commit()
+    send_verification_email(user.email, token)
 
 
 def _set_session_cookie(response: RedirectResponse, user_id: int) -> None:
@@ -102,6 +116,7 @@ def signup_submit(
             request, "signup.html", {"errors": errors, "values": values, "current_user": None}, status_code=400
         )
 
+    _send_verification(db, new_user)
     response = RedirectResponse("/dashboard", status_code=303)
     _set_session_cookie(response, new_user.id)
     return response
@@ -263,11 +278,64 @@ def _valid_token(token: str, db: Session) -> Optional[PasswordResetToken]:
     return record
 
 
+# ---- Email verification ----
+
+@router.get("/verify-email", response_class=HTMLResponse)
+def verify_email(
+    request: Request,
+    token: str = "",
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    if not token:
+        return RedirectResponse("/dashboard", status_code=303)
+    record = db.query(EmailVerificationToken).filter(
+        EmailVerificationToken.token == token
+    ).first()
+    if not record or record.used_at is not None:
+        return templates.TemplateResponse(
+            request, "verify_email.html",
+            {"state": "invalid", "current_user": current_user},
+            status_code=400,
+        )
+    if record.expires_at < datetime.utcnow():
+        return templates.TemplateResponse(
+            request, "verify_email.html",
+            {"state": "expired", "current_user": current_user},
+            status_code=400,
+        )
+    record.user.email_verified = True
+    record.used_at = datetime.utcnow()
+    db.commit()
+    return templates.TemplateResponse(
+        request, "verify_email.html",
+        {"state": "success", "current_user": record.user},
+    )
+
+
+@router.post("/resend-verification")
+def resend_verification(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    if current_user.email_verified:
+        return RedirectResponse("/dashboard", status_code=303)
+    ip = rate_limiter.client_ip(request)
+    if not rate_limiter.check(ip, "resend-verification", max_attempts=3, window_secs=300):
+        return RedirectResponse("/dashboard?resend=limited", status_code=303)
+    _send_verification(db, current_user)
+    return RedirectResponse("/dashboard?resend=sent", status_code=303)
+
+
 # ---- Dashboard stub (real CRUD UI in Task #11) ----
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(
     request: Request,
+    resend: Optional[str] = None,
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -285,6 +353,11 @@ def dashboard(
         "filaments": filaments,
         "printers": printers,
     }
+    resend_notice = None
+    if resend == "sent":
+        resend_notice = "Verification email sent — check your inbox."
+    elif resend == "limited":
+        resend_notice = "Too many resend requests. Try again in a few minutes."
     return templates.TemplateResponse(request, "dashboard.html", {
         "user": user,
         "current_user": user,
@@ -292,4 +365,5 @@ def dashboard(
         "sidebar_prints": total_prints,
         "sidebar_queue": queued,
         "sidebar_filaments": filaments,
+        "resend_notice": resend_notice,
     })

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Verify Email — PrintShelf{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+    {% if state == "success" %}
+        <h1>Email verified</h1>
+        <p>Your email address is confirmed. You're all set.</p>
+        <a href="/dashboard" class="btn-primary">Go to dashboard</a>
+    {% elif state == "expired" %}
+        <h1>Link expired</h1>
+        <p>That verification link is more than 24 hours old.</p>
+        {% if current_user %}
+        <form method="post" action="/resend-verification">
+            <button type="submit" class="btn-primary">Send a new link</button>
+        </form>
+        {% else %}
+        <p><a href="/login">Log in</a> and we'll show you a banner to request a fresh link.</p>
+        {% endif %}
+    {% else %}
+        <h1>Invalid link</h1>
+        <p>This verification link is invalid or has already been used.</p>
+        <a href="/dashboard" class="btn-secondary">Back to dashboard</a>
+    {% endif %}
+</div>
+{% endblock %}

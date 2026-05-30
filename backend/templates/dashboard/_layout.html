@@ -15,6 +15,14 @@
         </ul>
     </aside>
     <div class="dash-main">
+        {% if current_user and not current_user.email_verified %}
+        <div class="verify-banner">
+            Check your inbox — we sent a verification link to <strong>{{ current_user.email }}</strong>.
+            <form method="post" action="/resend-verification" style="display:inline">
+                <button type="submit" class="linklike">Resend</button>
+            </form>
+        </div>
+        {% endif %}
         {% block dash %}{% endblock %}
     </div>
 </div>
