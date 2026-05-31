@@ -10,7 +10,7 @@ from datetime import date
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import nullslast
@@ -250,6 +250,7 @@ def delete_printer(
 @router.get("/filaments", response_class=HTMLResponse)
 def list_filaments(
     request: Request,
+    cap: Optional[str] = None,
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -261,7 +262,7 @@ def list_filaments(
     )
     return templates.TemplateResponse(
         request, "dashboard/filaments_list.html",
-        _ctx(user, db=db, filaments=filaments, statuses=[s.value for s in FilamentStatus]),
+        _ctx(user, db=db, filaments=filaments, statuses=[s.value for s in FilamentStatus], cap_hit=cap == "1"),
     )
 
 
@@ -361,7 +362,12 @@ def create_filament(
 ):
     if (r := _require_user(user)) is not None:
         return r
-    enforce_filament_limit(db, user)  # raises HTTPException 402 if over cap
+    try:
+        enforce_filament_limit(db, user)
+    except HTTPException as e:
+        if e.status_code == 402:
+            return RedirectResponse("/dashboard/upgrade", status_code=303)
+        raise
     errors = []
     try:
         diameter_f = float(diameter or "1.75")
@@ -689,7 +695,12 @@ async def create_print(
 ):
     if (r := _require_user(user)) is not None:
         return r
-    enforce_print_limit(db, user)
+    try:
+        enforce_print_limit(db, user)
+    except HTTPException as e:
+        if e.status_code == 402:
+            return RedirectResponse("/dashboard/upgrade", status_code=303)
+        raise
     errors: list[str] = []
 
     # Auto-import: if the user pasted a source URL but skipped the "Pre-fill

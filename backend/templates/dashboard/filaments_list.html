@@ -7,6 +7,7 @@
     <h1>Filaments</h1>
     <a href="/dashboard/filaments/new" class="btn-primary">+ Add filament</a>
 </header>
+{% if cap_hit %}<p class="notice notice-warn">You've hit the 10-filament free-tier limit. <a href="/dashboard/upgrade">Upgrade to Pro</a> for unlimited spools.</p>{% endif %}
 
 {% if filaments %}
 <div class="table-scroll">

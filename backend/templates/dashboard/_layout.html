@@ -12,6 +12,9 @@
             <li><a href="/dashboard/filaments" {% if section == "filaments" %}class="active"{% endif %}>Filaments {% if sidebar_filaments is defined %}<span class="nav-count">{{ sidebar_filaments }}</span>{% endif %}</a></li>
             <li class="sidebar-divider"></li>
             <li><a href="/dashboard/account" {% if section == "account" %}class="active"{% endif %}>Account</a></li>
+            {% if current_user and current_user.tier != "pro" %}
+            <li><a href="/dashboard/upgrade" {% if section == "upgrade" %}class="active"{% endif %} class="sidebar-upgrade">⚡ Go Pro</a></li>
+            {% endif %}
         </ul>
     </aside>
     <div class="dash-main">

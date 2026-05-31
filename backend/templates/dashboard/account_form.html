@@ -91,6 +91,20 @@
     </div>
 </form>
 
+<section class="dash-billing" id="billing" style="margin-top:32px">
+    {% if user.tier == "pro" %}
+    <h3>Subscription</h3>
+    <p><span class="status-pill status-printed">Pro</span> Your account is on the Pro plan — unlimited prints and filaments.</p>
+    <form method="post" action="/dashboard/billing/portal" style="margin-top:8px">
+        <button type="submit" class="btn-secondary">Manage subscription →</button>
+    </form>
+    {% else %}
+    <h3>Subscription</h3>
+    <p>You're on the <strong>Free</strong> plan (50 prints · 10 filaments).</p>
+    <a href="/dashboard/upgrade" class="btn-primary" style="display:inline-block;margin-top:4px">Upgrade to Pro →</a>
+    {% endif %}
+</section>
+
 <section class="dash-apikey" style="margin-top:32px">
     <details id="api-key">
         <summary>Chrome extension API key</summary>

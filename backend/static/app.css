@@ -535,3 +535,21 @@ footer {
 .avatar-preview { display: flex; align-items: center; gap: 12px; margin-top: -8px; }
 .avatar-preview img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
 .sidebar-divider { border-top: 1px solid var(--border); margin: 6px 4px; }
+
+/* Upgrade / billing */
+.sidebar-upgrade { color: var(--accent) !important; font-weight: 500; }
+.upgrade-wrap { max-width: 560px; }
+.upgrade-pitch { color: var(--text-dim); margin-bottom: 24px; }
+.upgrade-plans { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.upgrade-plan { flex: 1; min-width: 200px; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.upgrade-plan--featured { border-color: var(--accent); background: var(--accent-soft); }
+.plan-badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 0.75rem; font-weight: 600; padding: 2px 10px; border-radius: 10px; white-space: nowrap; }
+.plan-name { font-weight: 600; font-size: 1rem; }
+.plan-price { display: flex; align-items: baseline; gap: 2px; }
+.plan-amount { font-size: 2rem; font-weight: 700; }
+.plan-period { color: var(--text-dim); font-size: 0.9rem; }
+.plan-equiv { font-size: 0.82rem; color: var(--text-dim); margin-top: -4px; }
+.plan-btn { width: 100%; margin-top: 8px; text-align: center; }
+.upgrade-features { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 6px; color: var(--text-dim); font-size: 0.9rem; }
+.upgrade-free-note { font-size: 0.82rem; color: var(--text-dim); }
+.dash-billing h3 { margin: 0 0 8px; font-size: 1rem; }
