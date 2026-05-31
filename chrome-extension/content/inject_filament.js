@@ -170,6 +170,57 @@
       },
     },
     {
+      // Anycubic (Shopify). Each color is a radio input whose value attribute
+      // contains both the name and hex: e.g. "White (#EFF0F1)".
+      store: "anycubic",
+      hosts: ["store.anycubic.com"],
+      pathPattern: /^\/products\/[^/]+/i,
+      readVariant: () => {
+        const checked = document.querySelector(
+          'input[type="radio"][name="Color"]:checked, ' +
+          'input[type="radio"][name*="color" i]:checked'
+        );
+        if (!checked) return { name: "", hex: "" };
+        // value format: "White (#EFF0F1)" or "Black (#212721)"
+        const raw = checked.value || "";
+        const hexMatch = raw.match(/#([0-9A-Fa-f]{6})/);
+        const hex = hexMatch ? "#" + hexMatch[1].toLowerCase() : "";
+        // Strip the parenthesised hex to get the clean color name
+        const name = raw.replace(/\s*\(#[0-9A-Fa-f]{6}\)\s*/i, "").trim();
+        return { name, hex };
+      },
+    },
+    {
+      // MatterHackers. Each color is its own URL (/store/l/{slug}/sk/{SKU}).
+      // The color name lives in the page title — let the server extract it.
+      store: "matterhackers",
+      hosts: ["www.matterhackers.com", "matterhackers.com"],
+      pathPattern: /^\/store\/l\//i,
+      readVariant: () => ({ name: "", hex: "" }),
+    },
+    {
+      // Amazon. Selected color name shown in
+      // #inline-twister-expanded-dimension-text-color_name. No hex available.
+      store: "amazon",
+      hosts: ["www.amazon.com", "amazon.com"],
+      pathPattern: /\/dp\/[A-Z0-9]{10}|\/gp\/product\/[A-Z0-9]{10}/i,
+      readVariant: () => {
+        // Primary: the inline twister selected-value span
+        const el = document.getElementById("inline-twister-expanded-dimension-text-color_name");
+        if (el) {
+          const name = (el.textContent || "").trim();
+          if (name) return { name, hex: "" };
+        }
+        // Fallback: aria-label on the dimension heading "Selected Color is X."
+        const heading = document.querySelector("[aria-label*='Selected Color']");
+        if (heading) {
+          const m = (heading.getAttribute("aria-label") || "").match(/Selected Color is ([^.]+)\./i);
+          if (m) return { name: m[1].trim(), hex: "" };
+        }
+        return { name: "", hex: "" };
+      },
+    },
+    {
       store: "polymaker",
       hosts: ["us.polymaker.com", "polymaker.com", "shop.polymaker.com"],
       // Shopify storefronts use /products/<slug> for product pages.
