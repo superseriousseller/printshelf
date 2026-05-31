@@ -77,6 +77,11 @@ class User(Base):
     # Email verification
     email_verified = Column(Boolean, default=False, nullable=False, server_default=text('false'))
 
+    # Notification preferences
+    notify_follow = Column(Boolean, default=True, nullable=False, server_default=text('true'))
+    notify_feed = Column(Boolean, default=True, nullable=False, server_default=text('true'))
+    unsubscribe_token = Column(String(32), nullable=True)
+
     # Chrome extension auth — regeneratable from settings
     api_key = Column(String(64), unique=True, nullable=False, index=True)
 

@@ -74,6 +74,17 @@
             <input type="password" name="new_password_confirm" autocomplete="new-password">
         </label>
     </fieldset>
+    <fieldset class="dash-section" id="notifications">
+        <legend>Email notifications</legend>
+        <label class="checkbox-label">
+            <input type="checkbox" name="notify_follow" value="1" {% if user.notify_follow %}checked{% endif %}>
+            Email me when someone follows me
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" name="notify_feed" value="1" {% if user.notify_feed %}checked{% endif %}>
+            Email me when someone I follow logs a new print
+        </label>
+    </fieldset>
     <div class="form-actions">
         <button type="submit" class="btn-primary">Save changes</button>
         <a href="/@{{ user.username }}" target="_blank">View public profile ↗</a>

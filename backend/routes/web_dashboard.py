@@ -30,6 +30,7 @@ from models import (
     User,
     get_db,
 )
+from email_service import send_feed_notification
 from import_service import ImportError_, extract as extract_url
 from filament_import_service import extract as extract_filament_url
 from affiliate import apply_affiliate
@@ -806,6 +807,20 @@ async def create_print(
     )
     db.add(p)
     db.commit()
+
+    # Notify followers when a public non-queued print is logged
+    if p.is_public and not p.queued:
+        followers = (
+            db.query(User)
+            .join(Follow, Follow.follower_id == User.id)
+            .filter(Follow.following_id == user.id, User.notify_feed == True, User.unsubscribe_token != None)  # noqa: E712
+            .all()
+        )
+        print_url = f"{os.environ.get('APP_URL', 'https://printshelf.app')}/@{user.username}/prints/{p.id}"
+        display = user.display_name or user.username
+        for follower in followers:
+            send_feed_notification(follower.email, user.username, display, p.title, print_url, follower.unsubscribe_token)
+
     target = "/dashboard/prints?queued=true" if p.queued else "/dashboard/prints"
     return RedirectResponse(target, status_code=303)
 
@@ -1091,6 +1106,8 @@ async def save_account_settings(
     current_password: str = Form(""),
     new_password: str = Form(""),
     new_password_confirm: str = Form(""),
+    notify_follow: str = Form(""),
+    notify_feed: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -1157,6 +1174,8 @@ async def save_account_settings(
     user.bio = bio or None
     user.avatar_url = avatar_url or None
     user.socials = {k: v for k, v in resolved_socials.items() if v} or None
+    user.notify_follow = bool(notify_follow)
+    user.notify_feed = bool(notify_feed)
     if new_password_hash:
         user.password_hash = new_password_hash
     db.commit()

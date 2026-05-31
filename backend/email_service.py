@@ -65,3 +65,61 @@ border-radius:6px;text-decoration:none;display:inline-block;">Verify email</a></
     except Exception:
         logger.exception("Failed to send verification email to %s", to_email)
         return False
+
+
+def send_follow_notification(to_email: str, follower_username: str, follower_display: str, unsubscribe_token: str) -> bool:
+    """Notify a user that someone followed them."""
+    if not _API_KEY:
+        logger.warning("RESEND_API_KEY not set — skipping follow notification to %s", to_email)
+        return False
+    try:
+        import resend
+        resend.api_key = _API_KEY
+        profile_url = f"{_APP_URL}/@{follower_username}"
+        unsub_url = f"{_APP_URL}/unsubscribe?token={unsubscribe_token}&type=follow"
+        resend.Emails.send({
+            "from": _FROM,
+            "to": [to_email],
+            "subject": f"{follower_display} started following you on PrintShelf",
+            "html": f"""
+<p><a href="{profile_url}">@{follower_username}</a> is now following you on PrintShelf.</p>
+<p><a href="{profile_url}" style="background:#6c63ff;color:#fff;padding:10px 20px;
+border-radius:6px;text-decoration:none;display:inline-block;">View their profile</a></p>
+<p style="color:#888;font-size:12px;margin-top:24px;">
+  <a href="{unsub_url}" style="color:#888;">Unsubscribe from follow notifications</a>
+</p>
+""",
+        })
+        return True
+    except Exception:
+        logger.exception("Failed to send follow notification to %s", to_email)
+        return False
+
+
+def send_feed_notification(to_email: str, printer_username: str, printer_display: str, print_title: str, print_url: str, unsubscribe_token: str) -> bool:
+    """Notify a follower that someone they follow logged a new print."""
+    if not _API_KEY:
+        logger.warning("RESEND_API_KEY not set — skipping feed notification to %s", to_email)
+        return False
+    try:
+        import resend
+        resend.api_key = _API_KEY
+        unsub_url = f"{_APP_URL}/unsubscribe?token={unsubscribe_token}&type=feed"
+        resend.Emails.send({
+            "from": _FROM,
+            "to": [to_email],
+            "subject": f"{printer_display} logged a new print on PrintShelf",
+            "html": f"""
+<p><a href="{_APP_URL}/@{printer_username}">@{printer_username}</a> just logged a new print:
+<strong>{print_title}</strong></p>
+<p><a href="{print_url}" style="background:#ff6a3d;color:#fff;padding:10px 20px;
+border-radius:6px;text-decoration:none;display:inline-block;">View print</a></p>
+<p style="color:#888;font-size:12px;margin-top:24px;">
+  <a href="{unsub_url}" style="color:#888;">Unsubscribe from feed notifications</a>
+</p>
+""",
+        })
+        return True
+    except Exception:
+        logger.exception("Failed to send feed notification to %s", to_email)
+        return False
