@@ -16,6 +16,13 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the fix
 
 ### ✅ Done (recent)
+- Email verification (2026-05-30) — `email_verified` column + `EmailVerificationToken` model. New signups get a 24h link; unverified users see a dashboard banner with rate-limited resend (3/5min). Pre-migration users grandfathered as verified. PostgreSQL-safe migration. On prod (1d02e7e).
+- Follow/feed (2026-05-29) — follows table, follow/unfollow buttons on profiles, follower/following counts, /dashboard/feed with prints from followed users, Feed sidebar link.
+- Print settings metadata — layer height, infill %, supports, print time, filament used g. On prod.
+- Search — /search finds users + public prints by title/designer. Nav search bar. On prod.
+- "Others with this filament/printer" discovery — print detail pages show cross-user related prints. On prod.
+- Social links + printers on public profiles. On prod.
+- `/@username` URL migration (301 redirects from `/u/`). On prod.
 - Chrome Web Store submission (v0.3.5, 2026-05-29) — trimmed manifest `description` to 119 chars (132 limit), replaced placeholder icons with real 16/48/128 PNGs, declared single-purpose + permission justifications + data disclosure (Authentication info + Website content), No remote code, privacy policy at /privacy. Paste-ready listing copy lives in `chrome-extension/PUBLISH.md`.
 - Filament Chrome extension button (Polymaker, v0.3.4) — one-click "Add filament" on `/products/*` pages. Reads selected-variant color name + hex from the DOM (Polymaker packs both into the swatch label's textContent); falls back to "HEX Code: #…" in the product description for the PolyLite line. Server-side `POST /api/filaments/import-url` provides brand/material/price. Status defaults to `want`.
 - Delete-confirm modal — replaced native `confirm()` across filaments / printers / prints lists with a centered modal overlay (Cam's parallel work).
@@ -129,15 +136,18 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-05-29 (session 7):**
-- `/@username` URL migration — 301 redirects from `/u/` keep old links working. All on prod.
-- Social links on profiles — MakerWorld, Printables, Instagram, TikTok, YouTube, X, Thingiverse. Enter handle or full URL; pill badges on `/@username`. On prod.
-- Printers on public profile — machine chips (brand + model) below stats row. On prod.
-- "Others with this filament/printer" discovery — print detail pages show up to 6 cross-user related prints by filament brand+material and printer brand+model. On prod.
+**Completed 2026-05-30 (session 11):**
+- Email verification — `email_verified` column, `EmailVerificationToken` model, dashboard banner with resend (rate-limited 3/5min), `/verify-email` route, grandfathered existing users. PostgreSQL boolean fix (sa.text('false') + TRUE/FALSE literals). 9/9 QA pass. On prod (1d02e7e).
+
+**Completed 2026-05-30 (session 10):**
+- Avatar upload, password change, "Add to my queue" button, open redirect fix, per-IP rate limiting, enforce_print_limit bug fix. On prod (726c5d5).
+- Admin console, affiliate click tracking, follow/feed, username case-insensitivity — on prod (session 9).
 
 **In progress:**
 - Chrome extension v0.3.5 **pending Web Store review** — watch for approval or policy-cited rejection email.
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate signups pending — env vars to set on Railway prod when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
+- **Set `ADMIN_USERNAME=PluggedIn3d` on Railway prod** (verified on staging)
+- **Set `RESEND_API_KEY` on Railway prod** (needed for verification emails to actually send)
 
-**Immediate next step:** Print settings metadata (layer height, infill %, supports) OR Extension Phases 3+ (Anycubic → Shopify/easy, MatterHackers → legacy CMS/medium, Bambu → SPA/MutationObserver, Amazon → hardest) OR affiliate signups + click-test `/buy` links. Reddit launch post when `/@PluggedIn3d` looks post-worthy.
+**Immediate next step:** Notifications (new follower, new feed posts) OR Reddit launch post when `/@PluggedIn3d` looks post-worthy.
