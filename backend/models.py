@@ -9,7 +9,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     create_engine, Column, Integer, String, Float, Boolean,
-    DateTime, Date, Text, ForeignKey, Index, JSON,
+    DateTime, Date, Text, ForeignKey, Index, JSON, text,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -73,6 +73,9 @@ class User(Base):
     tier = Column(String(20), default="free", nullable=False)
     stripe_customer_id = Column(String(100), nullable=True, unique=True, index=True)
     stripe_subscription_id = Column(String(100), nullable=True, index=True)
+
+    # Email verification
+    email_verified = Column(Boolean, default=False, nullable=False, server_default=text('false'))
 
     # Chrome extension auth — regeneratable from settings
     api_key = Column(String(64), unique=True, nullable=False, index=True)
@@ -307,6 +310,21 @@ Index("ix_community_filaments_brand_material", CommunityFilament.brand, Communit
 
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+
+    user = relationship("User")
+
+
+# ============== Email Verification Token ==============
+
+class EmailVerificationToken(Base):
+    __tablename__ = "email_verification_tokens"
 
     id = Column(Integer, primary_key=True, index=True)
     token = Column(String(64), unique=True, nullable=False, index=True)

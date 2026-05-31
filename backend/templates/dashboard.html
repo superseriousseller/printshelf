@@ -3,6 +3,7 @@
 {% block title %}Dashboard — PrintShelf{% endblock %}
 
 {% block dash %}
+{% if resend_notice %}<p class="notice notice-ok">{{ resend_notice }}</p>{% endif %}
 <header class="dash-header">
     <h1>Welcome back, {{ user.display_name or user.username }}</h1>
     <p class="dash-subtitle">Your public profile lives at <a href="/@{{ user.username }}">/@{{ user.username }}</a>.</p>

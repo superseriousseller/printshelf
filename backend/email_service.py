@@ -36,3 +36,32 @@ border-radius:6px;text-decoration:none;display:inline-block;">Reset password</a>
     except Exception:
         logger.exception("Failed to send password reset email to %s", to_email)
         return False
+
+
+def send_verification_email(to_email: str, token: str) -> bool:
+    """Send an email-verification link. Returns True on success, False on failure."""
+    if not _API_KEY:
+        verify_url = f"{_APP_URL}/verify-email?token={token}"
+        logger.warning("RESEND_API_KEY not set — verification link: %s", verify_url)
+        return False
+
+    try:
+        import resend
+        resend.api_key = _API_KEY
+        verify_url = f"{_APP_URL}/verify-email?token={token}"
+        resend.Emails.send({
+            "from": _FROM,
+            "to": [to_email],
+            "subject": "Verify your PrintShelf email",
+            "html": f"""
+<p>Thanks for joining PrintShelf! Tap the button below to verify your email address.</p>
+<p><a href="{verify_url}" style="background:#ff6a3d;color:#fff;padding:10px 20px;
+border-radius:6px;text-decoration:none;display:inline-block;">Verify email</a></p>
+<p>This link expires in 24 hours. If you didn't create an account, ignore this email.</p>
+<p style="color:#888;font-size:12px;">{verify_url}</p>
+""",
+        })
+        return True
+    except Exception:
+        logger.exception("Failed to send verification email to %s", to_email)
+        return False

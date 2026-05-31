@@ -188,6 +188,8 @@ a:hover { text-decoration: underline; }
 .notice-ok { background: #143a26; border: 1px solid #1f5c3a; color: #9be5b6; }
 .notice-warn { background: #4a3522; border: 1px solid #6b4d2f; color: #f0c08a; }
 .notice-error { background: #4a2222; border: 1px solid #7a3333; color: #f0a0a0; }
+.verify-banner { background: #2a2d1a; border: 1px solid #4a5020; color: #d4e08a; font-size: 0.875rem; padding: 10px 14px; border-radius: 8px; margin-bottom: 18px; }
+.verify-banner strong { color: #e8f0a0; }
 
 /* ── Auth notice (success/info, used on login after password reset) ── */
 .auth-notice { background: #143a26; border: 1px solid #1f5c3a; color: #9be5b6; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 16px; }
