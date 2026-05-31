@@ -84,7 +84,91 @@
     return { name: stripped, hex };
   }
 
+  // Converts an rgb(r,g,b) string to lowercase #rrggbb hex. Used to normalise
+  // inline style background-color values from computed styles.
+  function rgbToHex(rgb) {
+    const m = (rgb || "").match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
+    if (!m) return "";
+    return "#" + [m[1], m[2], m[3]].map((n) => parseInt(n, 10).toString(16).padStart(2, "0")).join("");
+  }
+
+  // Bambu product descriptions contain a <table class="pct_tb"> with one row per
+  // color variant: color name | hex code | swatch cell. Parse it into a
+  // lowercase-hex → canonical-name map so we can identify any selected swatch color.
+  function buildBambuColorMap() {
+    const map = {};
+    for (const row of document.querySelectorAll("table.pct_tb tr")) {
+      const cells = row.querySelectorAll("td");
+      if (cells.length < 2) continue;
+      const name = (cells[0].textContent || "").trim();
+      const hexRaw = (cells[1].textContent || "").trim();
+      const m = hexRaw.match(/#[0-9A-Fa-f]{6}/);
+      if (name && m) map[m[0].toLowerCase()] = name;
+    }
+    return map;
+  }
+
   const STORES = [
+    {
+      store: "bambu",
+      hosts: ["us.store.bambulab.com", "eu.store.bambulab.com", "store.bambulab.com"],
+      pathPattern: /^\/products\/[^/]+/i,
+      readVariant: () => {
+        const colorMap = buildBambuColorMap();
+
+        // Walk candidate "selected swatch" elements from most to least specific.
+        // Bambu's Next.js store renders variants as styled buttons/divs; we read
+        // the background-color of whatever carries the active/selected state.
+        const SWATCH_SELECTORS = [
+          // Aria / data attributes set by their React components
+          "[aria-selected='true']",
+          "[aria-pressed='true']",
+          "[data-selected='true']",
+          "[data-active='true']",
+          // Common CSS-class patterns for active swatches
+          ".selected", ".is-selected", ".active", ".is-active",
+          ".sku--selected", ".sku-item--active", ".color--selected",
+          ".variant--active", ".product-option--selected",
+        ];
+        for (const sel of SWATCH_SELECTORS) {
+          for (const el of document.querySelectorAll(sel)) {
+            // Read inline style first (most reliable), then computed.
+            const inlineStyle = el.getAttribute("style") || "";
+            const inlineMatch = inlineStyle.match(/background(?:-color)?\s*:\s*(#[0-9A-Fa-f]{6}|rgb\([^)]+\))/i);
+            let hex = inlineMatch
+              ? (inlineMatch[1].startsWith("#") ? inlineMatch[1].toLowerCase() : rgbToHex(inlineMatch[1]))
+              : "";
+            if (!hex) {
+              const computed = window.getComputedStyle(el).backgroundColor;
+              hex = computed && computed !== "rgba(0, 0, 0, 0)" && computed !== "transparent"
+                ? rgbToHex(computed) : "";
+            }
+            if (hex && colorMap[hex]) return { name: colorMap[hex], hex };
+            if (hex) {
+              // Hex found but not in table — fall through to name-reading below
+              // but keep the hex so we can still return something.
+              const name = (el.getAttribute("aria-label") || el.getAttribute("title") || "").trim();
+              if (name) return { name, hex };
+            }
+          }
+        }
+
+        // No selected swatch found — try reading a "Color: <name>" text label that
+        // Bambu renders near the variant picker once a variant is selected.
+        const colorLabelPattern = /color\s*[:：]\s*(.+)/i;
+        for (const el of document.querySelectorAll("[class*='option'], [class*='variant'], [class*='color'], [class*='sku']")) {
+          const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+          const m = text.match(colorLabelPattern);
+          if (m && m[1].trim().length > 0 && m[1].trim().length < 60) {
+            const name = m[1].trim();
+            const hexEntry = Object.entries(colorMap).find(([, n]) => n.toLowerCase() === name.toLowerCase());
+            return { name, hex: hexEntry ? hexEntry[0] : "" };
+          }
+        }
+
+        return { name: "", hex: "" };
+      },
+    },
     {
       store: "polymaker",
       hosts: ["us.polymaker.com", "polymaker.com", "shop.polymaker.com"],
