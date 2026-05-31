@@ -330,6 +330,26 @@ def resend_verification(
     return RedirectResponse("/dashboard?resend=sent", status_code=303)
 
 
+# ---- Unsubscribe ----
+
+@router.get("/unsubscribe", response_class=HTMLResponse)
+def unsubscribe(
+    request: Request,
+    token: str = "",
+    type: str = "",
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.unsubscribe_token == token).first() if token else None
+    if not user or type not in ("follow", "feed"):
+        return templates.TemplateResponse(request, "unsubscribe.html", {"state": "invalid", "current_user": None})
+    if type == "follow":
+        user.notify_follow = False
+    else:
+        user.notify_feed = False
+    db.commit()
+    return templates.TemplateResponse(request, "unsubscribe.html", {"state": "success", "type": type, "current_user": None})
+
+
 # ---- Dashboard stub (real CRUD UI in Task #11) ----
 
 @router.get("/dashboard", response_class=HTMLResponse)

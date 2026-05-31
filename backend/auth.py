@@ -180,6 +180,7 @@ def create_user(
         display_name=(display_name or username_n).strip(),
         api_key=generate_api_key(),
         tier="free",
+        unsubscribe_token=secrets.token_hex(16),
     )
     db.add(user)
     db.commit()

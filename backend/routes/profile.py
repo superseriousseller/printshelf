@@ -15,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from auth import get_current_user_web_optional
+from email_service import send_follow_notification
 from models import Filament, Follow, Print, Printer, User, get_db
 
 router = APIRouter(tags=["profile"])
@@ -286,6 +287,13 @@ def follow_user(
         if not exists:
             db.add(Follow(follower_id=current_user.id, following_id=target.id))
             db.commit()
+            if target.notify_follow and target.email and target.unsubscribe_token:
+                send_follow_notification(
+                    target.email,
+                    current_user.username,
+                    current_user.display_name or current_user.username,
+                    target.unsubscribe_token,
+                )
     return RedirectResponse(url=f"/@{username}", status_code=303)
 
 
