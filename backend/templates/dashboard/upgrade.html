@@ -1,0 +1,43 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = "upgrade" %}
+{% block title %}Upgrade to Pro — PrintShelf{% endblock %}
+
+{% block dash %}
+<header class="dash-header">
+    <h1>Upgrade to Pro</h1>
+</header>
+
+<div class="upgrade-wrap">
+    <p class="upgrade-pitch">You've hit the free-tier limit. Go Pro for unlimited prints and filaments.</p>
+
+    <div class="upgrade-plans">
+        <div class="upgrade-plan">
+            <div class="plan-name">Monthly</div>
+            <div class="plan-price"><span class="plan-amount">${{ monthly_price }}</span><span class="plan-period">/month</span></div>
+            <form method="post" action="/dashboard/billing/checkout">
+                <input type="hidden" name="plan" value="monthly">
+                <button type="submit" class="btn-secondary plan-btn">Subscribe monthly</button>
+            </form>
+        </div>
+        <div class="upgrade-plan upgrade-plan--featured">
+            <div class="plan-badge">Best value</div>
+            <div class="plan-name">Annual</div>
+            <div class="plan-price"><span class="plan-amount">${{ annual_price }}</span><span class="plan-period">/year</span></div>
+            <div class="plan-equiv">${{ annual_monthly_equiv }}/month — save 35%</div>
+            <form method="post" action="/dashboard/billing/checkout">
+                <input type="hidden" name="plan" value="annual">
+                <button type="submit" class="btn-primary plan-btn">Subscribe annually</button>
+            </form>
+        </div>
+    </div>
+
+    <ul class="upgrade-features">
+        <li>✓ Unlimited prints</li>
+        <li>✓ Unlimited filaments</li>
+        <li>✓ Everything else — no other limits</li>
+        <li>✓ Cancel any time</li>
+    </ul>
+
+    <p class="upgrade-free-note">Free tier: {{ free_print_limit or 50 }} prints · 10 filaments · always available.</p>
+</div>
+{% endblock %}

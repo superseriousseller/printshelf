@@ -1,0 +1,15 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = "upgrade" %}
+{% block title %}Welcome to Pro — PrintShelf{% endblock %}
+
+{% block dash %}
+<div class="auth-wrap" style="margin-top:48px">
+    <h1>You're Pro now 🎉</h1>
+    <p>Unlimited prints and filaments — no more limits.</p>
+    {% if debug_error %}
+    <p class="notice notice-error" style="text-align:left;margin-top:16px"><strong>Upgrade error (debug):</strong> {{ debug_error }}<br>Your payment went through — contact support if your account doesn't show Pro within a few minutes.</p>
+    {% endif %}
+    <a href="/dashboard/filaments/new" class="btn-primary">Add a filament →</a>
+    <a href="/dashboard" class="btn-secondary" style="margin-left:8px">Dashboard</a>
+</div>
+{% endblock %}

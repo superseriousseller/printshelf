@@ -136,6 +136,9 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
+**Completed 2026-05-31 (session 12):**
+- Email notifications — `notify_follow` + `notify_feed` prefs (default on), `unsubscribe_token` on User. Follow triggers email to followed user; new public print triggers email to all followers. One-click unsubscribe (/unsubscribe?token=&type=). Toggles on Account settings. 14/14 QA pass with real email delivery confirmed. On prod (33ff5c2).
+
 **Completed 2026-05-30 (session 11):**
 - Email verification — `email_verified` column, `EmailVerificationToken` model, dashboard banner with resend (rate-limited 3/5min), `/verify-email` route, grandfathered existing users. PostgreSQL boolean fix (sa.text('false') + TRUE/FALSE literals). 9/9 QA pass. On prod (1d02e7e).
 
@@ -148,6 +151,4 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate signups pending — env vars to set on Railway prod when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
 - **Set `ADMIN_USERNAME=PluggedIn3d` on Railway prod** (verified on staging)
-- **Set `RESEND_API_KEY` on Railway prod** (needed for verification emails to actually send)
-
-**Immediate next step:** Notifications (new follower, new feed posts) OR Reddit launch post when `/@PluggedIn3d` looks post-worthy.
+**Immediate next step:** Reddit launch post when `/@PluggedIn3d` looks post-worthy, OR Stripe/paid tier.
