@@ -12,30 +12,15 @@
 
 ### 📋 Todo
 - Reddit launch post — after /@cam looks post-worthy
-- Stripe / paid tier — free-tier cap logging in place; ship when cap-hits justify it
+- **Stripe prod go-live** — set 4 env vars on Railway prod (see Operational Gotchas below)
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the fix
 
 ### ✅ Done (recent)
-- Email verification (2026-05-30) — `email_verified` column + `EmailVerificationToken` model. New signups get a 24h link; unverified users see a dashboard banner with rate-limited resend (3/5min). Pre-migration users grandfathered as verified. PostgreSQL-safe migration. On prod (1d02e7e).
-- Follow/feed (2026-05-29) — follows table, follow/unfollow buttons on profiles, follower/following counts, /dashboard/feed with prints from followed users, Feed sidebar link.
-- Print settings metadata — layer height, infill %, supports, print time, filament used g. On prod.
-- Search — /search finds users + public prints by title/designer. Nav search bar. On prod.
-- "Others with this filament/printer" discovery — print detail pages show cross-user related prints. On prod.
-- Social links + printers on public profiles. On prod.
-- `/@username` URL migration (301 redirects from `/u/`). On prod.
-- Chrome Web Store submission (v0.3.5, 2026-05-29) — trimmed manifest `description` to 119 chars (132 limit), replaced placeholder icons with real 16/48/128 PNGs, declared single-purpose + permission justifications + data disclosure (Authentication info + Website content), No remote code, privacy policy at /privacy. Paste-ready listing copy lives in `chrome-extension/PUBLISH.md`.
-- Filament Chrome extension button (Polymaker, v0.3.4) — one-click "Add filament" on `/products/*` pages. Reads selected-variant color name + hex from the DOM (Polymaker packs both into the swatch label's textContent); falls back to "HEX Code: #…" in the product description for the PolyLite line. Server-side `POST /api/filaments/import-url` provides brand/material/price. Status defaults to `want`.
-- Delete-confirm modal — replaced native `confirm()` across filaments / printers / prints lists with a centered modal overlay (Cam's parallel work).
-- Filament URL import (Amazon, Bambu, Polymaker, MatterHackers, Anycubic) — paste a product URL, pre-fills brand/material/color/price from OG tags + JSON-LD
-- Affiliate redirector — `/dashboard/filaments/{id}/buy` injects per-store tag at click-time; bare URLs in DB
-- Hard-error vs soft-warn notice styling (red `notice-error` vs yellow `notice-warn`)
-- Search + sort on prints list (title search, sort by newest/oldest/title/rating/date)
-- Sidebar counts — live Prints / Queue / Filaments badges in nav
-- Overview dashboard stats row (prints, queued, success %, filaments, printers)
-- Public profile cards — filament material chips with color swatches
-- Filament form color picker — native input[type=color] synced with hex field
-- Print detail page, clickable cards/rows, Printables title fix, thumbnail field hidden
-- Chrome extension v0.2.0 title bugs fixed (JSON-LD preferred, doubled attribution stripped)
+- Stripe Pro billing (2026-06-01) — $4.99/mo or $39/yr. Upgrade page, Checkout, Customer Portal, webhook handler. Free-tier cap (50 prints / 10 filaments) enforces 402 → /dashboard/upgrade. Sync upgrade on success page via httpx (Railway webhook delivery unreliable). 8/8 QA pass. On prod (62d914c).
+- Chrome extension v0.3.6/v0.3.7 (2026-05-31) — added Bambu Lab, Anycubic, MatterHackers, Amazon filament buttons.
+- Email notifications (2026-05-31) — notify_follow + notify_feed prefs, unsubscribe_token, one-click unsubscribe. On prod (33ff5c2).
+- Email verification (2026-05-30) — email_verified column, EmailVerificationToken model, dashboard banner with resend. On prod (1d02e7e).
+- Follow/feed, print settings metadata, search, "others with this filament/printer", social links, /@username URLs, affiliate redirector, filament URL import — all on prod (sessions 9–10).
 
 ### 🔧 Tech Debt
 - None flagged
@@ -74,6 +59,13 @@ chrome-extension/          # separate project — do not suggest changes here as
 - **Pydantic EmailStr** rejects `.test`/`.example`/`.localhost` — use `@printshelf.app` for test accounts.
 - **Print form is multipart/form-data** — all `/dashboard/prints` POSTs must use multipart.
 - **Title not HTML5-required** — server auto-imports from `source_url` if blank; 400 if neither present.
+- **Stripe prod go-live** — set these 4 env vars on Railway prod (Stripe live-mode Dashboard):
+  - `STRIPE_SECRET_KEY` = `sk_live_...`
+  - `STRIPE_WEBHOOK_SECRET` = `whsec_...` (from Webhooks → printshelf.app/stripe/webhook endpoint)
+  - `STRIPE_PRICE_MONTHLY` = `price_live_...` ($4.99/mo product)
+  - `STRIPE_PRICE_ANNUAL` = `price_live_...` ($39/yr product)
+  - Note: Railway webhook delivery is unreliable — sync success-page upgrade is the primary path; webhook handles lifecycle events only.
+- **Stripe webhook** — Railway staging webhook delivery unreliable (pending_webhooks=1, no inbound requests). Worked around via httpx session retrieve on /dashboard/billing/success. Webhook still handles subscription cancellations/renewals if it fires.
 
 ## Conventions
 - JSON API: camelCase keys. Auth: JWT or API key on same Bearer header. Lists: `{items,total,limit,offset}`.
@@ -136,19 +128,19 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
+**Completed 2026-06-01 (session 13):**
+- Stripe Pro billing — $4.99/mo or $39/yr. Upgrade page, Checkout, Customer Portal, webhook. Free-tier caps redirect to /dashboard/upgrade. Sync upgrade via httpx on success page (bypasses Railway webhook delivery issue). 8/8 QA pass (build c5b35e0). On prod (62d914c).
+
 **Completed 2026-05-31 (session 12):**
-- Email notifications — `notify_follow` + `notify_feed` prefs (default on), `unsubscribe_token` on User. Follow triggers email to followed user; new public print triggers email to all followers. One-click unsubscribe (/unsubscribe?token=&type=). Toggles on Account settings. 14/14 QA pass with real email delivery confirmed. On prod (33ff5c2).
-
-**Completed 2026-05-30 (session 11):**
-- Email verification — `email_verified` column, `EmailVerificationToken` model, dashboard banner with resend (rate-limited 3/5min), `/verify-email` route, grandfathered existing users. PostgreSQL boolean fix (sa.text('false') + TRUE/FALSE literals). 9/9 QA pass. On prod (1d02e7e).
-
-**Completed 2026-05-30 (session 10):**
-- Avatar upload, password change, "Add to my queue" button, open redirect fix, per-IP rate limiting, enforce_print_limit bug fix. On prod (726c5d5).
-- Admin console, affiliate click tracking, follow/feed, username case-insensitivity — on prod (session 9).
+- Email notifications — notify_follow + notify_feed prefs, unsubscribe_token, one-click unsubscribe. 14/14 QA pass. On prod (33ff5c2).
 
 **In progress:**
 - Chrome extension v0.3.5 **pending Web Store review** — watch for approval or policy-cited rejection email.
+- Chrome extension v0.3.6/v0.3.7 (Bambu, Anycubic, MatterHackers, Amazon) — code merged to main, needs re-submission to Web Store.
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate signups pending — env vars to set on Railway prod when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
-- **Set `ADMIN_USERNAME=PluggedIn3d` on Railway prod** (verified on staging)
-**Immediate next step:** Reddit launch post when `/@PluggedIn3d` looks post-worthy, OR Stripe/paid tier.
+
+**Immediate next steps (in order):**
+1. Set Stripe live-mode env vars on Railway prod (see Operational Gotchas) — billing is live on prod code but inactive until keys are set
+2. Set `ADMIN_USERNAME=PluggedIn3d` on Railway prod (pending since session 10)
+3. Reddit launch post when `/@PluggedIn3d` looks post-worthy
