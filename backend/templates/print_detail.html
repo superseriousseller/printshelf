@@ -57,7 +57,8 @@
             {% endif %}
 
             {% if printer %}
-            <p class="detail-printer">Printer: {{ printer.name }}</p>
+            {% set make_model = ((printer.brand or "") + " " + (printer.model or "")).strip() %}
+            <p class="detail-printer">Printer: {% if make_model %}{{ make_model }}{% if printer.name %} ({{ printer.name }}){% endif %}{% else %}{{ printer.name }}{% endif %}</p>
             {% endif %}
 
             {% if filaments %}

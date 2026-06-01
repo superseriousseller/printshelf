@@ -7,6 +7,7 @@ are wired in subsequent tasks.
 import os
 from datetime import date
 
+import httpx
 import logging
 from typing import Optional
 
@@ -1152,6 +1153,21 @@ async def save_account_settings(
             errors.extend(upload_errors)
         elif uploaded_url:
             avatar_url = uploaded_url
+
+    # Mirror external avatar URLs to our CDN — external URLs (e.g. Google/Discord)
+    # change or expire, causing the avatar to disappear. Re-host on our storage once.
+    elif avatar_url and not avatar_url.startswith(("https://cdn.printshelf.app", "/uploads/")):
+        try:
+            resp = httpx.get(avatar_url, follow_redirects=True, timeout=10,
+                             headers={"User-Agent": "PrintShelf/1.0"})
+            resp.raise_for_status()
+            raw = resp.content
+            if 0 < len(raw) <= MAX_UPLOAD_BYTES:
+                mirrored = upload_image(raw, prefix="av")
+                _log.info("avatar mirrored user_id=%s -> %s", user.id, mirrored)
+                avatar_url = mirrored
+        except Exception as exc:
+            _log.warning("avatar mirror failed user_id=%s url=%s err=%s", user.id, avatar_url, exc)
 
     # Password change — only if any password field is filled
     new_password_hash = None
