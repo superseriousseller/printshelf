@@ -98,7 +98,26 @@ def billing_success(
     current_user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
-    # Webhook handles the actual tier upgrade; this is just the thank-you page.
+    # Primary upgrade path: verify payment status synchronously so the user
+    # is upgraded immediately, independent of webhook delivery.
+    if current_user and session_id:
+        try:
+            s = _stripe()
+            cs = s.checkout.Session.retrieve(session_id)
+            if cs.get("payment_status") == "paid" and cs.get("status") == "complete":
+                user_id = int((cs.get("metadata") or {}).get("user_id", 0))
+                if user_id == current_user.id and current_user.tier != "pro":
+                    current_user.tier = "pro"
+                    if cs.get("customer"):
+                        current_user.stripe_customer_id = cs.get("customer")
+                    if cs.get("subscription"):
+                        current_user.stripe_subscription_id = cs.get("subscription")
+                    db.commit()
+                    db.refresh(current_user)
+                    _log.info("upgraded user_id=%s to pro via success page (session=%s)", user_id, session_id)
+        except Exception as exc:
+            _log.warning("billing_success stripe retrieve failed session=%s err=%s", session_id, exc)
+
     return templates.TemplateResponse(request, "dashboard/upgrade_success.html", {
         "current_user": current_user,
         "user": current_user,
