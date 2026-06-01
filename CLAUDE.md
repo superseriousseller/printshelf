@@ -135,8 +135,7 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 - Email notifications — notify_follow + notify_feed prefs, unsubscribe_token, one-click unsubscribe. 14/14 QA pass. On prod (33ff5c2).
 
 **In progress:**
-- Chrome extension v0.3.5 **pending Web Store review** — watch for approval or policy-cited rejection email.
-- Chrome extension v0.3.6/v0.3.7 (Bambu, Anycubic, MatterHackers, Amazon) — code merged to main, needs re-submission to Web Store.
+- Chrome extension **v0.3.7 live** on Web Store — Polymaker, Bambu, Anycubic, MatterHackers, Amazon filament buttons. QA not yet run on Bambu/Anycubic/MatterHackers/Amazon stores (only Polymaker was formally QA'd).
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate signups pending — env vars to set on Railway prod when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
 
