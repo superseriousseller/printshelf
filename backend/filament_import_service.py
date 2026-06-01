@@ -168,6 +168,37 @@ def _extract_brand_from_jsonld(soup: BeautifulSoup) -> Optional[str]:
     return None
 
 
+def _extract_amazon_brand(soup: BeautifulSoup, title: str) -> Optional[str]:
+    """Amazon doesn't reliably include brand in JSON-LD. Try DOM sources."""
+    # 1. bylineInfo element — "Visit the SUNLU Store" or "Brand: SUNLU"
+    byline = soup.find(id="bylineInfo")
+    if byline:
+        text = byline.get_text(" ", strip=True)
+        m = re.search(r"Visit the (.+?) Store", text, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+        m = re.search(r"Brand[:\s]+([A-Za-z0-9][A-Za-z0-9\s&+'\-]{0,30})", text, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+
+    # 2. Product details table (desktop layout uses th/td pairs)
+    for row in soup.find_all("tr"):
+        cells = row.find_all(["th", "td"])
+        if len(cells) >= 2 and "brand" in cells[0].get_text(strip=True).lower():
+            val = cells[1].get_text(strip=True)
+            if val and len(val) < 50:
+                return val
+
+    # 3. Heuristic: first token of the title if it looks like a brand word
+    #    (all-caps acronym like "SUNLU", "HATCHBOX", or a short CamelCase word)
+    if title:
+        first = title.split()[0] if title.split() else ""
+        if first and re.match(r'^[A-Z]{2,}$|^[A-Z][a-z]+[A-Z]', first):
+            return first
+
+    return None
+
+
 def _extract_price_from_jsonld(soup: BeautifulSoup) -> Optional[float]:
     for script in soup.find_all("script", type="application/ld+json"):
         try:
@@ -247,7 +278,10 @@ def extract(url: str) -> dict:
     # Strip noise like " | Polymaker", " - Bambu Lab US Store"
     title = re.split(r"\s+[|–\-]\s+", title)[0].strip()
 
-    brand = _extract_brand_from_jsonld(soup) or _DEFAULT_BRAND.get(store)
+    brand = _extract_brand_from_jsonld(soup)
+    if not brand and store == "amazon":
+        brand = _extract_amazon_brand(soup, title)
+    brand = brand or _DEFAULT_BRAND.get(store)
     material = _detect_material(title) or _detect_material(_og(soup, "description") or "")
     color = _detect_color(title, material, brand)
     price = _price_from_og(soup) or _extract_price_from_jsonld(soup)
