@@ -128,6 +128,13 @@ def _normalize_hex(value: Optional[str]) -> Optional[str]:
     return v if v.startswith("#") else f"#{v}"
 
 
+# ============== Queue redirect ==============
+
+@router.get("/queue")
+def queue_redirect():
+    return RedirectResponse(url="/dashboard/prints?queued=true", status_code=301)
+
+
 # ============== Printers ==============
 
 @router.get("/printers", response_class=HTMLResponse)

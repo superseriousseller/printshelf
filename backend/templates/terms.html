@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Terms of Service — PrintShelf{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="PrintShelf Terms of Service — the rules for using printshelf.app.">
+    <meta name="robots" content="index,follow">
+{% endblock %}
+
+{% block content %}
+<article class="legal-page">
+    <h1>Terms of Service</h1>
+    <p class="legal-updated">Last updated: 2026-06-01</p>
+
+    <p>
+        PrintShelf (printshelf.app) is a 3D print tracking service operated by
+        Super Serious LLC. By creating an account or using the service, you agree
+        to these terms. Questions: <a href="mailto:hello@printshelf.app">hello@printshelf.app</a>.
+    </p>
+
+    <h2>Your account</h2>
+    <ul>
+        <li>You must be at least 13 years old to use PrintShelf.</li>
+        <li>You are responsible for keeping your password and API key secure. Don't share them.</li>
+        <li>One account per person. Don't impersonate others or register usernames for the purpose of squatting.</li>
+    </ul>
+
+    <h2>Your content</h2>
+    <ul>
+        <li>You own the photos and notes you upload. By uploading them you grant PrintShelf a license to store, display, and serve them as part of the service (including on your public profile).</li>
+        <li>Don't upload content you don't have the right to share — copyrighted images, private information about other people, etc.</li>
+        <li>Don't use PrintShelf to spam, scrape at scale, or probe for vulnerabilities.</li>
+    </ul>
+
+    <h2>Free tier &amp; Pro billing</h2>
+    <ul>
+        <li>Free accounts are limited to 50 prints and 10 filaments. You can view and edit existing content at any time; saving new items is blocked when you're at the cap.</li>
+        <li>Pro subscriptions are billed monthly ($4.99/mo) or annually ($39/yr) via Stripe. Upgrades take effect immediately.</li>
+        <li>You can cancel your Pro subscription at any time from your Account page. Your Pro features remain active until the end of the current billing period.</li>
+        <li>We don't offer refunds for partial billing periods, but if something goes wrong on our end, email us and we'll make it right.</li>
+    </ul>
+
+    <h2>Availability</h2>
+    <p>
+        PrintShelf is a solo-operated indie product. We aim for high availability but
+        can't promise a specific uptime SLA. We may change, pause, or discontinue
+        features with reasonable notice. If we ever shut down entirely, we'll give
+        you at least 30 days' notice and a way to export your data.
+    </p>
+
+    <h2>Limitation of liability</h2>
+    <p>
+        PrintShelf is provided as-is. We're not liable for lost data, lost prints,
+        or anything else that goes wrong beyond our reasonable control. Our liability
+        to you is capped at the amount you paid us in the 12 months before the event.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+        We'll update the "Last updated" date if we change these terms materially and
+        post a notice in the dashboard. Continued use after that date means you accept
+        the new terms.
+    </p>
+
+    <h2>Governing law</h2>
+    <p>These terms are governed by the laws of the State of Nebraska, USA.</p>
+
+    <h2>Contact</h2>
+    <p>Super Serious LLC · <a href="mailto:hello@printshelf.app">hello@printshelf.app</a></p>
+</article>
+{% endblock %}

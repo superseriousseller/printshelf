@@ -21,11 +21,12 @@ def upgrade() -> None:
     op.add_column('users', sa.Column('notify_follow', sa.Boolean(), nullable=False, server_default=sa.text('true')))
     op.add_column('users', sa.Column('notify_feed', sa.Boolean(), nullable=False, server_default=sa.text('true')))
     op.add_column('users', sa.Column('unsubscribe_token', sa.String(32), nullable=True))
-    # Backfill unsubscribe tokens for existing users
-    op.execute("""
-        UPDATE users SET unsubscribe_token = md5(random()::text || id::text)
-        WHERE unsubscribe_token IS NULL
-    """)
+    # Backfill unsubscribe tokens — dialect-aware (SQLite lacks md5/::text)
+    bind = op.get_bind()
+    if bind.dialect.name == 'postgresql':
+        op.execute("UPDATE users SET unsubscribe_token = md5(random()::text || id::text) WHERE unsubscribe_token IS NULL")
+    else:
+        op.execute("UPDATE users SET unsubscribe_token = lower(hex(randomblob(16))) WHERE unsubscribe_token IS NULL")
 
 
 def downgrade() -> None:

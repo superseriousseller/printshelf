@@ -14,7 +14,8 @@
         <form class="nav-search" method="get" action="/search">
             <input type="search" name="q" placeholder="Search…" value="{{ request.query_params.get('q', '') if request.url.path == '/search' else '' }}">
         </form>
-        <nav class="topnav">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">&#9776;</button>
+        <nav class="topnav" id="topnav">
             {% if current_user %}
                 <a href="/dashboard">Dashboard</a>
                 <a href="/@{{ current_user.username }}">My shelf</a>
@@ -30,6 +31,31 @@
     <main>{% block content %}{% endblock %}</main>
     <footer>
         <p>PrintShelf — track every print. <a href="/">printshelf.app</a></p>
+        <p class="footer-links">
+            <a href="/privacy">Privacy</a>
+            <span class="footer-sep">·</span>
+            <a href="/terms">Terms</a>
+            <span class="footer-sep">·</span>
+            <a href="mailto:hello@printshelf.app">Contact</a>
+        </p>
     </footer>
+<script>
+(function() {
+    var toggle = document.getElementById('nav-toggle');
+    var nav = document.getElementById('topnav');
+    if (!toggle || !nav) return;
+    toggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var open = nav.classList.toggle('nav-open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', function(e) {
+        if (!nav.contains(e.target) && e.target !== toggle) {
+            nav.classList.remove('nav-open');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+})();
+</script>
 </body>
 </html>
