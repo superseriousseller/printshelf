@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Optional
 
+import httpx
 import stripe
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -99,52 +100,58 @@ def billing_success(
     db: Session = Depends(get_db),
 ):
     _log.info("billing_success hit session_id=%r user=%s", session_id, current_user.id if current_user else None)
+    debug_error: Optional[str] = None
 
     if not session_id:
         return templates.TemplateResponse(request, "dashboard/upgrade_success.html", {
-            "current_user": current_user, "user": current_user,
+            "current_user": current_user, "user": current_user, "debug_error": "no session_id",
         })
 
-    # Read key at call-time (not import-time) so a late env var set works too.
     stripe_key = os.environ.get("STRIPE_SECRET_KEY", "")
     if not stripe_key:
         _log.error("billing_success: STRIPE_SECRET_KEY not set")
         return templates.TemplateResponse(request, "dashboard/upgrade_success.html", {
-            "current_user": current_user, "user": current_user,
+            "current_user": current_user, "user": current_user, "debug_error": "STRIPE_SECRET_KEY not configured",
         })
 
     try:
-        stripe.api_key = stripe_key
-        cs = stripe.checkout.Session.retrieve(session_id)
-        # Use attribute access — StripeObject .get() can be unreliable on nested objects
-        payment_status = cs.payment_status
-        status = cs.status
+        # Use httpx directly — bypasses any Stripe SDK v8 compatibility issues
+        resp = httpx.get(
+            f"https://api.stripe.com/v1/checkout/sessions/{session_id}",
+            auth=(stripe_key, ""),
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        cs = resp.json()
+        payment_status = cs.get("payment_status")
+        status = cs.get("status")
         _log.info("billing_success cs.status=%s cs.payment_status=%s", status, payment_status)
 
         if status == "complete" and payment_status == "paid":
-            metadata = cs.metadata or {}
-            meta_user_id = int(metadata.get("user_id", 0))
+            meta_user_id = int((cs.get("metadata") or {}).get("user_id", 0))
             _log.info("billing_success meta_user_id=%s", meta_user_id)
             if meta_user_id:
                 target = db.query(User).filter(User.id == meta_user_id).first()
                 _log.info("billing_success target_id=%s tier=%s", target.id if target else None, target.tier if target else None)
                 if target and target.tier != "pro":
                     target.tier = "pro"
-                    if cs.customer:
-                        target.stripe_customer_id = cs.customer
-                    if cs.subscription:
-                        target.stripe_subscription_id = cs.subscription
+                    if cs.get("customer"):
+                        target.stripe_customer_id = cs["customer"]
+                    if cs.get("subscription"):
+                        target.stripe_subscription_id = cs["subscription"]
                     db.commit()
                     _log.info("billing_success upgraded user_id=%s to pro session=%s", meta_user_id, session_id)
-                    # Redirect to account page — Pro badge will be immediately visible
                     return RedirectResponse("/dashboard/account#billing", status_code=303)
+                debug_error = f"target tier already={target.tier if target else 'not found'}"
         else:
-            _log.warning("billing_success unexpected state status=%s payment_status=%s", status, payment_status)
+            debug_error = f"unexpected state: status={status} payment_status={payment_status}"
+            _log.warning("billing_success %s", debug_error)
     except Exception as exc:
+        debug_error = str(exc)
         _log.error("billing_success error session=%s: %s", session_id, exc, exc_info=True)
 
     return templates.TemplateResponse(request, "dashboard/upgrade_success.html", {
-        "current_user": current_user, "user": current_user,
+        "current_user": current_user, "user": current_user, "debug_error": debug_error,
     })
 
 
