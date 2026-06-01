@@ -5,22 +5,22 @@
 ## Project Status
 
 ### 🔄 In Progress
-- Chrome extension (`chrome-extension/`) — **v0.3.5 submitted to Chrome Web Store 2026-05-29, pending review** (filament button on Polymaker + model pages). First review may be slow: host permissions + Authentication-info/Website-content data disclosure trigger in-depth review.
-- Cam dogfooding printshelf.app — building up /@cam organically
-- Affiliate program signups (Amazon Associates, Bambu, Polymaker, MatterHackers, Anycubic) — set env vars on Railway prod as they come in: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
-- Extension Phases 3+ — add Anycubic, MatterHackers, Bambu, Amazon to `STORES` in `inject_filament.js`. Each needs its own swatch selectors. Architecture proven on Polymaker.
+- Cam dogfooding printshelf.app at `/@PluggedIn3d`
+- Affiliate program signups — set env vars on Railway prod as they arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
+- Extension store QA — Bambu/Anycubic/MatterHackers/Amazon saves confirmed working (buttons appear, saves go through). Amazon brand extraction fix shipped (b2a8b71). Pending final confirmation of Amazon brand field in re-run.
 
 ### 📋 Todo
-- Reddit launch post — after /@cam looks post-worthy
-- **Stripe prod go-live** — set 4 env vars on Railway prod (see Operational Gotchas below)
-- Makerworld real imports — blocked by Railway IP; Chrome extension is the fix
+- Reddit launch post — after `/@PluggedIn3d` looks post-worthy
+- Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
-- Stripe Pro billing (2026-06-01) — $4.99/mo or $39/yr. Upgrade page, Checkout, Customer Portal, webhook handler. Free-tier cap (50 prints / 10 filaments) enforces 402 → /dashboard/upgrade. Sync upgrade on success page via httpx (Railway webhook delivery unreliable). 8/8 QA pass. On prod (62d914c).
-- Chrome extension v0.3.6/v0.3.7 (2026-05-31) — added Bambu Lab, Anycubic, MatterHackers, Amazon filament buttons.
-- Email notifications (2026-05-31) — notify_follow + notify_feed prefs, unsubscribe_token, one-click unsubscribe. On prod (33ff5c2).
-- Email verification (2026-05-30) — email_verified column, EmailVerificationToken model, dashboard banner with resend. On prod (1d02e7e).
-- Follow/feed, print settings metadata, search, "others with this filament/printer", social links, /@username URLs, affiliate redirector, filament URL import — all on prod (sessions 9–10).
+- Printer make/model on print detail page + avatar mirroring to CDN (2026-06-01). On prod (54c0756).
+- Homepage copy — extension + Pro "coming soon" removed, correct prices + CWS link. On prod.
+- Stripe Pro billing (2026-06-01) — $4.99/mo or $39/yr. 8/8 QA pass on prod with live Stripe keys. On prod (62d914c).
+- Chrome extension v0.3.7 live — Polymaker, Bambu Lab, Anycubic, MatterHackers, Amazon filament buttons. Amazon brand extraction fix (server-side, b2a8b71).
+- Email notifications (2026-05-31) — notify_follow + notify_feed, one-click unsubscribe. On prod (33ff5c2).
+- Email verification (2026-05-30) — email_verified, dashboard banner, resend. On prod (1d02e7e).
+- Follow/feed, print settings, search, profile discovery, affiliate redirector, filament URL import — on prod (sessions 9–10).
 
 ### 🔧 Tech Debt
 - None flagged
@@ -129,17 +129,13 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 
 ## Next Session Starts Here
 **Completed 2026-06-01 (session 13):**
-- Stripe Pro billing — $4.99/mo or $39/yr. Upgrade page, Checkout, Customer Portal, webhook. Free-tier caps redirect to /dashboard/upgrade. Sync upgrade via httpx on success page (bypasses Railway webhook delivery issue). 8/8 QA pass (build c5b35e0). On prod (62d914c).
-
-**Completed 2026-05-31 (session 12):**
-- Email notifications — notify_follow + notify_feed prefs, unsubscribe_token, one-click unsubscribe. 14/14 QA pass. On prod (33ff5c2).
+- Stripe Pro billing — 8/8 QA pass including live Stripe keys on prod. On prod (62d914c).
+- Printer make/model on print detail, avatar CDN mirroring, Amazon brand extraction, color picker UX. On prod (b2a8b71).
+- Homepage copy updated — extension + Pro "coming soon" removed.
 
 **In progress:**
-- Chrome extension **v0.3.7 live** on Web Store — Polymaker, Bambu, Anycubic, MatterHackers, Amazon filament buttons. QA not yet run on Bambu/Anycubic/MatterHackers/Amazon stores (only Polymaker was formally QA'd).
-- Cam dogfooding printshelf.app at `/@PluggedIn3d`
-- Affiliate signups pending — env vars to set on Railway prod when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
+- Chrome extension v0.3.7 live — buttons on Bambu, Anycubic, MatterHackers, Amazon all confirmed appearing and saving. Amazon brand fix deployed server-side. Pending final re-run confirmation of Amazon brand field showing correctly.
+- Cam dogfooding at `/@PluggedIn3d`
+- Affiliate env vars pending when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
 
-**Immediate next steps (in order):**
-1. Set Stripe live-mode env vars on Railway prod (see Operational Gotchas) — billing is live on prod code but inactive until keys are set
-2. Set `ADMIN_USERNAME=PluggedIn3d` on Railway prod (pending since session 10)
-3. Reddit launch post when `/@PluggedIn3d` looks post-worthy
+**Immediate next step:** Reddit launch post — `/@PluggedIn3d` shelf + billing + extension all live, good time to post.
