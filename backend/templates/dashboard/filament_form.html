@@ -43,13 +43,13 @@
         <label>
             Color
             <div class="color-pair">
-                <input type="color" id="cpicker" value="{{ values.color_hex or '#888888' }}">
-                <input type="text" id="chex" name="color_hex" pattern="#?[0-9A-Fa-f]{6}" value="{{ values.color_hex or '' }}" placeholder="#111111">
+                <input type="color" id="cpicker" value="{{ values.color_hex or '#888888' }}" {% if not values.color_hex %}style="opacity:0.35"{% endif %}>
+                <input type="text" id="chex" name="color_hex" pattern="#?[0-9A-Fa-f]{6}" value="{{ values.color_hex or '' }}" placeholder="e.g. #F4EFEB">
             </div>
         </label>
     </div>
     <script>
-    (function(){var p=document.getElementById('cpicker'),t=document.getElementById('chex');p.oninput=function(){t.value=p.value;};t.oninput=function(){if(/^#[0-9A-Fa-f]{6}$/.test(t.value))p.value=t.value;};})();
+    (function(){var p=document.getElementById('cpicker'),t=document.getElementById('chex');p.oninput=function(){t.value=p.value;p.style.opacity='1';};t.oninput=function(){if(/^#[0-9A-Fa-f]{6}$/.test(t.value)){p.value=t.value;p.style.opacity='1';}};})();
     </script>
     <div class="row">
         <label>
