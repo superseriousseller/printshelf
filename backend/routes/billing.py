@@ -4,7 +4,7 @@ import os
 from typing import Optional
 
 import stripe
-from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -130,11 +130,13 @@ def customer_portal(
 @router.post("/stripe/webhook")
 async def stripe_webhook(
     request: Request,
-    stripe_signature: str = Header(None, alias="stripe-signature"),
     db: Session = Depends(get_db),
 ):
     payload = await request.body()
+    stripe_signature = request.headers.get("stripe-signature")
+    _log.info("stripe_webhook received payload_len=%d sig_present=%s", len(payload), bool(stripe_signature))
     if not STRIPE_WEBHOOK_SECRET:
+        _log.error("stripe_webhook called but STRIPE_WEBHOOK_SECRET not set")
         raise HTTPException(status_code=503, detail="Webhook secret not configured.")
     s = _stripe()
     try:
