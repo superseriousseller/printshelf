@@ -11,6 +11,9 @@
 {% endblock %}
 
 {% block content %}
+{% if request.query_params.get('deleted') == '1' %}
+<p class="notice notice-ok" style="max-width:1100px;margin:16px auto 0">Your account has been deleted. Sorry to see you go.</p>
+{% endif %}
 <section class="hero">
     <div class="hero-copy">
         <h1>A shelf for every print you make.</h1>

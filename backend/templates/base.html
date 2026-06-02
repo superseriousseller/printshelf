@@ -16,6 +16,7 @@
         </form>
         <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">&#9776;</button>
         <nav class="topnav" id="topnav">
+            <a href="/explore">Explore</a>
             {% if current_user %}
                 <a href="/dashboard">Dashboard</a>
                 <a href="/@{{ current_user.username }}">My shelf</a>

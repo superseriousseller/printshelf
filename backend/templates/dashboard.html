@@ -17,6 +17,40 @@
     <div class="stat-item"><span class="stat-value">{{ stats.filaments }}</span><span class="stat-label">filaments</span></div>
     <div class="stat-item"><span class="stat-value">{{ stats.printers }}</span><span class="stat-label">printers</span></div>
 </section>
+{% else %}
+<section class="onboarding">
+    <h2>Get started</h2>
+    <ul class="onboarding-steps">
+        <li class="{% if stats.printers > 0 %}step-done{% endif %}">
+            <span class="step-check">{% if stats.printers > 0 %}✓{% else %}1{% endif %}</span>
+            <div>
+                <a href="/dashboard/printers/new">Add your printer</a>
+                <p>Register the machine you print with.</p>
+            </div>
+        </li>
+        <li class="{% if stats.filaments > 0 %}step-done{% endif %}">
+            <span class="step-check">{% if stats.filaments > 0 %}✓{% else %}2{% endif %}</span>
+            <div>
+                <a href="/dashboard/filaments/new">Add a filament</a>
+                <p>Track what's on your spool rack.</p>
+            </div>
+        </li>
+        <li>
+            <span class="step-check">3</span>
+            <div>
+                <a href="/dashboard/prints/new">Log your first print</a>
+                <p>Upload a photo and give it a title.</p>
+            </div>
+        </li>
+        <li>
+            <span class="step-check">4</span>
+            <div>
+                <a href="https://chromewebstore.google.com/detail/printshelf/ffomddhafgccgacapkifpcbgcmphdmkh" target="_blank" rel="noopener">Install the Chrome extension</a>
+                <p>One-click imports from Makerworld, Printables, and more.</p>
+            </div>
+        </li>
+    </ul>
+</section>
 {% endif %}
 
 <section class="dash-cards">

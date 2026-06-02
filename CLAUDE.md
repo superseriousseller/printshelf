@@ -12,10 +12,11 @@
 ### 📋 Todo
 - Reddit launch post — product is now post-worthy (legal pages, mobile nav, hero UX all done)
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
-- Edit Print scroll bug (audit item #4) — "black void ~700px" reported on prod; needs in-browser investigation (couldn't repro from code)
+- Edit Print scroll bug — fixed (gradient column fill + fieldset min-width). QA confirmed no void on staging.
 
 ### ✅ Done (recent)
-- Audit fixes (2026-06-01) — mobile hamburger nav, footer Privacy/Terms/Contact, Terms of Service page, hero gallery caption + 2-col mobile, logged-out CTA → example shelf, /dashboard/queue 301 redirect. 8/11 QA pass on staging (3 caveats = data/non-bugs). On prod (ba66a17).
+- Queue IA / Explore / Scroll bug (2026-06-02) — Queue removed from sidebar, /explore page (24 recent public prints, linked from sidebar + homepage hero), sidebar column fill fix, fieldset overflow fix. On prod (db4dc26).
+- Audit fixes (2026-06-01) — mobile hamburger nav, footer Privacy/Terms/Contact, Terms of Service page, hero gallery caption + 2-col mobile, logged-out CTA → example shelf, /dashboard/queue 301 redirect. On prod (ba66a17).
 - Printer make/model on print detail page + avatar mirroring to CDN (2026-06-01). On prod (54c0756).
 - Homepage copy — extension + Pro "coming soon" removed, correct prices + CWS link. On prod.
 - Stripe Pro billing (2026-06-01) — $4.99/mo or $39/yr. 8/8 QA pass on prod with live Stripe keys. On prod (62d914c).
@@ -139,5 +140,4 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars pending when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
 
-**Immediate next step:** Reddit launch post — product is now audit-clean (mobile nav, legal pages, hero UX done). Post to r/3Dprinting or r/functionalprint.
-**Open audit items remaining:** Edit Print scroll bug (#4 from audit), Queue IA cleanup (#9), Browse/Explore page (#10).
+**Immediate next step:** Confirm /explore and homepage "Browse all community prints →" link look good on prod, then decide what's next.

@@ -1,0 +1,30 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = "account" %}
+{% block title %}Delete account — PrintShelf{% endblock %}
+
+{% block dash %}
+<header class="dash-header">
+    <h1>Delete account</h1>
+</header>
+
+<div class="dash-form" style="max-width:480px">
+    <p style="color:var(--fail);font-weight:600">This cannot be undone.</p>
+    <p style="color:var(--text-dim)">
+        Deleting your account will permanently remove all your prints, filaments,
+        printers, and photos. Your public shelf will disappear immediately.
+        Followers and follows will be removed.
+    </p>
+    {% if error %}<p class="notice notice-warn">{{ error }}</p>{% endif %}
+    <form method="post" action="/dashboard/account/delete">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:0.9rem;color:var(--text-dim)">
+            Type <strong style="color:var(--text)">DELETE</strong> to confirm
+            <input type="text" name="confirm" autocomplete="off" placeholder="DELETE"
+                   style="background:var(--bg-card);color:var(--text);border:1px solid var(--fail);border-radius:8px;padding:9px 12px;font-size:16px;font-family:inherit">
+        </label>
+        <div class="form-actions" style="margin-top:16px">
+            <button type="submit" class="btn-danger">Delete my account</button>
+            <a href="/dashboard/account">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

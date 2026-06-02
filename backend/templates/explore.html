@@ -4,6 +4,10 @@
 
 {% block meta %}
     <meta name="description" content="Browse recent 3D prints from the PrintShelf community.">
+    <meta property="og:title" content="Explore shelves — PrintShelf">
+    <meta property="og:description" content="Browse recent 3D prints from makers in the PrintShelf community.">
+    <meta property="og:url" content="https://printshelf.app/explore">
+    <meta name="twitter:card" content="summary">
 {% endblock %}
 
 {% block content %}
@@ -33,6 +37,13 @@
         </article>
         {% endfor %}
     </section>
+    {% if has_prev or has_next %}
+    <nav class="explore-pager">
+        {% if has_prev %}<a href="/explore?page={{ page - 1 }}" class="btn-secondary">← Newer</a>{% endif %}
+        <span class="explore-page-num">Page {{ page }}</span>
+        {% if has_next %}<a href="/explore?page={{ page + 1 }}" class="btn-secondary">Older →</a>{% endif %}
+    </nav>
+    {% endif %}
     {% else %}
     <section class="empty">
         <h1>Nothing here yet</h1>
