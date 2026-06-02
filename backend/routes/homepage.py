@@ -126,10 +126,11 @@ def explore(
         .filter(
             Print.is_public == True,  # noqa: E712
             Print.queued == False,    # noqa: E712
+            or_(Print.photo_url.isnot(None), Print.thumbnail_url.isnot(None)),
         )
         .order_by(Print.created_at.desc())
         .offset(offset)
-        .limit(EXPLORE_LIMIT + 1)  # fetch one extra to know if there's a next page
+        .limit(EXPLORE_LIMIT + 1)  # fetch one extra to detect next page
         .all()
     )
     has_next = len(rows) > EXPLORE_LIMIT
@@ -144,7 +145,6 @@ def explore(
             "status": p.status,
         }
         for p, uname, _ in rows
-        if p.photo_url or p.thumbnail_url
     ]
     return templates.TemplateResponse(
         request,
