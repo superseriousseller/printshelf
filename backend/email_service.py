@@ -96,6 +96,41 @@ border-radius:6px;text-decoration:none;display:inline-block;">View their profile
         return False
 
 
+def send_welcome(to_email: str, username: str) -> bool:
+    """Send a welcome email to a newly signed-up user."""
+    if not _API_KEY:
+        logger.warning("RESEND_API_KEY not set — skipping welcome email to %s", to_email)
+        return False
+    try:
+        import resend
+        resend.api_key = _API_KEY
+        shelf_url = f"{_APP_URL}/@{username}"
+        resend.Emails.send({
+            "from": _FROM,
+            "to": [to_email],
+            "subject": "Welcome to PrintShelf — your shelf is ready",
+            "html": f"""
+<p>Hey @{username} — your shelf is live.</p>
+<p><a href="{shelf_url}" style="background:#ff6a3d;color:#fff;padding:10px 20px;
+border-radius:6px;text-decoration:none;display:inline-block;">View your shelf →</a></p>
+<p><strong>Quick start:</strong></p>
+<ul>
+  <li><a href="{_APP_URL}/dashboard/printers/new">Add your printer</a></li>
+  <li><a href="{_APP_URL}/dashboard/filaments/new">Log a filament spool</a></li>
+  <li><a href="{_APP_URL}/dashboard/prints/new">Log your first print</a></li>
+  <li><a href="https://chromewebstore.google.com/detail/printshelf/ffomddhafgccgacapkifpcbgcmphdmkh">Install the Chrome extension</a> — one-click imports from Makerworld, Printables, and more</li>
+</ul>
+<p style="color:#888;font-size:12px;margin-top:24px;">
+  Questions? Reply to this email or find us at <a href="{_APP_URL}" style="color:#888;">printshelf.app</a>.
+</p>
+""",
+        })
+        return True
+    except Exception:
+        logger.exception("Failed to send welcome email to %s", to_email)
+        return False
+
+
 def send_feed_notification(to_email: str, printer_username: str, printer_display: str, print_title: str, print_url: str, unsubscribe_token: str) -> bool:
     """Notify a follower that someone they follow logged a new print."""
     if not _API_KEY:

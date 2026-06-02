@@ -26,13 +26,21 @@ templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
 
 def _stats_for(db: Session, user: User) -> dict:
     """Aggregate over the user's PUBLIC prints only — same scope as what's rendered."""
+    from sqlalchemy import func
     q = db.query(Print).filter(Print.user_id == user.id, Print.is_public == True, Print.queued == False)  # noqa: E712
     total = q.count()
     if total == 0:
-        return {"total": 0, "success_pct": 0, "favorite_material": None}
+        return {"total": 0, "success_pct": 0, "favorite_material": None, "filament_used_g": None, "print_time_mins": None}
 
     success = q.filter(Print.status == "printed").count()
     success_pct = round((success / total) * 100)
+
+    agg = db.query(
+        func.sum(Print.filament_used_g),
+        func.sum(Print.print_time_mins),
+    ).filter(Print.user_id == user.id, Print.is_public == True, Print.queued == False).one()  # noqa: E712
+    filament_used_g = round(agg[0]) if agg[0] else None
+    print_time_mins = int(agg[1]) if agg[1] else None
 
     # Favorite material = most-referenced filament material across this user's public prints
     favorite_material = None
@@ -48,7 +56,13 @@ def _stats_for(db: Session, user: User) -> dict:
             if mat_counts:
                 favorite_material = mat_counts.most_common(1)[0][0]
 
-    return {"total": total, "success_pct": success_pct, "favorite_material": favorite_material}
+    return {
+        "total": total,
+        "success_pct": success_pct,
+        "favorite_material": favorite_material,
+        "filament_used_g": filament_used_g,
+        "print_time_mins": print_time_mins,
+    }
 
 
 @router.get("/u/{username}")
