@@ -7,14 +7,17 @@
 ### 🔄 In Progress
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate program signups — set env vars on Railway prod as they arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
-- Chrome extension v0.3.7 — all saves confirmed working. Amazon brand field: pending final re-run confirmation.
+- Railway prod setup needed: add `CRON_SECRET` env var + create Cron service (`0 10 * * *`, `curl -sf -X POST https://printshelf.app/internal/drip -H "X-Cron-Secret: $CRON_SECRET"`)
 
 ### 📋 Todo
-- Reddit launch post — product is now post-worthy
+- Per-print video URL (free feature — content creators link YouTube/TikTok to prints)
+- Social link input UX fix (placeholder shows username but user must still type — add "Use @handle" JS fill)
+- Reddit launch post
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
-- Welcome email / sitemap / profile stats / print view links (2026-06-02) — send_welcome on signup, /sitemap.xml (5k URLs), filament_used_g + print_time_mins on profile, dashboard print title → public view. 5/5 QA. On prod (6e50872).
+- Onboarding drip emails (2026-06-02) — Day-2 "log your first print" + Day-7 "see what others are logging". /internal/drip cron endpoint (secret-gated). 10/10 QA. On prod (117002a).
+- Welcome email / sitemap / profile stats / print view links (2026-06-02) — 5/5 QA. On prod (6e50872).
 - Queue IA / Explore / Scroll bug (2026-06-02) — Queue removed from sidebar, /explore page, sidebar column fill fix, fieldset overflow fix. On prod (db4dc26).
 - Audit fixes (2026-06-01) — mobile hamburger nav, footer Privacy/Terms/Contact, Terms of Service, hero gallery caption, logged-out CTA → example shelf. On prod (ba66a17).
 - Stripe Pro billing (2026-06-01) — $4.99/mo or $39/yr. 8/8 QA. On prod (62d914c).
@@ -127,16 +130,13 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-02 (session 15):**
-- Welcome email on signup (`send_welcome` in email_service.py + web_auth.py)
-- /sitemap.xml — public profiles + print detail pages, up to 5k URLs
-- Profile stats — filament_used_g and print_time_mins displayed on /@username
-- Dashboard prints list — title links to public view (/@user/prints/ID), Edit link stays in row actions
-- All on prod (6e50872)
+**Completed 2026-06-02 (session 15–16):**
+- Welcome email, sitemap, profile stats, print view links — prod (6e50872)
+- Onboarding drip emails Day-2 + Day-7 — prod (117002a)
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars pending when codes arrive
-- Chrome extension Amazon brand field: pending final re-run confirmation
+- Railway prod: add CRON_SECRET + create Cron service for /internal/drip
 
-**Immediate next step:** Decide what to build next — Reddit launch post, or next feature.
+**Immediate next step:** Per-print video URL field (free, content-creator feature) then social link UX fix.
