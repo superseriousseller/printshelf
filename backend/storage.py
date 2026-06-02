@@ -165,5 +165,19 @@ def upload_image(raw: bytes, *, prefix: str = "p") -> str:
     return f"/uploads/photos/{filename}"
 
 
+def delete_image(url: str) -> None:
+    """Best-effort deletion of an image from R2. Logs errors but never raises."""
+    if not url or not _r2_configured():
+        return
+    base = os.environ.get("R2_PUBLIC_URL_BASE", "").rstrip("/")
+    if not base or not url.startswith(base + "/"):
+        return
+    key = url[len(base) + 1:]
+    try:
+        _get_r2_client().delete_object(Bucket=os.environ["R2_BUCKET"], Key=key)
+    except Exception:
+        logger.exception("Failed to delete R2 object %s", key)
+
+
 def storage_mode() -> str:
     return "r2" if _r2_configured() else "local"

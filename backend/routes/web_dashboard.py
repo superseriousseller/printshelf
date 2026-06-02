@@ -17,7 +17,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import nullslast
 from sqlalchemy.orm import Session
 
-from auth import get_current_user_web_optional
+from auth import SESSION_COOKIE_NAME, get_current_user_web_optional
 from limits import enforce_filament_limit, enforce_print_limit
 from models import (
     AffiliateClick,
@@ -36,7 +36,7 @@ from import_service import ImportError_, extract as extract_url
 from filament_import_service import extract as extract_filament_url
 from affiliate import apply_affiliate
 from models import ImportCache
-from storage import MAX_UPLOAD_BYTES, UploadError, upload_image
+from storage import MAX_UPLOAD_BYTES, UploadError, delete_image, upload_image
 
 _log = logging.getLogger(__name__)
 _IMPORT_CACHE_TTL_DAYS = 14
@@ -1253,3 +1253,57 @@ def feed(
         request, "dashboard/feed.html",
         _ctx(user, db=db, section="feed", feed_items=feed_items),
     )
+
+
+# ============== Account deletion ==============
+
+@router.get("/account/delete", response_class=HTMLResponse)
+def delete_account_confirm(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    return templates.TemplateResponse(
+        request, "dashboard/delete_account.html",
+        {"current_user": user, "user": user},
+    )
+
+
+@router.post("/account/delete")
+def delete_account(
+    request: Request,
+    confirm: str = Form(""),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    if confirm.strip().upper() != "DELETE":
+        return templates.TemplateResponse(
+            request, "dashboard/delete_account.html",
+            {"current_user": user, "user": user, "error": "Type DELETE to confirm."},
+            status_code=422,
+        )
+
+    # Delete R2 photos (best-effort)
+    prints = db.query(Print).filter(Print.user_id == user.id).all()
+    for p in prints:
+        if p.photo_url:
+            delete_image(p.photo_url)
+    if user.avatar_url:
+        delete_image(user.avatar_url)
+
+    # Delete all user data
+    db.query(Print).filter(Print.user_id == user.id).delete()
+    db.query(Filament).filter(Filament.user_id == user.id).delete()
+    db.query(Printer).filter(Printer.user_id == user.id).delete()
+    db.query(Follow).filter(
+        (Follow.follower_id == user.id) | (Follow.following_id == user.id)
+    ).delete(synchronize_session=False)
+    db.delete(user)
+    db.commit()
+
+    response = RedirectResponse("/?deleted=1", status_code=303)
+    response.delete_cookie(SESSION_COOKIE_NAME, path="/")
+    return response

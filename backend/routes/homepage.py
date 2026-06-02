@@ -114,9 +114,12 @@ EXPLORE_LIMIT = 24
 @router.get("/explore", response_class=HTMLResponse)
 def explore(
     request: Request,
+    page: int = 1,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
+    page = max(1, page)
+    offset = (page - 1) * EXPLORE_LIMIT
     rows = (
         db.query(Print, User.username, User.display_name)
         .join(User, Print.user_id == User.id)
@@ -125,26 +128,34 @@ def explore(
             Print.queued == False,    # noqa: E712
         )
         .order_by(Print.created_at.desc())
-        .limit(EXPLORE_LIMIT)
+        .offset(offset)
+        .limit(EXPLORE_LIMIT + 1)  # fetch one extra to know if there's a next page
         .all()
     )
+    has_next = len(rows) > EXPLORE_LIMIT
+    rows = rows[:EXPLORE_LIMIT]
     prints = [
         {
             "id": p.id,
             "title": p.title,
-            "designer": p.designer,
             "thumbnail": p.photo_url or p.thumbnail_url,
             "rating": p.rating,
             "username": uname,
             "status": p.status,
         }
-        for p, uname, display_name in rows
+        for p, uname, _ in rows
         if p.photo_url or p.thumbnail_url
     ]
     return templates.TemplateResponse(
         request,
         "explore.html",
-        {"current_user": current_user, "prints": prints},
+        {
+            "current_user": current_user,
+            "prints": prints,
+            "page": page,
+            "has_next": has_next,
+            "has_prev": page > 1,
+        },
     )
 
 
