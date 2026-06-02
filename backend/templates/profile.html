@@ -33,6 +33,12 @@
             <li><strong>{{ stats.total }}</strong> {{ "print" if stats.total == 1 else "prints" }}</li>
             <li><strong>{{ stats.success_pct }}%</strong> success</li>
             {% if stats.favorite_material %}<li><strong>{{ stats.favorite_material }}</strong> favorite</li>{% endif %}
+            {% if stats.filament_used_g %}<li><strong>{{ stats.filament_used_g }}g</strong> filament used</li>{% endif %}
+            {% if stats.print_time_mins %}
+                {% set hrs = (stats.print_time_mins // 60) %}
+                {% set mins = (stats.print_time_mins % 60) %}
+                <li><strong>{% if hrs %}{{ hrs }}h {% endif %}{{ mins }}m</strong> print time</li>
+            {% endif %}
         </ul>
         {% if printers %}
         <div class="machines">

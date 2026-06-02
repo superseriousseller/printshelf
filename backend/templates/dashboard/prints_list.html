@@ -41,7 +41,7 @@
         </div>
         <div class="prints-row-body">
             <h3>
-                <a href="/dashboard/prints/{{ p.id }}/edit">{{ p.title }}</a>
+                <a href="/@{{ current_user.username }}/prints/{{ p.id }}">{{ p.title }}</a>
                 {% if p.queued %}<span class="badge-pill badge-queued">Queued</span>{% endif %}
                 {% if p.status == "failed" %}<span class="badge-pill badge-fail">Failed</span>
                 {% elif p.status == "partial" %}<span class="badge-pill badge-partial">Partial</span>{% endif %}

@@ -23,7 +23,7 @@ from auth import (
     get_current_user_web_optional,
     hash_password,
 )
-from email_service import send_password_reset, send_verification_email
+from email_service import send_password_reset, send_verification_email, send_welcome
 from models import EmailVerificationToken, Filament, PasswordResetToken, Print, Printer, User, get_db
 import rate_limiter
 
@@ -117,6 +117,7 @@ def signup_submit(
         )
 
     _send_verification(db, new_user)
+    send_welcome(new_user.email, new_user.username)
     response = RedirectResponse("/dashboard", status_code=303)
     _set_session_cookie(response, new_user.id)
     return response

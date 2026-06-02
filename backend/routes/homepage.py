@@ -8,7 +8,7 @@ import os
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -167,6 +167,44 @@ def terms_of_service(
     return templates.TemplateResponse(
         request, "terms.html", {"current_user": current_user},
     )
+
+
+@router.get("/sitemap.xml")
+def sitemap(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    app_url = os.environ.get("APP_URL", "https://printshelf.app").rstrip("/")
+    static_urls = ["/", "/explore", "/signup", "/login"]
+
+    user_rows = (
+        db.query(User.username)
+        .join(Print, Print.user_id == User.id)
+        .filter(Print.is_public == True, Print.queued == False)  # noqa: E712
+        .distinct()
+        .all()
+    )
+    usernames = [r.username for r in user_rows]
+
+    print_rows = (
+        db.query(Print.id, User.username)
+        .join(User, Print.user_id == User.id)
+        .filter(Print.is_public == True, Print.queued == False)  # noqa: E712
+        .order_by(Print.created_at.desc())
+        .limit(5000)
+        .all()
+    )
+
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for path in static_urls:
+        lines.append(f"  <url><loc>{app_url}{path}</loc></url>")
+    for uname in usernames:
+        lines.append(f"  <url><loc>{app_url}/@{uname}</loc></url>")
+    for print_id, uname in print_rows:
+        lines.append(f"  <url><loc>{app_url}/@{uname}/prints/{print_id}</loc></url>")
+    lines.append("</urlset>")
+
+    return Response("\n".join(lines), media_type="application/xml")
 
 
 @router.get("/privacy", response_class=HTMLResponse)
