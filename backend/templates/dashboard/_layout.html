@@ -6,8 +6,8 @@
         <ul>
             <li><a href="/dashboard" {% if section == "home" %}class="active"{% endif %}>Overview</a></li>
             <li><a href="/dashboard/feed" {% if section == "feed" %}class="active"{% endif %}>Feed</a></li>
-            <li><a href="/dashboard/prints" {% if section == "prints" %}class="active"{% endif %}>Prints {% if sidebar_prints is defined %}<span class="nav-count">{{ sidebar_prints }}</span>{% endif %}</a></li>
-            <li><a href="/dashboard/prints?queued=true" {% if section == "queue" %}class="active"{% endif %}>Queue {% if sidebar_queue is defined and sidebar_queue > 0 %}<span class="nav-count">{{ sidebar_queue }}</span>{% endif %}</a></li>
+            <li><a href="/explore" {% if section == "explore" %}class="active"{% endif %}>Explore</a></li>
+            <li><a href="/dashboard/prints" {% if section == "prints" or section == "queue" %}class="active"{% endif %}>Prints {% if sidebar_prints is defined %}<span class="nav-count">{{ sidebar_prints }}</span>{% endif %}</a></li>
             <li><a href="/dashboard/printers" {% if section == "printers" %}class="active"{% endif %}>Printers</a></li>
             <li><a href="/dashboard/filaments" {% if section == "filaments" %}class="active"{% endif %}>Filaments {% if sidebar_filaments is defined %}<span class="nav-count">{{ sidebar_filaments }}</span>{% endif %}</a></li>
             <li class="sidebar-divider"></li>

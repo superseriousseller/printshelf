@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Explore shelves — PrintShelf{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="Browse recent 3D prints from the PrintShelf community.">
+{% endblock %}
+
+{% block content %}
+<div class="explore-page">
+    <header class="explore-header">
+        <h1>Explore</h1>
+        <p class="explore-sub">Recent prints from the community. Click any card to see the full shelf.</p>
+    </header>
+
+    {% if prints %}
+    <section class="print-grid">
+        {% for p in prints %}
+        <article class="print-card">
+            <a href="/@{{ p.username }}/prints/{{ p.id }}" class="card-link" aria-label="{{ p.title }}"></a>
+            <div class="thumb">
+                <img src="{{ p.thumbnail }}" alt="{{ p.title }}" loading="lazy">
+                {% if p.status == "failed" %}<span class="badge badge-fail">Failed</span>
+                {% elif p.status == "partial" %}<span class="badge badge-partial">Partial</span>{% endif %}
+            </div>
+            <div class="card-body">
+                <h3>{{ p.title }}</h3>
+                <div class="card-meta">
+                    <a class="explore-user" href="/@{{ p.username }}">@{{ p.username }}</a>
+                    {% if p.rating %}<span class="rating">{% for _ in range(p.rating) %}★{% endfor %}</span>{% endif %}
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </section>
+    {% else %}
+    <section class="empty">
+        <h1>Nothing here yet</h1>
+        <p>Be the first to <a href="/signup">log a print</a>.</p>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

@@ -10,10 +10,12 @@
 - Extension store QA — Bambu/Anycubic/MatterHackers/Amazon saves confirmed working (buttons appear, saves go through). Amazon brand extraction fix shipped (b2a8b71). Pending final confirmation of Amazon brand field in re-run.
 
 ### 📋 Todo
-- Reddit launch post — after `/@PluggedIn3d` looks post-worthy
+- Reddit launch post — product is now post-worthy (legal pages, mobile nav, hero UX all done)
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
+- Edit Print scroll bug (audit item #4) — "black void ~700px" reported on prod; needs in-browser investigation (couldn't repro from code)
 
 ### ✅ Done (recent)
+- Audit fixes (2026-06-01) — mobile hamburger nav, footer Privacy/Terms/Contact, Terms of Service page, hero gallery caption + 2-col mobile, logged-out CTA → example shelf, /dashboard/queue 301 redirect. 8/11 QA pass on staging (3 caveats = data/non-bugs). On prod (ba66a17).
 - Printer make/model on print detail page + avatar mirroring to CDN (2026-06-01). On prod (54c0756).
 - Homepage copy — extension + Pro "coming soon" removed, correct prices + CWS link. On prod.
 - Stripe Pro billing (2026-06-01) — $4.99/mo or $39/yr. 8/8 QA pass on prod with live Stripe keys. On prod (62d914c).
@@ -128,14 +130,14 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-01 (session 13):**
-- Stripe Pro billing — 8/8 QA pass including live Stripe keys on prod. On prod (62d914c).
-- Printer make/model on print detail, avatar CDN mirroring, Amazon brand extraction, color picker UX. On prod (b2a8b71).
-- Homepage copy updated — extension + Pro "coming soon" removed.
+**Completed 2026-06-01 (session 14):**
+- Audit fixes — mobile hamburger nav, footer + Privacy/Terms/Contact, Terms of Service page, hero caption + 2-col mobile, logged-out "See an example shelf →" CTA, /dashboard/queue redirect. On prod (ba66a17).
+- Local dev fix: migration f4a7b2c9d1e5 now dialect-aware (SQLite compat for unsubscribe_token backfill).
 
 **In progress:**
 - Chrome extension v0.3.7 live — buttons on Bambu, Anycubic, MatterHackers, Amazon all confirmed appearing and saving. Amazon brand fix deployed server-side. Pending final re-run confirmation of Amazon brand field showing correctly.
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars pending when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
 
-**Immediate next step:** Reddit launch post — `/@PluggedIn3d` shelf + billing + extension all live, good time to post.
+**Immediate next step:** Reddit launch post — product is now audit-clean (mobile nav, legal pages, hero UX done). Post to r/3Dprinting or r/functionalprint.
+**Open audit items remaining:** Edit Print scroll bug (#4 from audit), Queue IA cleanup (#9), Browse/Explore page (#10).
