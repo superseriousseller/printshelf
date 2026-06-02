@@ -108,6 +108,46 @@ def search(
     )
 
 
+EXPLORE_LIMIT = 24
+
+
+@router.get("/explore", response_class=HTMLResponse)
+def explore(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    rows = (
+        db.query(Print, User.username, User.display_name)
+        .join(User, Print.user_id == User.id)
+        .filter(
+            Print.is_public == True,  # noqa: E712
+            Print.queued == False,    # noqa: E712
+        )
+        .order_by(Print.created_at.desc())
+        .limit(EXPLORE_LIMIT)
+        .all()
+    )
+    prints = [
+        {
+            "id": p.id,
+            "title": p.title,
+            "designer": p.designer,
+            "thumbnail": p.photo_url or p.thumbnail_url,
+            "rating": p.rating,
+            "username": uname,
+            "status": p.status,
+        }
+        for p, uname, display_name in rows
+        if p.photo_url or p.thumbnail_url
+    ]
+    return templates.TemplateResponse(
+        request,
+        "explore.html",
+        {"current_user": current_user, "prints": prints},
+    )
+
+
 @router.get("/terms", response_class=HTMLResponse)
 def terms_of_service(
     request: Request,
