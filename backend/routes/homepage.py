@@ -108,6 +108,16 @@ def search(
     )
 
 
+@router.get("/terms", response_class=HTMLResponse)
+def terms_of_service(
+    request: Request,
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    return templates.TemplateResponse(
+        request, "terms.html", {"current_user": current_user},
+    )
+
+
 @router.get("/privacy", response_class=HTMLResponse)
 def privacy_policy(
     request: Request,

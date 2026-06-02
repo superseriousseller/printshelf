@@ -24,27 +24,30 @@
                 <a href="/@{{ current_user.username }}" class="btn-ghost btn-lg">See your shelf</a>
             {% else %}
                 <a href="/signup" class="btn-primary btn-lg">Start your shelf — free</a>
-                <a href="/login" class="btn-ghost btn-lg">Log in</a>
+                <a href="/@PluggedIn3d" class="btn-ghost btn-lg">See an example shelf →</a>
             {% endif %}
         </div>
         <p class="hero-fineprint">Free tier: 50 prints · 10 filaments. <a href="/dashboard/upgrade">Pro $4.99/mo</a> for unlimited.</p>
     </div>
 
     {% if featured %}
-    <div class="hero-gallery">
-        {% for f in featured %}
-        <a class="home-card" href="/@{{ f.username }}">
-            <div class="home-thumb">
-                <img src="{{ f.thumbnail }}" alt="{{ f.title }}" loading="lazy">
-                {% if f.status == "failed" %}<span class="badge-pill badge-fail">Failed</span>
-                {% elif f.status == "partial" %}<span class="badge-pill badge-partial">Partial</span>{% endif %}
-            </div>
-            <div class="home-card-body">
-                <h4>{{ f.title }}</h4>
-                <p class="home-maker">by @{{ f.username }}{% if f.rating %} · {{ "★" * f.rating }}{% endif %}</p>
-            </div>
-        </a>
-        {% endfor %}
+    <div class="hero-gallery-wrap">
+        <p class="hero-gallery-label">Recent prints from the community</p>
+        <div class="hero-gallery">
+            {% for f in featured %}
+            <a class="home-card" href="/@{{ f.username }}">
+                <div class="home-thumb">
+                    <img src="{{ f.thumbnail }}" alt="{{ f.title }}" loading="lazy">
+                    {% if f.status == "failed" %}<span class="badge-pill badge-fail">Failed</span>
+                    {% elif f.status == "partial" %}<span class="badge-pill badge-partial">Partial</span>{% endif %}
+                </div>
+                <div class="home-card-body">
+                    <h4>{{ f.title }}</h4>
+                    <p class="home-maker">by @{{ f.username }}{% if f.rating %} · {{ "★" * f.rating }}{% endif %}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
     </div>
     {% else %}
     <div class="hero-gallery hero-gallery-empty">
