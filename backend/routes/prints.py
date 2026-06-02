@@ -49,6 +49,7 @@ class PrintCreate(BaseModel):
     queued: bool = False
     is_public: bool = True
     print_date: Optional[date] = None
+    video_url: Optional[str] = Field(default=None, max_length=1000)
 
 
 class PrintUpdate(BaseModel):
@@ -66,6 +67,7 @@ class PrintUpdate(BaseModel):
     queued: Optional[bool] = None
     is_public: Optional[bool] = None
     print_date: Optional[date] = None
+    video_url: Optional[str] = Field(default=None, max_length=1000)
 
 
 def _own_or_404(db: Session, user: User, print_id: int) -> Print:
@@ -136,6 +138,7 @@ def _create_print(db: Session, user: User, body: PrintCreate, *, force_queued: O
         queued=queued,
         is_public=body.is_public,
         print_date=body.print_date,
+        video_url=body.video_url,
     )
     db.add(p)
     db.commit()

@@ -698,6 +698,7 @@ async def create_print(
     supports: str = Form(""),
     print_time_mins: str = Form(""),
     filament_used_g: str = Form(""),
+    video_url: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -796,7 +797,7 @@ async def create_print(
             "queued": queued, "is_public": is_public,
             "layer_height": layer_height, "infill_pct": infill_pct,
             "supports": supports, "print_time_mins": print_time_mins,
-            "filament_used_g": filament_used_g,
+            "filament_used_g": filament_used_g, "video_url": video_url,
         }
         return templates.TemplateResponse(
             request, "dashboard/print_form.html",
@@ -823,6 +824,7 @@ async def create_print(
         supports=supports_b,
         print_time_mins=print_time_i,
         filament_used_g=filament_used_f,
+        video_url=video_url.strip() or None,
     )
     db.add(p)
     db.commit()
@@ -872,6 +874,7 @@ def edit_print(
         "supports": ("yes" if p.supports is True else ("no" if p.supports is False else "")),
         "print_time_mins": str(p.print_time_mins) if p.print_time_mins is not None else "",
         "filament_used_g": str(p.filament_used_g) if p.filament_used_g is not None else "",
+        "video_url": p.video_url or "",
     }
     return templates.TemplateResponse(
         request, "dashboard/print_form.html",
@@ -903,6 +906,7 @@ async def update_print(
     supports: str = Form(""),
     print_time_mins: str = Form(""),
     filament_used_g: str = Form(""),
+    video_url: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -978,6 +982,7 @@ async def update_print(
     p.supports = _parse_supports(supports)
     p.print_time_mins = _parse_int(print_time_mins, min_val=1)
     p.filament_used_g = _parse_float(filament_used_g)
+    p.video_url = video_url.strip() or None
     db.commit()
     return RedirectResponse("/dashboard/prints", status_code=303)
 
