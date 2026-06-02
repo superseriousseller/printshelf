@@ -7,23 +7,19 @@
 ### 🔄 In Progress
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate program signups — set env vars on Railway prod as they arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
-- Extension store QA — Bambu/Anycubic/MatterHackers/Amazon saves confirmed working (buttons appear, saves go through). Amazon brand extraction fix shipped (b2a8b71). Pending final confirmation of Amazon brand field in re-run.
+- Chrome extension v0.3.7 — all saves confirmed working. Amazon brand field: pending final re-run confirmation.
 
 ### 📋 Todo
-- Reddit launch post — product is now post-worthy (legal pages, mobile nav, hero UX all done)
+- Reddit launch post — product is now post-worthy
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
-- Edit Print scroll bug — fixed (gradient column fill + fieldset min-width). QA confirmed no void on staging.
 
 ### ✅ Done (recent)
-- Queue IA / Explore / Scroll bug (2026-06-02) — Queue removed from sidebar, /explore page (24 recent public prints, linked from sidebar + homepage hero), sidebar column fill fix, fieldset overflow fix. On prod (db4dc26).
-- Audit fixes (2026-06-01) — mobile hamburger nav, footer Privacy/Terms/Contact, Terms of Service page, hero gallery caption + 2-col mobile, logged-out CTA → example shelf, /dashboard/queue 301 redirect. On prod (ba66a17).
-- Printer make/model on print detail page + avatar mirroring to CDN (2026-06-01). On prod (54c0756).
-- Homepage copy — extension + Pro "coming soon" removed, correct prices + CWS link. On prod.
-- Stripe Pro billing (2026-06-01) — $4.99/mo or $39/yr. 8/8 QA pass on prod with live Stripe keys. On prod (62d914c).
-- Chrome extension v0.3.7 live — Polymaker, Bambu Lab, Anycubic, MatterHackers, Amazon filament buttons. Amazon brand extraction fix (server-side, b2a8b71).
-- Email notifications (2026-05-31) — notify_follow + notify_feed, one-click unsubscribe. On prod (33ff5c2).
-- Email verification (2026-05-30) — email_verified, dashboard banner, resend. On prod (1d02e7e).
-- Follow/feed, print settings, search, profile discovery, affiliate redirector, filament URL import — on prod (sessions 9–10).
+- Welcome email / sitemap / profile stats / print view links (2026-06-02) — send_welcome on signup, /sitemap.xml (5k URLs), filament_used_g + print_time_mins on profile, dashboard print title → public view. 5/5 QA. On prod (6e50872).
+- Queue IA / Explore / Scroll bug (2026-06-02) — Queue removed from sidebar, /explore page, sidebar column fill fix, fieldset overflow fix. On prod (db4dc26).
+- Audit fixes (2026-06-01) — mobile hamburger nav, footer Privacy/Terms/Contact, Terms of Service, hero gallery caption, logged-out CTA → example shelf. On prod (ba66a17).
+- Stripe Pro billing (2026-06-01) — $4.99/mo or $39/yr. 8/8 QA. On prod (62d914c).
+- Chrome extension v0.3.7 — Polymaker, Bambu Lab, Anycubic, MatterHackers, Amazon filament buttons + brand fix.
+- Email notifications + verification, follow/feed, search, profile discovery, affiliate redirector, filament URL import — on prod (sessions 9–13).
 
 ### 🔧 Tech Debt
 - None flagged
@@ -131,13 +127,16 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-01 (session 14):**
-- Audit fixes — mobile hamburger nav, footer + Privacy/Terms/Contact, Terms of Service page, hero caption + 2-col mobile, logged-out "See an example shelf →" CTA, /dashboard/queue redirect. On prod (ba66a17).
-- Local dev fix: migration f4a7b2c9d1e5 now dialect-aware (SQLite compat for unsubscribe_token backfill).
+**Completed 2026-06-02 (session 15):**
+- Welcome email on signup (`send_welcome` in email_service.py + web_auth.py)
+- /sitemap.xml — public profiles + print detail pages, up to 5k URLs
+- Profile stats — filament_used_g and print_time_mins displayed on /@username
+- Dashboard prints list — title links to public view (/@user/prints/ID), Edit link stays in row actions
+- All on prod (6e50872)
 
 **In progress:**
-- Chrome extension v0.3.7 live — buttons on Bambu, Anycubic, MatterHackers, Amazon all confirmed appearing and saving. Amazon brand fix deployed server-side. Pending final re-run confirmation of Amazon brand field showing correctly.
 - Cam dogfooding at `/@PluggedIn3d`
-- Affiliate env vars pending when codes arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
+- Affiliate env vars pending when codes arrive
+- Chrome extension Amazon brand field: pending final re-run confirmation
 
-**Immediate next step:** Confirm /explore and homepage "Browse all community prints →" link look good on prod, then decide what's next.
+**Immediate next step:** Decide what to build next — Reddit launch post, or next feature.
