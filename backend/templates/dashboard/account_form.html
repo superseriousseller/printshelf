@@ -41,10 +41,20 @@
         ] %}
         <label>
             {{ label }}
-            <input type="text" name="social_{{ key }}" maxlength="300" value="{{ values['social_' ~ key] or '' }}" placeholder="{{ user.username }}">
+            <div class="social-field">
+                <input type="text" name="social_{{ key }}" maxlength="300" value="{{ values['social_' ~ key] or '' }}" placeholder="{{ user.username }}">
+                <button type="button" class="social-fill-btn" data-value="{{ user.username }}">Use @{{ user.username }}</button>
+            </div>
         </label>
         {% endfor %}
     </fieldset>
+    <script>
+    document.querySelectorAll('.social-fill-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            btn.closest('.social-field').querySelector('input').value = btn.dataset.value;
+        });
+    });
+    </script>
     <div class="avatar-preview" id="avatar-preview" style="{% if not values.avatar_url %}display:none{% endif %}">
         <img id="avatar-preview-img" src="{{ values.avatar_url or '' }}" alt="avatar preview">
         <span class="hint">Avatar preview</span>

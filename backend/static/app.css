@@ -134,6 +134,10 @@ a:hover { text-decoration: underline; }
 .dash-form .dash-section legend { padding: 0 6px; font-size: 0.9rem; color: var(--text-dim); }
 .dash-socials { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
 .dash-socials legend { padding: 0 6px; font-size: 0.9rem; color: var(--text-dim); }
+.social-field { display: flex; gap: 8px; align-items: center; }
+.social-field input { flex: 1; margin: 0; }
+.social-fill-btn { white-space: nowrap; font-size: 0.78rem; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; opacity: 0.8; }
+.social-fill-btn:hover { opacity: 1; text-decoration: underline; }
 .photo-picker { display: flex; flex-direction: column; gap: 12px; }
 .photo-picker .current-photo { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .photo-picker .current-photo img { max-width: 220px; max-height: 220px; border-radius: 8px; border: 1px solid var(--border); }
