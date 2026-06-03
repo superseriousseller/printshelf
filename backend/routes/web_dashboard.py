@@ -364,6 +364,7 @@ def create_filament(
     status: str = Form("own"),
     source_url: str = Form(""),
     price_at_save: str = Form(""),
+    spool_weight_g: str = Form(""),
     notes: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
@@ -388,6 +389,14 @@ def create_filament(
             price_f = float(price_at_save.strip())
         except ValueError:
             errors.append("Price must be a number.")
+    spool_weight_i: Optional[int] = None
+    if spool_weight_g.strip():
+        try:
+            spool_weight_i = int(float(spool_weight_g.strip()))
+            if spool_weight_i <= 0:
+                spool_weight_i = None
+        except ValueError:
+            errors.append("Spool weight must be a number.")
     if status not in {s.value for s in FilamentStatus}:
         errors.append("Invalid status.")
     if not brand.strip() or not material.strip():
@@ -398,7 +407,8 @@ def create_filament(
             _filament_form_ctx(user, db, None, errors, {
                 "brand": brand, "material": material, "color_name": color_name,
                 "color_hex": color_hex, "diameter": diameter, "status": status,
-                "source_url": source_url, "price_at_save": price_at_save, "notes": notes,
+                "source_url": source_url, "price_at_save": price_at_save,
+                "spool_weight_g": spool_weight_g, "notes": notes,
             }),
             status_code=400,
         )
@@ -407,7 +417,7 @@ def create_filament(
         color_name=color_name.strip() or None, color_hex=_normalize_hex(color_hex),
         diameter=diameter_f, status=status,
         source_url=source_url.strip() or None, price_at_save=price_f,
-        notes=notes.strip() or None,
+        spool_weight_g=spool_weight_i, notes=notes.strip() or None,
     )
     db.add(f)
     db.commit()
@@ -434,6 +444,7 @@ def edit_filament(
             "diameter": str(f.diameter), "status": f.status,
             "source_url": f.source_url or "",
             "price_at_save": f.price_at_save if f.price_at_save is not None else "",
+            "spool_weight_g": f.spool_weight_g if f.spool_weight_g is not None else "",
             "notes": f.notes or "",
         }),
     )
@@ -451,6 +462,7 @@ def update_filament(
     status: str = Form("own"),
     source_url: str = Form(""),
     price_at_save: str = Form(""),
+    spool_weight_g: str = Form(""),
     notes: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
@@ -479,6 +491,14 @@ def update_filament(
             pass
     else:
         f.price_at_save = None
+    if spool_weight_g.strip():
+        try:
+            w = int(float(spool_weight_g.strip()))
+            f.spool_weight_g = w if w > 0 else None
+        except ValueError:
+            pass
+    else:
+        f.spool_weight_g = None
     f.notes = notes.strip() or None
     db.commit()
     return RedirectResponse("/dashboard/filaments", status_code=303)

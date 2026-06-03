@@ -472,6 +472,7 @@ footer {
 .setting-key { color: var(--text-dim); font-size: 0.8rem; margin-right: 4px; }
 .detail-notes { margin-top: 20px; }
 .detail-notes p { color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0; }
+.cost-est { color: var(--text-dim); font-size: 0.9em; }
 .detail-video { margin-top: 16px; }
 .detail-source { margin-top: 12px; font-size: 0.9rem; }
 .detail-source a { color: var(--accent); text-transform: capitalize; }

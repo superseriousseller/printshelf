@@ -70,10 +70,16 @@
         Source URL <span class="hint">(where you bought it)</span>
         <input type="url" name="source_url" maxlength="1000" value="{{ values.source_url or '' }}" placeholder="https://…">
     </label>
-    <label>
-        Price paid <span class="hint">(USD, optional — pulled from the product page when available)</span>
-        <input type="number" step="0.01" min="0" name="price_at_save" value="{{ values.price_at_save if values.price_at_save not in (None, '') else '' }}" placeholder="24.99">
-    </label>
+    <div class="row">
+        <label>
+            Price paid <span class="hint">(USD, optional)</span>
+            <input type="number" step="0.01" min="0" name="price_at_save" value="{{ values.price_at_save if values.price_at_save not in (None, '') else '' }}" placeholder="24.99">
+        </label>
+        <label>
+            Spool weight <span class="hint">(grams — used to calculate cost per print)</span>
+            <input type="number" step="1" min="1" name="spool_weight_g" value="{{ values.spool_weight_g if values.spool_weight_g not in (None, '') else '' }}" placeholder="1000">
+        </label>
+    </div>
     <label>
         Notes
         <textarea name="notes" rows="3">{{ values.notes or '' }}</textarea>

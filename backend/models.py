@@ -162,7 +162,8 @@ class Filament(Base):
 
     status = Column(String(20), default="own", nullable=False)
     source_url = Column(String(1000), nullable=True)
-    price_at_save = Column(Float, nullable=True)
+    price_at_save = Column(Float, nullable=True)   # purchase price of the spool
+    spool_weight_g = Column(Integer, nullable=True) # spool weight in grams (1000, 500, 250…)
     notes = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -180,6 +181,7 @@ class Filament(Base):
             "status": self.status,
             "sourceUrl": self.source_url,
             "priceAtSave": self.price_at_save,
+            "spoolWeightG": self.spool_weight_g,
             "notes": self.notes,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
         }

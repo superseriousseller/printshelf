@@ -365,14 +365,28 @@ def dashboard(
     total_prints = db.query(Print).filter(Print.user_id == user.id, Print.queued == False).count()  # noqa: E712
     queued = db.query(Print).filter(Print.user_id == user.id, Print.queued == True).count()  # noqa: E712
     success = db.query(Print).filter(Print.user_id == user.id, Print.queued == False, Print.status == "printed").count()  # noqa: E712
-    filaments = db.query(Filament).filter(Filament.user_id == user.id).count()
+    filaments_count = db.query(Filament).filter(Filament.user_id == user.id).count()
     printers = db.query(Printer).filter(Printer.user_id == user.id).count()
+
+    # Estimated total filament spend — one query for all filaments, then iterate prints
+    all_prints = db.query(Print).filter(Print.user_id == user.id, Print.queued == False, Print.filament_used_g.isnot(None)).all()  # noqa: E712
+    all_filaments = db.query(Filament).filter(Filament.user_id == user.id, Filament.price_at_save.isnot(None), Filament.spool_weight_g.isnot(None)).all()
+    fil_by_id = {f.id: f for f in all_filaments}
+    total_spend: float = 0.0
+    for p in all_prints:
+        if p.filament_ids:
+            fils = [fil_by_id[fid] for fid in p.filament_ids if fid in fil_by_id]
+            if fils:
+                cost_per_g = sum(f.price_at_save / f.spool_weight_g for f in fils) / len(fils)
+                total_spend += p.filament_used_g * cost_per_g
+
     stats = {
         "total_prints": total_prints,
         "queued": queued,
         "success_pct": round((success / total_prints) * 100) if total_prints > 0 else 0,
-        "filaments": filaments,
+        "filaments": filaments_count,
         "printers": printers,
+        "total_spend": round(total_spend, 2) if total_spend else None,
     }
     resend_notice = None
     if resend == "sent":
@@ -385,6 +399,6 @@ def dashboard(
         "stats": stats,
         "sidebar_prints": total_prints,
         "sidebar_queue": queued,
-        "sidebar_filaments": filaments,
+        "sidebar_filaments": filaments_count,
         "resend_notice": resend_notice,
     })
