@@ -42,8 +42,8 @@
         <label>
             {{ label }}
             <div class="social-field">
-                <input type="text" id="social_{{ key }}" name="social_{{ key }}" maxlength="300" value="{{ values['social_' ~ key] or '' }}" placeholder="{{ user.username }}">
-                <button type="button" class="social-fill-btn" data-target="social_{{ key }}" data-value="{{ user.username }}">Use @{{ user.username }}</button>
+                <input type="text" name="social_{{ key }}" maxlength="300" value="{{ values['social_' ~ key] or '' }}" placeholder="{{ user.username }}">
+                <button type="button" class="social-fill-btn" data-value="{{ user.username }}">Use @{{ user.username }}</button>
             </div>
         </label>
         {% endfor %}
@@ -51,7 +51,7 @@
     <script>
     document.querySelectorAll('.social-fill-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            document.getElementById(btn.dataset.target).value = btn.dataset.value;
+            btn.closest('.social-field').querySelector('input').value = btn.dataset.value;
         });
     });
     </script>
