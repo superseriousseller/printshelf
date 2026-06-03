@@ -24,6 +24,17 @@ _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
 
 
+def _calc_print_cost(filament_used_g: float, filaments: list) -> float | None:
+    """Return estimated material cost in USD, or None if data is insufficient."""
+    if not filament_used_g or not filaments:
+        return None
+    priced = [f for f in filaments if f.price_at_save and f.spool_weight_g]
+    if not priced:
+        return None
+    cost_per_g = sum(f.price_at_save / f.spool_weight_g for f in priced) / len(priced)
+    return round(filament_used_g * cost_per_g, 2)
+
+
 def _stats_for(db: Session, user: User) -> dict:
     """Aggregate over the user's PUBLIC prints only — same scope as what's rendered."""
     from sqlalchemy import func
@@ -266,6 +277,8 @@ def public_print_detail(
             u.id: u for u in db.query(User).filter(User.id.in_(related_user_ids)).all()
         }
 
+    print_cost = _calc_print_cost(p.filament_used_g, filaments)
+
     return templates.TemplateResponse(
         request,
         "print_detail.html",
@@ -274,6 +287,7 @@ def public_print_detail(
             "print_": p,
             "filaments": filaments,
             "printer": printer,
+            "print_cost": print_cost,
             "related_by_filament": related_by_filament,
             "filament_label": filament_label,
             "related_by_printer": related_by_printer,

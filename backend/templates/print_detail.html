@@ -88,7 +88,7 @@
                         {% if h %}{{ h }}h {% endif %}{% if m %}{{ m }}m{% endif %}
                     </li>
                     {% endif %}
-                    {% if print_.filament_used_g %}<li><span class="setting-key">Filament used</span> {{ print_.filament_used_g }}g</li>{% endif %}
+                    {% if print_.filament_used_g %}<li><span class="setting-key">Filament used</span> {{ print_.filament_used_g }}g{% if print_cost %} · <span class="cost-est">${{ "%.2f"|format(print_cost) }} est.</span>{% endif %}</li>{% endif %}
                 </ul>
             </div>
             {% endif %}
