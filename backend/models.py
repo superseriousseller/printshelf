@@ -82,6 +82,9 @@ class User(Base):
     notify_feed = Column(Boolean, default=True, nullable=False, server_default=text('true'))
     unsubscribe_token = Column(String(32), nullable=True)
 
+    # Shelf analytics
+    profile_views = Column(Integer, default=0, nullable=False, server_default=text('0'))
+
     # Onboarding drip email tracking
     drip_day2_sent = Column(Boolean, default=False, nullable=False, server_default=text('false'))
     drip_day7_sent = Column(Boolean, default=False, nullable=False, server_default=text('false'))

@@ -341,6 +341,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
 .profile-meta h1 { margin: 0 0 4px; font-size: 1.6rem; }
 .profile-meta .handle { margin: 0 0 8px; color: var(--text-dim); }
 .profile-meta .bio { margin: 0 0 12px; color: var(--text); max-width: 56ch; }
+.shelf-views-owner { font-size: 0.78rem; color: var(--text-dim); margin: 0 0 8px; opacity: 0.7; }
 .profile-meta .stats { list-style: none; padding: 0; margin: 0; display: flex; gap: 22px; flex-wrap: wrap; }
 .profile-meta .stats li { color: var(--text-dim); font-size: 0.95rem; }
 .profile-meta .stats strong { color: var(--text); font-size: 1.15rem; margin-right: 4px; }
@@ -404,6 +405,21 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
 }
 .empty h1 { color: var(--text); margin: 0 0 12px; }
 .empty code { background: var(--bg-card); padding: 2px 8px; border-radius: 4px; color: var(--accent); }
+
+/* ===== Developers page ===== */
+.dev-page { max-width: 860px; margin: 0 auto; padding: 40px 16px 80px; }
+.dev-header { margin-bottom: 40px; }
+.dev-header h1 { font-size: 2rem; margin: 0 0 10px; }
+.dev-sub { color: var(--text-dim); margin: 0; }
+.dev-section { margin-bottom: 44px; }
+.dev-section h2 { font-size: 1.2rem; margin: 0 0 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.dev-section h3 { font-size: 1rem; margin: 20px 0 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.8rem; }
+.dev-code { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-size: 0.85rem; overflow-x: auto; white-space: pre; margin: 0 0 12px; line-height: 1.6; }
+.dev-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.dev-table th { text-align: left; color: var(--text-dim); font-weight: 600; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border); }
+.dev-table td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+.dev-table td:first-child, .dev-table td:nth-child(2) { white-space: nowrap; }
+.dev-table code { background: var(--bg-elev); padding: 1px 6px; border-radius: 4px; font-size: 0.83rem; color: var(--accent); }
 
 footer {
     border-top: 1px solid var(--border); padding: 18px 24px; text-align: center;

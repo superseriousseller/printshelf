@@ -105,6 +105,13 @@ def public_profile(
             status_code=404,
         )
 
+    # Count the visit — skip if the owner is viewing their own shelf
+    if current_user is None or current_user.id != user.id:
+        db.query(User).filter(User.id == user.id).update(
+            {"profile_views": User.profile_views + 1}
+        )
+        db.commit()
+
     q = db.query(Print).filter(
         Print.user_id == user.id,
         Print.is_public == True,  # noqa: E712
@@ -182,6 +189,7 @@ def public_profile(
             "follower_count": follower_count,
             "following_count": following_count,
             "is_following": is_following,
+            "profile_views": user.profile_views if (current_user and current_user.id == user.id) else None,
         },
     )
 

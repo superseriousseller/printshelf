@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}API — PrintShelf{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="PrintShelf API reference — log prints, manage filaments, and build integrations with your API key.">
+{% endblock %}
+
+{% block content %}
+<div class="dev-page">
+    <header class="dev-header">
+        <h1>PrintShelf API</h1>
+        <p class="dev-sub">Every account has an API key. Find yours on the <a href="/dashboard/account#api-key">Account page</a>. Pass it as a Bearer token on every request.</p>
+    </header>
+
+    <section class="dev-section">
+        <h2>Authentication</h2>
+        <pre class="dev-code">Authorization: Bearer &lt;your-api-key&gt;</pre>
+        <p>The same key works for all endpoints. You can regenerate it from the Account page if needed. Keep it secret — it has full read/write access to your account.</p>
+    </section>
+
+    <section class="dev-section">
+        <h2>Base URL</h2>
+        <pre class="dev-code">https://printshelf.app</pre>
+        <p>Interactive docs (Swagger UI) are available at <a href="/docs" target="_blank">/docs</a>. ReDoc is at <a href="/redoc" target="_blank">/redoc</a>.</p>
+    </section>
+
+    <section class="dev-section">
+        <h2>Quick start — log a print</h2>
+        <pre class="dev-code">curl -X POST https://printshelf.app/api/prints \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Benchy",
+    "source_platform": "manual",
+    "status": "printed",
+    "rating": 4,
+    "filament_used_g": 15.2,
+    "print_time_mins": 48,
+    "is_public": true
+  }'</pre>
+    </section>
+
+    <section class="dev-section">
+        <h2>Endpoints</h2>
+
+        <h3>Prints</h3>
+        <table class="dev-table">
+            <tr><td><code>GET</code></td><td><code>/api/prints</code></td><td>List your prints. Params: <code>queued</code>, <code>status</code>, <code>printer_id</code>, <code>limit</code>, <code>offset</code></td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/prints</code></td><td>Log a new print</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/prints/queue</code></td><td>Add to queue (forces <code>queued=true</code>)</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/prints/{id}</code></td><td>Get a single print</td></tr>
+            <tr><td><code>PATCH</code></td><td><code>/api/prints/{id}</code></td><td>Update a print (partial — only send fields you want to change)</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/prints/{id}/printed</code></td><td>Move a queued print to printed</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>/api/prints/{id}</code></td><td>Delete a print</td></tr>
+        </table>
+
+        <h3>Filaments</h3>
+        <table class="dev-table">
+            <tr><td><code>GET</code></td><td><code>/api/filaments</code></td><td>List your filaments</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/filaments</code></td><td>Add a filament spool</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/filaments/{id}</code></td><td>Get a single filament</td></tr>
+            <tr><td><code>PATCH</code></td><td><code>/api/filaments/{id}</code></td><td>Update a filament</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>/api/filaments/{id}</code></td><td>Delete a filament</td></tr>
+        </table>
+
+        <h3>Printers</h3>
+        <table class="dev-table">
+            <tr><td><code>GET</code></td><td><code>/api/printers</code></td><td>List your printers</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/printers</code></td><td>Register a printer</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/printers/{id}</code></td><td>Get a single printer</td></tr>
+            <tr><td><code>PATCH</code></td><td><code>/api/printers/{id}</code></td><td>Update a printer</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>/api/printers/{id}</code></td><td>Delete a printer</td></tr>
+        </table>
+    </section>
+
+    <section class="dev-section">
+        <h2>Print fields</h2>
+        <table class="dev-table">
+            <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+            <tr><td><code>title</code></td><td>string</td><td>Required. Max 300 chars.</td></tr>
+            <tr><td><code>designer</code></td><td>string</td><td>Optional.</td></tr>
+            <tr><td><code>source_platform</code></td><td>string</td><td><code>manual</code>, <code>printables</code>, <code>makerworld</code>, <code>thingiverse</code>, <code>cults3d</code>, <code>myminifactory</code></td></tr>
+            <tr><td><code>source_url</code></td><td>string</td><td>Model page URL.</td></tr>
+            <tr><td><code>photo_url</code></td><td>string</td><td>URL to your photo. Use <code>POST /api/uploads/photo</code> to upload to R2.</td></tr>
+            <tr><td><code>printer_id</code></td><td>int</td><td>Must belong to your account.</td></tr>
+            <tr><td><code>filament_ids</code></td><td>int[]</td><td>Array of filament IDs. Must belong to your account.</td></tr>
+            <tr><td><code>status</code></td><td>string</td><td><code>printed</code>, <code>failed</code>, <code>partial</code></td></tr>
+            <tr><td><code>rating</code></td><td>int</td><td>1–5.</td></tr>
+            <tr><td><code>queued</code></td><td>bool</td><td>True = in queue. False = logged print.</td></tr>
+            <tr><td><code>is_public</code></td><td>bool</td><td>Show on public shelf.</td></tr>
+            <tr><td><code>print_date</code></td><td>date</td><td>ISO 8601 — <code>2026-06-02</code>.</td></tr>
+            <tr><td><code>layer_height</code></td><td>float</td><td>mm, e.g. <code>0.20</code>.</td></tr>
+            <tr><td><code>infill_pct</code></td><td>int</td><td>0–100.</td></tr>
+            <tr><td><code>supports</code></td><td>bool</td><td><code>true</code> / <code>false</code>.</td></tr>
+            <tr><td><code>print_time_mins</code></td><td>int</td><td>Total minutes.</td></tr>
+            <tr><td><code>filament_used_g</code></td><td>float</td><td>Grams.</td></tr>
+            <tr><td><code>video_url</code></td><td>string</td><td>YouTube, TikTok, Instagram, etc.</td></tr>
+            <tr><td><code>notes</code></td><td>string</td><td>Free text.</td></tr>
+        </table>
+    </section>
+
+    <section class="dev-section">
+        <h2>Upload a photo</h2>
+        <pre class="dev-code">curl -X POST https://printshelf.app/api/uploads/photo \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@/path/to/photo.jpg"</pre>
+        <p>Returns <code>{"url": "https://cdn.printshelf.app/..."}</code>. Pass that URL as <code>photo_url</code> when creating or updating a print.</p>
+    </section>
+
+    <section class="dev-section">
+        <h2>Import from a model URL</h2>
+        <pre class="dev-code">curl -X POST https://printshelf.app/api/import-url \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.printables.com/model/12345"}'</pre>
+        <p>Scrapes the page and returns <code>title</code>, <code>designer</code>, <code>thumbnail_url</code>, and <code>source_platform</code>. Makerworld is partially supported — title only; use the Chrome extension for full imports.</p>
+    </section>
+
+    <section class="dev-section">
+        <h2>Responses</h2>
+        <p>All endpoints return JSON. Lists return <code>{"items": [...], "total": N, "limit": N, "offset": N}</code>.</p>
+        <table class="dev-table">
+            <tr><th>Status</th><th>Meaning</th></tr>
+            <tr><td><code>200</code></td><td>OK</td></tr>
+            <tr><td><code>201</code></td><td>Created</td></tr>
+            <tr><td><code>204</code></td><td>Deleted</td></tr>
+            <tr><td><code>400</code></td><td>Bad request — check field values</td></tr>
+            <tr><td><code>401</code></td><td>Missing or invalid API key</td></tr>
+            <tr><td><code>402</code></td><td>Free-tier limit hit — upgrade to Pro</td></tr>
+            <tr><td><code>404</code></td><td>Not found or doesn't belong to your account</td></tr>
+            <tr><td><code>429</code></td><td>Rate limited — slow down</td></tr>
+        </table>
+    </section>
+
+    <section class="dev-section">
+        <h2>Get your API key</h2>
+        {% if current_user %}
+        <p>Your key is on the <a href="/dashboard/account#api-key">Account page</a>.</p>
+        {% else %}
+        <p><a href="/signup">Sign up</a> or <a href="/login">log in</a> to get your API key from the Account page.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

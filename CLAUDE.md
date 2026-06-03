@@ -7,16 +7,17 @@
 ### 🔄 In Progress
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate program signups — set env vars on Railway prod as they arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
-- Railway prod setup needed: add `CRON_SECRET` env var + create Cron service (`0 10 * * *`, `curl -sf -X POST https://printshelf.app/internal/drip -H "X-Cron-Secret: $CRON_SECRET"`)
+- Reddit r/bambulab launch post — draft ready, Cam to post from PluggedIn3d account with shelf screenshot
 
 ### 📋 Todo
-- Per-print video URL (free feature — content creators link YouTube/TikTok to prints)
-- Social link input UX fix (placeholder shows username but user must still type — add "Use @handle" JS fill)
-- Reddit launch post
+- API docs page (/developers) — worked curl example, auth header, rate limit note
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
-- Onboarding drip emails (2026-06-02) — Day-2 "log your first print" + Day-7 "see what others are logging". /internal/drip cron endpoint (secret-gated). 10/10 QA. On prod (117002a).
+- Print cost tracking (2026-06-02) — spool_weight_g on filaments, cost-per-print on detail page, total spend on dashboard. 7/7 QA. On prod (fd32413).
+- Per-print video URL (2026-06-02) — YouTube/TikTok/Instagram detection, ▶ badge on profile cards. 8/8 QA. On prod (0e6401d).
+- Social link UX fix (2026-06-02) — "Use @handle" fill button, Instagram content blocker fix. On prod (7d66031).
+- Onboarding drip emails (2026-06-02) — Day-2 + Day-7, /internal/drip cron endpoint. 10/10 QA. On prod (117002a).
 - Welcome email / sitemap / profile stats / print view links (2026-06-02) — 5/5 QA. On prod (6e50872).
 - Queue IA / Explore / Scroll bug (2026-06-02) — Queue removed from sidebar, /explore page, sidebar column fill fix, fieldset overflow fix. On prod (db4dc26).
 - Audit fixes (2026-06-01) — mobile hamburger nav, footer Privacy/Terms/Contact, Terms of Service, hero gallery caption, logged-out CTA → example shelf. On prod (ba66a17).
@@ -130,13 +131,16 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-02 (session 15–16):**
+**Completed 2026-06-02 (session 15–17):**
 - Welcome email, sitemap, profile stats, print view links — prod (6e50872)
 - Onboarding drip emails Day-2 + Day-7 — prod (117002a)
+- Per-print video URL — prod (0e6401d)
+- Social link UX fix + Instagram content blocker fix — prod (7d66031)
+- Print cost tracking (spool_weight_g + cost-per-print + dashboard spend tile) — prod (fd32413)
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars pending when codes arrive
-- Railway prod: add CRON_SECRET + create Cron service for /internal/drip
+- Reddit r/bambulab post — draft written this session, Cam to post from PluggedIn3d account
 
-**Immediate next step:** Per-print video URL field (free, content-creator feature) then social link UX fix.
+**Immediate next step:** Reddit post (Cam action), then API docs page or next feature.
