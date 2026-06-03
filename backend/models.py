@@ -221,6 +221,8 @@ class Print(Base):
     print_time_mins = Column(Integer, nullable=True) # total minutes
     filament_used_g = Column(Float, nullable=True)   # grams
 
+    video_url = Column(String(1000), nullable=True)   # YouTube/TikTok/Instagram link
+
     print_date = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -250,6 +252,7 @@ class Print(Base):
             "supports": self.supports,
             "printTimeMins": self.print_time_mins,
             "filamentUsedG": self.filament_used_g,
+            "videoUrl": self.video_url,
         }
 
 

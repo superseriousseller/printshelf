@@ -384,6 +384,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
 .thumb .badge { position: absolute; top: 10px; left: 10px; }
 .badge-fail { background: var(--fail); color: white; }
 .badge-partial { background: var(--partial); color: #1a1300; }
+.badge-video { background: #1a1a2e; color: #a78bfa; }
 
 .card-body { padding: 12px 14px 14px; }
 .card-body h3 { margin: 0 0 4px; font-size: 1rem; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -467,7 +468,8 @@ footer {
 .setting-key { color: var(--text-dim); font-size: 0.8rem; margin-right: 4px; }
 .detail-notes { margin-top: 20px; }
 .detail-notes p { color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0; }
-.detail-source { margin-top: 20px; font-size: 0.9rem; }
+.detail-video { margin-top: 16px; }
+.detail-source { margin-top: 12px; font-size: 0.9rem; }
 .detail-source a { color: var(--accent); text-transform: capitalize; }
 /* Explore page */
 .explore-page { max-width: 1100px; margin: 0 auto; padding: 32px 0; }

@@ -100,6 +100,20 @@
             </div>
             {% endif %}
 
+            {% if print_.video_url %}
+            {% set vurl = print_.video_url %}
+            {% if "youtube.com" in vurl or "youtu.be" in vurl %}
+                {% set vlabel = "▶ Watch on YouTube" %}
+            {% elif "tiktok.com" in vurl %}
+                {% set vlabel = "▶ Watch on TikTok" %}
+            {% elif "instagram.com" in vurl %}
+                {% set vlabel = "▶ Watch on Instagram" %}
+            {% else %}
+                {% set vlabel = "▶ Watch video" %}
+            {% endif %}
+            <p class="detail-video"><a href="{{ vurl }}" target="_blank" rel="noopener" class="btn-secondary">{{ vlabel }}</a></p>
+            {% endif %}
+
             {% if print_.source_url %}
             <p class="detail-source"><a href="{{ print_.source_url }}" target="_blank" rel="noopener">View on {{ print_.source_platform }}</a></p>
             {% endif %}

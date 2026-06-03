@@ -45,6 +45,10 @@
         Source URL <span class="hint">(model page on Makerworld/Printables/etc — optional)</span>
         <input type="url" name="source_url" maxlength="1000" value="{{ values.source_url or '' }}" placeholder="https://www.printables.com/model/…">
     </label>
+    <label>
+        Video URL <span class="hint">(YouTube, TikTok, Instagram — optional, shown on your public print page)</span>
+        <input type="url" name="video_url" maxlength="1000" value="{{ values.video_url or '' }}" placeholder="https://www.youtube.com/watch?v=…">
+    </label>
     <input type="hidden" name="thumbnail_url" value="{{ values.thumbnail_url or '' }}">
     <fieldset class="photo-picker">
         <legend>Your photo</legend>
