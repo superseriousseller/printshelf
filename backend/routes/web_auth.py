@@ -387,6 +387,7 @@ def dashboard(
         "filaments": filaments_count,
         "printers": printers,
         "total_spend": round(total_spend, 2) if total_spend else None,
+        "profile_views": user.profile_views,
     }
     resend_notice = None
     if resend == "sent":

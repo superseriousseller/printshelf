@@ -207,6 +207,16 @@ def sitemap(
     return Response("\n".join(lines), media_type="application/xml")
 
 
+@router.get("/developers", response_class=HTMLResponse)
+def developers(
+    request: Request,
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    return templates.TemplateResponse(
+        request, "developers.html", {"current_user": current_user},
+    )
+
+
 @router.get("/privacy", response_class=HTMLResponse)
 def privacy_policy(
     request: Request,

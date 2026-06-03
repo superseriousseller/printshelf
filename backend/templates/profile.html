@@ -29,6 +29,7 @@
             {% endfor %}
         </div>
         {% endif %}
+        {% if profile_views is not none %}<p class="shelf-views-owner">{{ profile_views }} shelf {{ "view" if profile_views == 1 else "views" }} — only you see this</p>{% endif %}
         <ul class="stats">
             <li><strong>{{ stats.total }}</strong> {{ "print" if stats.total == 1 else "prints" }}</li>
             <li><strong>{{ stats.success_pct }}%</strong> success</li>
