@@ -16,6 +16,9 @@ Direct affiliate programs (appends ?param=tag to the product URL):
   MATTERHACKERS_AFFILIATE_REF   MatterHackers referral code
   SUNLU_AFFILIATE_REF           SUNLU sca_ref token (e.g. "9625568.zGmL14Ga1b")
 
+Impact network programs (appends irpid + attribution flags to product URL):
+  FLASHFORGE_IMPACT_PID         FlashForge Impact publisher ID (7371845)
+
 Awin network programs (wraps product URL in Awin redirect):
   AWIN_AFFILIATE_ID             Your Awin publisher ID (shared across all Awin merchants)
   ANYCUBIC_AWIN_MERCHANT_ID     Anycubic's Awin merchant ID (69360)
@@ -34,6 +37,13 @@ _AWIN_MERCHANT = {
     "anycubic": "ANYCUBIC_AWIN_MERCHANT_ID",
 }
 
+# Impact network merchants: store → env var holding the publisher ID (irpid).
+# Static params (irgwc, afsrc, utm_source) appended alongside irpid.
+# irclickid is skipped — Impact falls back to cookie-based attribution.
+_IMPACT_MERCHANT = {
+    "flashforge": "FLASHFORGE_IMPACT_PID",
+}
+
 # Direct affiliate programs: store → (env_var, query_param_name).
 _STORE_TAG = {
     "amazon":        ("AMAZON_AFFILIATE_TAG", "tag"),
@@ -42,6 +52,15 @@ _STORE_TAG = {
     "matterhackers": ("MATTERHACKERS_AFFILIATE_REF", "aff"),
     "sunlu":         ("SUNLU_AFFILIATE_REF", "sca_ref"),
 }
+
+
+def _impact_url(url: str, pid: str) -> str:
+    _IMPACT_PARAMS = {"irpid", "irgwc", "afsrc", "utm_source"}
+    parsed = urlparse(url)
+    pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True)
+             if k not in _IMPACT_PARAMS]
+    pairs += [("irpid", pid), ("irgwc", "1"), ("afsrc", "1"), ("utm_source", "impact")]
+    return urlunparse(parsed._replace(query=urlencode(pairs)))
 
 
 def _awin_url(destination: str, merchant_id: str) -> str:
@@ -73,6 +92,14 @@ def apply_affiliate(url: str) -> str:
     if not url or not url.startswith(("http://", "https://")):
         return url
     store = detect_store(url)
+
+    # Impact network: append irpid + static attribution flags.
+    impact_env = _IMPACT_MERCHANT.get(store)
+    if impact_env:
+        pid = (os.environ.get(impact_env) or "").strip()
+        if pid:
+            return _impact_url(url, pid)
+        return url
 
     # Awin network: wrap the URL in an Awin redirect.
     merchant_env = _AWIN_MERCHANT.get(store)
