@@ -79,6 +79,8 @@ def detect_store(url: str) -> str:
         return "matterhackers"
     if "anycubic.com" in host:
         return "anycubic"
+    if "sunlu.com" in host:
+        return "sunlu"
     return "manual"
 
 

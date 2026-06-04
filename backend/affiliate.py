@@ -14,6 +14,7 @@ Direct affiliate programs (appends ?param=tag to the product URL):
   BAMBU_AFFILIATE_REF           Bambu Lab Store referral code
   POLYMAKER_AFFILIATE_REF       Polymaker (Refersion) referral code
   MATTERHACKERS_AFFILIATE_REF   MatterHackers referral code
+  SUNLU_AFFILIATE_REF           SUNLU sca_ref token (e.g. "9625568.zGmL14Ga1b")
 
 Awin network programs (wraps product URL in Awin redirect):
   AWIN_AFFILIATE_ID             Your Awin publisher ID (shared across all Awin merchants)
@@ -39,6 +40,7 @@ _STORE_TAG = {
     "bambu":         ("BAMBU_AFFILIATE_REF", "ref"),
     "polymaker":     ("POLYMAKER_AFFILIATE_REF", "ref"),
     "matterhackers": ("MATTERHACKERS_AFFILIATE_REF", "aff"),
+    "sunlu":         ("SUNLU_AFFILIATE_REF", "sca_ref"),
 }
 
 
