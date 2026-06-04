@@ -361,7 +361,7 @@ def create_filament(
     color_name: str = Form(""),
     color_hex: str = Form(""),
     diameter: str = Form("1.75"),
-    status: str = Form("own"),
+    wishlist: str = Form(""),
     source_url: str = Form(""),
     price_at_save: str = Form(""),
     spool_weight_g: str = Form(""),
@@ -377,6 +377,7 @@ def create_filament(
         if e.status_code == 402:
             return RedirectResponse("/dashboard/upgrade", status_code=303)
         raise
+    status = "want" if wishlist else "own"
     errors = []
     try:
         diameter_f = float(diameter or "1.75")
@@ -397,10 +398,6 @@ def create_filament(
                 spool_weight_i = None
         except ValueError:
             errors.append("Spool weight must be a number.")
-    if status not in {s.value for s in FilamentStatus}:
-        errors.append("Invalid status.")
-    if not brand.strip() or not material.strip():
-        errors.append("Brand and material are required.")
     if errors:
         return templates.TemplateResponse(
             request, "dashboard/filament_form.html",
@@ -459,7 +456,7 @@ def update_filament(
     color_name: str = Form(""),
     color_hex: str = Form(""),
     diameter: str = Form("1.75"),
-    status: str = Form("own"),
+    wishlist: str = Form(""),
     source_url: str = Form(""),
     price_at_save: str = Form(""),
     spool_weight_g: str = Form(""),
@@ -476,8 +473,7 @@ def update_filament(
         diameter_f = float(diameter or "1.75")
     except ValueError:
         diameter_f = 1.75
-    if status in {s.value for s in FilamentStatus}:
-        f.status = status
+    f.status = "want" if wishlist else "own"
     f.brand = brand.strip()
     f.material = material.strip()
     f.color_name = color_name.strip() or None
@@ -515,6 +511,21 @@ def delete_filament(
     f = db.query(Filament).filter(Filament.id == filament_id, Filament.user_id == user.id).first()
     if f is not None:
         db.delete(f)
+        db.commit()
+    return RedirectResponse("/dashboard/filaments", status_code=303)
+
+
+@router.post("/filaments/{filament_id}/mark-owned")
+def mark_filament_owned(
+    filament_id: int,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    f = db.query(Filament).filter(Filament.id == filament_id, Filament.user_id == user.id).first()
+    if f is not None:
+        f.status = "own"
         db.commit()
     return RedirectResponse("/dashboard/filaments", status_code=303)
 

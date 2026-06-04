@@ -59,11 +59,9 @@
                 <option value="2.85" {% if values.diameter == "2.85" %}selected{% endif %}>2.85mm</option>
             </select>
         </label>
-        <label>
-            Status
-            <select name="status">
-                {% for s in statuses %}<option value="{{ s }}" {% if values.status == s %}selected{% endif %}>{{ s|replace("_", " ") }}</option>{% endfor %}
-            </select>
+        <label class="checkbox-label">
+            <input type="checkbox" name="wishlist" value="1" {% if values.status == 'want' %}checked{% endif %}>
+            Add to wishlist (don't own yet)
         </label>
     </div>
     <label>
