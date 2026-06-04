@@ -9,31 +9,44 @@ data migration.
 Tags come from env vars. An empty/unset tag means "redirect to the bare
 URL" — useful before Cam has signed up for a given affiliate program.
 
-Env vars read:
+Direct affiliate programs (appends ?param=tag to the product URL):
   AMAZON_AFFILIATE_TAG          Amazon Associates tracking id (e.g. "printshelf-20")
   BAMBU_AFFILIATE_REF           Bambu Lab Store referral code
   POLYMAKER_AFFILIATE_REF       Polymaker (Refersion) referral code
   MATTERHACKERS_AFFILIATE_REF   MatterHackers referral code
-  ANYCUBIC_AFFILIATE_REF        Anycubic referral code
+
+Awin network programs (wraps product URL in Awin redirect):
+  AWIN_AFFILIATE_ID             Your Awin publisher ID (shared across all Awin merchants)
+  ANYCUBIC_AWIN_MERCHANT_ID     Anycubic's Awin merchant ID (69360)
 """
 import os
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qsl, quote_plus, urlencode, urlparse, urlunparse
 
 from filament_import_service import detect_store
 
 
-# Map of store → (env_var_name, query_param_name).
-# Query param defaults below are the canonical names used by each
-# affiliate program. If a program uses a path-based scheme instead of
-# a query param we'd extend this dict with a callable; for now all
-# five stores use ?param=tag.
+_AWIN_BASE = "https://www.awin1.com/cread.php"
+
+# Awin network merchants: store → env var holding that merchant's Awin ID.
+# The publisher (affiliate) ID is shared — read once from AWIN_AFFILIATE_ID.
+_AWIN_MERCHANT = {
+    "anycubic": "ANYCUBIC_AWIN_MERCHANT_ID",
+}
+
+# Direct affiliate programs: store → (env_var, query_param_name).
 _STORE_TAG = {
     "amazon":        ("AMAZON_AFFILIATE_TAG", "tag"),
     "bambu":         ("BAMBU_AFFILIATE_REF", "ref"),
     "polymaker":     ("POLYMAKER_AFFILIATE_REF", "ref"),
     "matterhackers": ("MATTERHACKERS_AFFILIATE_REF", "aff"),
-    "anycubic":      ("ANYCUBIC_AFFILIATE_REF", "ref"),
 }
+
+
+def _awin_url(destination: str, merchant_id: str) -> str:
+    affiliate_id = (os.environ.get("AWIN_AFFILIATE_ID") or "").strip()
+    if not affiliate_id:
+        return destination
+    return f"{_AWIN_BASE}?awinmid={merchant_id}&awinaffid={affiliate_id}&ued={quote_plus(destination)}"
 
 
 def _tag_for(store: str) -> tuple[str, str] | None:
@@ -58,13 +71,22 @@ def apply_affiliate(url: str) -> str:
     if not url or not url.startswith(("http://", "https://")):
         return url
     store = detect_store(url)
+
+    # Awin network: wrap the URL in an Awin redirect.
+    merchant_env = _AWIN_MERCHANT.get(store)
+    if merchant_env:
+        merchant_id = (os.environ.get(merchant_env) or "").strip()
+        if merchant_id:
+            return _awin_url(url, merchant_id)
+        return url
+
+    # Direct programs: append ?param=tag.
     spec = _tag_for(store)
     if spec is None:
         return url
     param, tag = spec
     parsed = urlparse(url)
-    # Replace any existing value for this param (a competitor's tag, an
-    # old tag of ours, etc.) so we never double up or honor a stale ref.
+    # Replace any existing value for this param so we never double up.
     pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True) if k != param]
     pairs.append((param, tag))
     return urlunparse(parsed._replace(query=urlencode(pairs)))
