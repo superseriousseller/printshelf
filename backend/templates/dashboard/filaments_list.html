@@ -27,6 +27,11 @@
             <td>{{ f.diameter }}mm</td>
             <td><span class="status-pill status-{{ f.status }}">{{ f.status|replace("_", " ") }}</span></td>
             <td class="actions">
+                {% if f.status == 'want' %}
+                <form method="post" action="/dashboard/filaments/{{ f.id }}/mark-owned" class="inline-form">
+                    <button type="submit" class="linklike">Mark as owned</button>
+                </form>
+                {% endif %}
                 {% if f.source_url %}<a href="/dashboard/filaments/{{ f.id }}/buy" target="_blank" rel="noopener nofollow sponsored">Buy</a>{% endif %}
                 <a href="/dashboard/filaments/{{ f.id }}/edit">Edit</a>
                 <form method="post" action="/dashboard/filaments/{{ f.id }}/delete" class="inline-form delete-form">
