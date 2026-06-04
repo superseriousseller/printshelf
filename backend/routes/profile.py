@@ -14,6 +14,7 @@ from limits import enforce_print_limit
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from affiliate import apply_affiliate
 from auth import get_current_user_web_optional
 from email_service import send_follow_notification
 from models import Filament, Follow, Print, Printer, User, get_db
@@ -287,6 +288,12 @@ def public_print_detail(
 
     print_cost = _calc_print_cost(p.filament_used_g, filaments)
 
+    filaments_ctx = []
+    for f in filaments:
+        price_per_kg = round(f.price_at_save / f.spool_weight_g * 1000, 2) if (f.price_at_save and f.spool_weight_g) else None
+        buy_url = apply_affiliate(f.source_url) if f.source_url else None
+        filaments_ctx.append({"f": f, "price_per_kg": price_per_kg, "buy_url": buy_url})
+
     return templates.TemplateResponse(
         request,
         "print_detail.html",
@@ -294,6 +301,7 @@ def public_print_detail(
             "user": user,
             "print_": p,
             "filaments": filaments,
+            "filaments_ctx": filaments_ctx,
             "printer": printer,
             "print_cost": print_cost,
             "related_by_filament": related_by_filament,

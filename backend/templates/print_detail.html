@@ -65,10 +65,12 @@
             <div class="detail-filaments">
                 <p class="detail-section-label">Filaments used</p>
                 <ul class="chip-list">
-                    {% for f in filaments %}
+                    {% for fc in filaments_ctx %}
                     <li class="chip">
-                        {% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span>{% endif %}
-                        {{ f.brand }} {{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}
+                        {% if fc.f.color_hex %}<span class="swatch-sm" style="background:{{ fc.f.color_hex }}"></span>{% endif %}
+                        {{ fc.f.brand }} {{ fc.f.material }}{% if fc.f.color_name %} · {{ fc.f.color_name }}{% endif %}
+                        {% if fc.price_per_kg %}<span class="chip-price">${{ "%.2f"|format(fc.price_per_kg) }}/kg</span>{% endif %}
+                        {% if fc.buy_url %}<a href="{{ fc.buy_url }}" class="chip-buy" target="_blank" rel="noopener sponsored">Buy (when purchased) →</a>{% endif %}
                     </li>
                     {% endfor %}
                 </ul>
