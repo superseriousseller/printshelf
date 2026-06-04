@@ -10,10 +10,10 @@
 - Reddit r/bambulab launch post — draft ready, Cam to post from PluggedIn3d account with shelf screenshot
 
 ### 📋 Todo
-- API docs page (/developers) — worked curl example, auth header, rate limit note
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Shelf analytics + API docs (2026-06-02) — profile_views counter (owner-only, atomic), /developers page, footer API link. 8/8 QA. On prod (5a3fa53).
 - Print cost tracking (2026-06-02) — spool_weight_g on filaments, cost-per-print on detail page, total spend on dashboard. 7/7 QA. On prod (fd32413).
 - Per-print video URL (2026-06-02) — YouTube/TikTok/Instagram detection, ▶ badge on profile cards. 8/8 QA. On prod (0e6401d).
 - Social link UX fix (2026-06-02) — "Use @handle" fill button, Instagram content blocker fix. On prod (7d66031).
@@ -131,16 +131,17 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-02 (session 15–17):**
+**Completed 2026-06-02 (session 15–18):**
 - Welcome email, sitemap, profile stats, print view links — prod (6e50872)
 - Onboarding drip emails Day-2 + Day-7 — prod (117002a)
 - Per-print video URL — prod (0e6401d)
 - Social link UX fix + Instagram content blocker fix — prod (7d66031)
 - Print cost tracking (spool_weight_g + cost-per-print + dashboard spend tile) — prod (fd32413)
+- Shelf analytics (profile_views counter) + API docs page (/developers) — prod (5a3fa53)
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars pending when codes arrive
-- Reddit r/bambulab post — draft written this session, Cam to post from PluggedIn3d account
+- Reddit r/bambulab post — draft written, Cam to post from PluggedIn3d account (Tue–Thu 9–11am CST)
 
-**Immediate next step:** Reddit post (Cam action), then API docs page or next feature.
+**Immediate next step:** Reddit post (Cam action). Next feature TBD.

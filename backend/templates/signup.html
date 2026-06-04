@@ -19,7 +19,7 @@
         </label>
         <label>
             Username <span class="hint">(used for your public URL: /@your-handle)</span>
-            <input type="text" name="username" required pattern="[A-Za-z0-9_\-]{3,30}" value="{{ values.username or '' }}" autocomplete="username">
+            <input type="text" name="username" required value="{{ values.username or '' }}" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false">
         </label>
         <label>
             Display name <span class="hint">(optional — shown on your profile)</span>
