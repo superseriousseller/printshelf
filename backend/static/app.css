@@ -167,6 +167,9 @@ a:hover { text-decoration: underline; }
 .badge-private { background: var(--border); color: var(--text-dim); }
 .swatch { display: inline-block; width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--border); }
 .swatch-sm { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); vertical-align: middle; }
+.chip-price { color: var(--text-dim); font-size: 0.73rem; }
+.chip-buy { color: var(--accent); font-size: 0.73rem; text-decoration: none; white-space: nowrap; }
+.chip-buy:hover { text-decoration: underline; }
 .status-pill { padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 500; text-transform: capitalize; }
 .status-own { background: #1e3a2a; color: #8fdca5; }
 .status-want { background: #2a2640; color: #b8a8f0; }
