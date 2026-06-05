@@ -12,6 +12,8 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Chrome extension v0.3.8 (2026-06-04) — SUNLU + FlashForge store support; finish extraction from product title (Silk/Matte/Glow/etc.); SUNLU brand fix (Shopify JSON-LD override). 8/8 QA. On prod (027dbc3).
+- Affiliate disclosure footer (2026-06-04) — FTC + Amazon Associates required language. On prod (bac0c83).
 - Print again button (2026-06-04) — owner sees "Print again" on detail page; pre-fills new print form with title, designer, source, printer, filaments, slicer settings; photo blank; notice banner shown. 8/8 QA. On prod (ba09c69).
 - Filament finish field (2026-06-04) — free-text finish field (Silk, Matte, Glow, etc.) on filament form with datalist suggestions; shown on chips + list. On prod (0db617c).
 - Affiliate expansion (2026-06-04) — Anycubic (Awin), SUNLU, FlashForge (Impact), filament price/kg + Buy link on print detail, filament own/want UX. On prod (eb22374). Env vars set: `AMAZON_AFFILIATE_TAG`, `AWIN_AFFILIATE_ID`, `ANYCUBIC_AWIN_MERCHANT_ID`, `SUNLU_AFFILIATE_REF`, `FLASHFORGE_IMPACT_PID`.
@@ -145,4 +147,4 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars still pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`
 
-**Immediate next step:** Next feature TBD.
+**Immediate next step:** Reload extension to v0.3.8 (chrome://extensions → Reload). Next feature TBD.
