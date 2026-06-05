@@ -86,12 +86,20 @@ def detect_store(url: str) -> str:
     return "manual"
 
 
-# Per-store default brand. Many filament retailers also sell other brands
-# (MatterHackers) so we keep these as a fallback only.
-_DEFAULT_BRAND = {
+# Single-brand stores: always use this name, overriding whatever JSON-LD says.
+# (Shopify stores often put the store display name in JSON-LD brand, not the
+# actual manufacturer — e.g. store.sunlu.com returns "Affordable 3D Printing
+# Filaments and Resins" instead of "SUNLU".)
+_FIXED_BRAND = {
     "bambu": "Bambu Lab",
     "polymaker": "Polymaker",
     "anycubic": "Anycubic",
+    "sunlu": "SUNLU",
+    "flashforge": "FlashForge",
+}
+
+# Multi-brand stores: only used as a fallback when JSON-LD has no brand.
+_DEFAULT_BRAND = {
     "matterhackers": "MatterHackers",
 }
 
@@ -282,7 +290,7 @@ def extract(url: str) -> dict:
     # Strip noise like " | Polymaker", " - Bambu Lab US Store"
     title = re.split(r"\s+[|–\-]\s+", title)[0].strip()
 
-    brand = _extract_brand_from_jsonld(soup)
+    brand = _FIXED_BRAND.get(store) or _extract_brand_from_jsonld(soup)
     if not brand and store == "amazon":
         brand = _extract_amazon_brand(soup, title)
     brand = brand or _DEFAULT_BRAND.get(store)
@@ -311,7 +319,7 @@ def extract(url: str) -> dict:
 
 def _partial_from_title(store: str, title: str, url: str) -> dict:
     """When the page blocked us but a slug-derived title is available."""
-    brand = _DEFAULT_BRAND.get(store)
+    brand = _FIXED_BRAND.get(store) or _DEFAULT_BRAND.get(store)
     material = _detect_material(title)
     color = _detect_color(title, material, brand)
     return {

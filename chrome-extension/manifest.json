@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "PrintShelf",
-  "description": "Add 3D models from Printables, Makerworld, Cults3D, Thingiverse — and filaments from Polymaker, Bambu Lab, Anycubic, MatterHackers, and Amazon — to your PrintShelf library.",
-  "version": "0.3.7",
+  "description": "Add 3D models from Printables, Makerworld, Cults3D, Thingiverse — and filaments from Polymaker, Bambu Lab, Anycubic, MatterHackers, Amazon, SUNLU, and FlashForge — to your PrintShelf library.",
+  "version": "0.3.8",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -45,7 +45,12 @@
     "https://www.matterhackers.com/*",
     "https://matterhackers.com/*",
     "https://www.amazon.com/*",
-    "https://amazon.com/*"
+    "https://amazon.com/*",
+    "https://store.sunlu.com/*",
+    "https://www.sunlu.com/*",
+    "https://sunlu.com/*",
+    "https://www.flashforge.com/*",
+    "https://flashforge.com/*"
   ],
   "content_scripts": [
     {
@@ -75,7 +80,12 @@
         "https://www.matterhackers.com/*",
         "https://matterhackers.com/*",
         "https://www.amazon.com/*",
-        "https://amazon.com/*"
+        "https://amazon.com/*",
+        "https://store.sunlu.com/*",
+        "https://www.sunlu.com/*",
+        "https://sunlu.com/*",
+        "https://www.flashforge.com/*",
+        "https://flashforge.com/*"
       ],
       "js": ["content/inject_filament.js"],
       "css": ["content/common.css"],
