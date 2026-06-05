@@ -6,13 +6,14 @@
 
 ### 🔄 In Progress
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
-- Affiliate program signups — set env vars on Railway prod as they arrive: `AMAZON_AFFILIATE_TAG`, `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`, `ANYCUBIC_AFFILIATE_REF`
-- Reddit r/bambulab launch post — draft ready, Cam to post from PluggedIn3d account with shelf screenshot
+- Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 
 ### 📋 Todo
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Affiliate expansion (2026-06-04) — Anycubic (Awin), SUNLU, FlashForge (Impact), filament price/kg + Buy link on print detail, filament own/want UX. On prod (eb22374). Env vars set: `AMAZON_AFFILIATE_TAG`, `AWIN_AFFILIATE_ID`, `ANYCUBIC_AWIN_MERCHANT_ID`, `SUNLU_AFFILIATE_REF`, `FLASHFORGE_IMPACT_PID`.
+- Signup fix (2026-06-04) — removed HTML5 pattern attr blocking all signups. On prod (adf981d).
 - Shelf analytics + API docs (2026-06-02) — profile_views counter (owner-only, atomic), /developers page, footer API link. 8/8 QA. On prod (5a3fa53).
 - Print cost tracking (2026-06-02) — spool_weight_g on filaments, cost-per-print on detail page, total spend on dashboard. 7/7 QA. On prod (fd32413).
 - Per-print video URL (2026-06-02) — YouTube/TikTok/Instagram detection, ▶ badge on profile cards. 8/8 QA. On prod (0e6401d).

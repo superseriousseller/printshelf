@@ -163,6 +163,7 @@ class Filament(Base):
     color_hex = Column(String(7), nullable=True)          # #RRGGBB
     diameter = Column(Float, default=1.75, nullable=False)  # 1.75 or 2.85
 
+    finish = Column(String(100), nullable=True)      # Silk, Matte, Glow, Wood, Carbon Fiber, etc.
     status = Column(String(20), default="own", nullable=False)
     source_url = Column(String(1000), nullable=True)
     price_at_save = Column(Float, nullable=True)   # purchase price of the spool
@@ -185,6 +186,7 @@ class Filament(Base):
             "sourceUrl": self.source_url,
             "priceAtSave": self.price_at_save,
             "spoolWeightG": self.spool_weight_g,
+            "finish": self.finish,
             "notes": self.notes,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
         }

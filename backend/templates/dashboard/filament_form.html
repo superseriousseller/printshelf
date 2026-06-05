@@ -53,17 +53,33 @@
     </script>
     <div class="row">
         <label>
+            Finish <span class="hint">(optional — Silk, Matte, Glow, Wood, etc.)</span>
+            <input type="text" name="finish" maxlength="100" value="{{ values.finish or '' }}" placeholder="e.g. Silk" list="finish-options" autocomplete="off">
+            <datalist id="finish-options">
+                <option value="Silk">
+                <option value="Matte">
+                <option value="Glow">
+                <option value="Marble">
+                <option value="Wood">
+                <option value="Carbon Fiber">
+                <option value="Metal">
+                <option value="Translucent">
+                <option value="Rainbow">
+                <option value="High Speed">
+            </datalist>
+        </label>
+        <label>
             Diameter
             <select name="diameter">
                 <option value="1.75" {% if values.diameter == "1.75" %}selected{% endif %}>1.75mm</option>
                 <option value="2.85" {% if values.diameter == "2.85" %}selected{% endif %}>2.85mm</option>
             </select>
         </label>
-        <label class="checkbox-label">
-            <input type="checkbox" name="wishlist" value="1" {% if values.status == 'want' %}checked{% endif %}>
-            Add to wishlist (don't own yet)
-        </label>
     </div>
+    <label class="checkbox-label">
+        <input type="checkbox" name="wishlist" value="1" {% if values.status == 'want' %}checked{% endif %}>
+        Add to wishlist (don't own yet)
+    </label>
     <label>
         Source URL <span class="hint">(where you bought it)</span>
         <input type="url" name="source_url" maxlength="1000" value="{{ values.source_url or '' }}" placeholder="https://…">
