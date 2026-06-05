@@ -20,6 +20,28 @@
 
 const DEFAULT_API_BASE = "https://printshelf.app";
 
+const FINISH_WORDS = [
+  ["carbon fiber", "Carbon Fiber"],
+  ["high speed", "High Speed"],
+  ["silk", "Silk"],
+  ["matte", "Matte"],
+  ["glow", "Glow"],
+  ["marble", "Marble"],
+  ["wood", "Wood"],
+  ["metal", "Metal"],
+  ["translucent", "Translucent"],
+  ["rainbow", "Rainbow"],
+];
+
+function extractFinish(title) {
+  if (!title) return null;
+  const t = title.toLowerCase();
+  for (const [key, label] of FINISH_WORDS) {
+    if (t.includes(key)) return label;
+  }
+  return null;
+}
+
 // FastAPI's HTTPException(detail=<object>) returns `detail` as a dict for
 // structured errors like upgrade_required. Coerce it into a string we can
 // show in a toast.
@@ -136,6 +158,7 @@ async function addFilament(payload) {
   const colorHex = (payload.colorHex && payload.colorHex.trim()) || null;
   const brand = meta && meta.brand;
   const material = meta && meta.material;
+  const finish = extractFinish((meta && meta.title) || "");
 
   // If we don't have the minimum to auto-create (brand + material), fall back
   // to the prefilled dashboard form. The user finishes 1-2 fields and saves.
@@ -152,6 +175,7 @@ async function addFilament(payload) {
     material,
     color_name: colorName,
     color_hex: colorHex,
+    finish,
     source_url: sourceUrl,
     price_at_save: meta && typeof meta.price === "number" ? meta.price : null,
     status: "want",

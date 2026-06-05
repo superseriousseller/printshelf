@@ -221,6 +221,56 @@
       },
     },
     {
+      // SUNLU (Shopify). Color swatches are standard Shopify radio inputs.
+      store: "sunlu",
+      hosts: ["store.sunlu.com", "www.sunlu.com", "sunlu.com"],
+      pathPattern: /^\/products\/[^/]+/i,
+      readVariant: () => {
+        const checked = document.querySelector(
+          'input[type="radio"][name*="color" i]:checked, ' +
+          'input[type="radio"][name*="Color"]:checked, ' +
+          '.product-form__input--swatch input[type="radio"]:checked'
+        );
+        if (!checked) return { name: "", hex: "" };
+        // Try aria-label or value for the name; check label for hex swatch.
+        let name = "";
+        let hex = "";
+        if (checked.id) {
+          const lbl = document.querySelector(`label[for="${CSS.escape(checked.id)}"]`);
+          if (lbl) {
+            name = (lbl.getAttribute("aria-label") || "").trim() || cleanColorLabel(lbl.textContent).name;
+            hex = findHexInLabel(lbl);
+          }
+        }
+        if (!name) name = cleanColorLabel(checked.value || "").name;
+        return { name, hex };
+      },
+    },
+    {
+      // FlashForge. Product pages live under /filament/ or /products/.
+      store: "flashforge",
+      hosts: ["www.flashforge.com", "flashforge.com"],
+      pathPattern: /\/(filament|products?)\/[^/]+/i,
+      readVariant: () => {
+        // FlashForge uses standard radio or select color pickers.
+        const checked = document.querySelector(
+          'input[type="radio"][name*="color" i]:checked, ' +
+          'input[type="radio"][name*="Color"]:checked'
+        );
+        if (checked) {
+          const name = cleanColorLabel(
+            checked.getAttribute("aria-label") || checked.value || ""
+          ).name;
+          const lbl = checked.id
+            ? document.querySelector(`label[for="${CSS.escape(checked.id)}"]`)
+            : null;
+          const hex = lbl ? findHexInLabel(lbl) : "";
+          return { name, hex };
+        }
+        return { name: "", hex: "" };
+      },
+    },
+    {
       store: "polymaker",
       hosts: ["us.polymaker.com", "polymaker.com", "shop.polymaker.com"],
       // Shopify storefronts use /products/<slug> for product pages.
