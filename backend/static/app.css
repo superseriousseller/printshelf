@@ -283,6 +283,30 @@ a:hover { text-decoration: underline; }
     .drop-sub { display: none; }
 }
 
+@media (max-width: 480px) {
+    /* Form rows: force single column on narrow phones */
+    .dash-form .row { grid-template-columns: 1fr; }
+
+    /* Prints filter bar: stack vertically */
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .filter-search { min-width: 0; }
+    .filter-sort { width: 100%; }
+
+    /* Public profile filters */
+    .filters form { flex-direction: column; align-items: stretch; }
+    .filters select { min-width: 0; width: 100%; }
+
+    /* Print detail page */
+    .print-detail-page { padding: 16px 12px; }
+    .related-section { padding: 0 12px; }
+
+    /* Admin */
+    .admin-wrap { padding: 16px 12px; }
+
+    /* Hero gallery: 1-col on very narrow screens */
+    .hero-gallery { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ---------- Homepage ---------- */
 .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; padding: 40px 0 56px; }
 .hero h1 { font-size: 2.6rem; line-height: 1.1; margin: 0 0 18px; letter-spacing: -0.02em; }
@@ -573,7 +597,9 @@ footer {
 .admin-stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 20px; min-width: 110px; display: flex; flex-direction: column; gap: 4px; }
 .admin-stat-val { font-size: 1.6rem; font-weight: 700; color: var(--text); line-height: 1; }
 .admin-stat-lbl { font-size: 0.75rem; color: var(--text-dim); }
-.admin-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.admin-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.admin-refresh { font-size: 0.8rem; padding: 3px 10px; margin-left: 8px; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 400px; }
 .admin-table th { text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--border); color: var(--text-dim); font-weight: 600; font-size: 0.8rem; }
 .admin-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
 .admin-table tr:last-child td { border-bottom: none; }

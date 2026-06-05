@@ -4,7 +4,7 @@
 {% block content %}
 <div class="admin-wrap">
     <h1 class="admin-title">Admin Console</h1>
-    <p class="admin-ts">{{ now.strftime('%Y-%m-%d %H:%M') }} UTC</p>
+    <p class="admin-ts">{{ now.strftime('%Y-%m-%d %H:%M') }} UTC <a href="/admin" class="btn-secondary admin-refresh">Refresh</a></p>
 
     <!-- Platform Totals -->
     <section class="admin-section">
@@ -43,6 +43,7 @@
             {% endfor %}
         </div>
         {% if recent_clicks %}
+        <div class="admin-table-scroll">
         <table class="admin-table">
             <thead><tr><th>Time</th><th>Store</th><th>Filament ID</th><th>User</th></tr></thead>
             <tbody>
@@ -56,6 +57,7 @@
             {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
         <p class="admin-empty">No clicks yet. Goes up when affiliate env vars are set and users click Buy.</p>
         {% endif %}
@@ -64,6 +66,7 @@
     <!-- Top Makers -->
     <section class="admin-section">
         <h2>Top Makers</h2>
+        <div class="admin-table-scroll">
         <table class="admin-table">
             <thead><tr><th>User</th><th>Prints</th><th>Joined</th></tr></thead>
             <tbody>
@@ -76,11 +79,13 @@
             {% endfor %}
             </tbody>
         </table>
+        </div>
     </section>
 
     <!-- Recent Signups -->
     <section class="admin-section">
         <h2>Recent Signups</h2>
+        <div class="admin-table-scroll">
         <table class="admin-table">
             <thead><tr><th>User</th><th>Email</th><th>Tier</th><th>Prints</th><th>Joined</th><th>Last login</th></tr></thead>
             <tbody>
@@ -96,6 +101,7 @@
             {% endfor %}
             </tbody>
         </table>
+        </div>
     </section>
 </div>
 {% endblock %}
