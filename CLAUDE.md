@@ -12,6 +12,8 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Print again button (2026-06-04) — owner sees "Print again" on detail page; pre-fills new print form with title, designer, source, printer, filaments, slicer settings; photo blank; notice banner shown. 8/8 QA. On prod (ba09c69).
+- Filament finish field (2026-06-04) — free-text finish field (Silk, Matte, Glow, etc.) on filament form with datalist suggestions; shown on chips + list. On prod (0db617c).
 - Affiliate expansion (2026-06-04) — Anycubic (Awin), SUNLU, FlashForge (Impact), filament price/kg + Buy link on print detail, filament own/want UX. On prod (eb22374). Env vars set: `AMAZON_AFFILIATE_TAG`, `AWIN_AFFILIATE_ID`, `ANYCUBIC_AWIN_MERCHANT_ID`, `SUNLU_AFFILIATE_REF`, `FLASHFORGE_IMPACT_PID`.
 - Signup fix (2026-06-04) — removed HTML5 pattern attr blocking all signups. On prod (adf981d).
 - Shelf analytics + API docs (2026-06-02) — profile_views counter (owner-only, atomic), /developers page, footer API link. 8/8 QA. On prod (5a3fa53).
@@ -132,17 +134,15 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-02 (session 15–18):**
-- Welcome email, sitemap, profile stats, print view links — prod (6e50872)
-- Onboarding drip emails Day-2 + Day-7 — prod (117002a)
-- Per-print video URL — prod (0e6401d)
-- Social link UX fix + Instagram content blocker fix — prod (7d66031)
-- Print cost tracking (spool_weight_g + cost-per-print + dashboard spend tile) — prod (fd32413)
-- Shelf analytics (profile_views counter) + API docs page (/developers) — prod (5a3fa53)
+**Completed 2026-06-04 (session 19):**
+- Signup fix — removed HTML5 pattern attr blocking all signups — prod (adf981d)
+- Filament own/want UX — default own, wishlist checkbox, "Mark as owned" quick action — prod (ef2ed25)
+- Affiliate expansion — Anycubic (Awin), SUNLU (sca_ref), FlashForge (Impact), all env vars set — prod (eb22374)
+- Filament finish field — Silk/Matte/Glow/etc. free-text with datalist — prod (0db617c)
+- Print again button — pre-fills new print form from existing print, 8/8 QA — prod (ba09c69)
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
-- Affiliate env vars pending when codes arrive
-- Reddit r/bambulab post — draft written, Cam to post from PluggedIn3d account (Tue–Thu 9–11am CST)
+- Affiliate env vars still pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`
 
-**Immediate next step:** Reddit post (Cam action). Next feature TBD.
+**Immediate next step:** Next feature TBD.
