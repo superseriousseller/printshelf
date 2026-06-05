@@ -10,10 +10,13 @@
 
 {% if printers %}
 <div class="table-scroll">
-<table class="dash-table">
+<table class="dash-table" id="printers-table">
     <thead>
         <tr>
-            <th>Name</th><th>Brand</th><th>Model</th><th></th>
+            <th data-sort data-col="0">Name</th>
+            <th data-sort data-col="1">Brand</th>
+            <th data-sort data-col="2">Model</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>

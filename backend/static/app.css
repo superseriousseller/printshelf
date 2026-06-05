@@ -108,6 +108,15 @@ a:hover { text-decoration: underline; }
 .dash-table tr:last-child td { border-bottom: 0; }
 .dash-table .actions { display: flex; gap: 14px; align-items: center; justify-content: flex-end; }
 .dash-table .actions a { font-size: 0.9rem; }
+.dash-table th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
+.dash-table th[data-sort]:hover { color: var(--text); }
+.dash-table th[data-sort]::after { content: " ↕"; opacity: 0.35; font-size: 0.8em; }
+.dash-table th[data-sort].sort-asc::after { content: " ↑"; opacity: 1; color: var(--accent); }
+.dash-table th[data-sort].sort-desc::after { content: " ↓"; opacity: 1; color: var(--accent); }
+.filter-chips { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.filter-chip { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-dim); border-radius: 20px; padding: 4px 14px; font-size: 0.82rem; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.filter-chip:hover { border-color: var(--accent); color: var(--text); }
+.filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .inline-form { display: inline; }
 .linklike.danger { color: #ff7c7c; }
 .linklike.danger:hover { color: #ff5c5c; }
