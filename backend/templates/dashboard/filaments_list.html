@@ -14,7 +14,7 @@
 <table class="dash-table">
     <thead>
         <tr>
-            <th></th><th>Brand</th><th>Material</th><th>Color</th><th>Diameter</th><th>Status</th><th></th>
+            <th></th><th>Brand</th><th>Material</th><th>Finish</th><th>Color</th><th>Diameter</th><th>Status</th><th></th>
         </tr>
     </thead>
     <tbody>
@@ -23,6 +23,7 @@
             <td>{% if f.color_hex %}<span class="swatch" style="background:{{ f.color_hex }}"></span>{% endif %}</td>
             <td><strong>{{ f.brand }}</strong></td>
             <td>{{ f.material }}</td>
+            <td>{{ f.finish or "—" }}</td>
             <td>{{ f.color_name or "—" }}</td>
             <td>{{ f.diameter }}mm</td>
             <td><span class="status-pill status-{{ f.status }}">{{ f.status|replace("_", " ") }}</span></td>

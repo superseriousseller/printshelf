@@ -361,6 +361,7 @@ def create_filament(
     color_name: str = Form(""),
     color_hex: str = Form(""),
     diameter: str = Form("1.75"),
+    finish: str = Form(""),
     wishlist: str = Form(""),
     source_url: str = Form(""),
     price_at_save: str = Form(""),
@@ -403,8 +404,8 @@ def create_filament(
             request, "dashboard/filament_form.html",
             _filament_form_ctx(user, db, None, errors, {
                 "brand": brand, "material": material, "color_name": color_name,
-                "color_hex": color_hex, "diameter": diameter, "status": status,
-                "source_url": source_url, "price_at_save": price_at_save,
+                "color_hex": color_hex, "diameter": diameter, "finish": finish,
+                "status": status, "source_url": source_url, "price_at_save": price_at_save,
                 "spool_weight_g": spool_weight_g, "notes": notes,
             }),
             status_code=400,
@@ -412,7 +413,7 @@ def create_filament(
     f = Filament(
         user_id=user.id, brand=brand.strip(), material=material.strip(),
         color_name=color_name.strip() or None, color_hex=_normalize_hex(color_hex),
-        diameter=diameter_f, status=status,
+        diameter=diameter_f, finish=finish.strip() or None, status=status,
         source_url=source_url.strip() or None, price_at_save=price_f,
         spool_weight_g=spool_weight_i, notes=notes.strip() or None,
     )
@@ -438,7 +439,7 @@ def edit_filament(
         _filament_form_ctx(user, db, f, [], {
             "brand": f.brand, "material": f.material,
             "color_name": f.color_name or "", "color_hex": f.color_hex or "",
-            "diameter": str(f.diameter), "status": f.status,
+            "diameter": str(f.diameter), "finish": f.finish or "", "status": f.status,
             "source_url": f.source_url or "",
             "price_at_save": f.price_at_save if f.price_at_save is not None else "",
             "spool_weight_g": f.spool_weight_g if f.spool_weight_g is not None else "",
@@ -456,6 +457,7 @@ def update_filament(
     color_name: str = Form(""),
     color_hex: str = Form(""),
     diameter: str = Form("1.75"),
+    finish: str = Form(""),
     wishlist: str = Form(""),
     source_url: str = Form(""),
     price_at_save: str = Form(""),
@@ -474,6 +476,7 @@ def update_filament(
     except ValueError:
         diameter_f = 1.75
     f.status = "want" if wishlist else "own"
+    f.finish = finish.strip() or None
     f.brand = brand.strip()
     f.material = material.strip()
     f.color_name = color_name.strip() or None

@@ -40,6 +40,7 @@ class FilamentCreate(BaseModel):
     color_name: Optional[str] = Field(default=None, max_length=100)
     color_hex: Optional[str] = Field(default=None, pattern=r"^#?[0-9A-Fa-f]{6}$")
     diameter: float = 1.75
+    finish: Optional[str] = Field(default=None, max_length=100)
     status: str = "own"
     source_url: Optional[str] = Field(default=None, max_length=1000)
     price_at_save: Optional[float] = None
@@ -52,6 +53,7 @@ class FilamentUpdate(BaseModel):
     color_name: Optional[str] = Field(default=None, max_length=100)
     color_hex: Optional[str] = Field(default=None, pattern=r"^#?[0-9A-Fa-f]{6}$")
     diameter: Optional[float] = None
+    finish: Optional[str] = Field(default=None, max_length=100)
     status: Optional[str] = None
     source_url: Optional[str] = Field(default=None, max_length=1000)
     price_at_save: Optional[float] = None
@@ -107,6 +109,7 @@ def create_filament(
         color_name=body.color_name,
         color_hex=_normalize_hex(body.color_hex),
         diameter=body.diameter,
+        finish=body.finish,
         status=body.status,
         source_url=body.source_url,
         price_at_save=body.price_at_save,
