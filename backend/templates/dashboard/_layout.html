@@ -57,5 +57,48 @@
 
     function close() { pending = null; overlay.hidden = true; }
 })();
+
+// Table sort
+(function() {
+    document.addEventListener('click', function(e) {
+        var th = e.target.closest('th[data-sort]');
+        if (!th) return;
+        var table = th.closest('table');
+        var tbody = table.querySelector('tbody');
+        var col = +th.dataset.col;
+        var numeric = th.dataset.numeric === '1';
+        var asc = !th.classList.contains('sort-asc');
+        table.querySelectorAll('th[data-sort]').forEach(function(h) { h.classList.remove('sort-asc', 'sort-desc'); });
+        th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+        var rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort(function(a, b) {
+            var av = (a.cells[col] ? a.cells[col].textContent : '').trim();
+            var bv = (b.cells[col] ? b.cells[col].textContent : '').trim();
+            if (numeric) { return asc ? (parseFloat(av)||0) - (parseFloat(bv)||0) : (parseFloat(bv)||0) - (parseFloat(av)||0); }
+            return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+        });
+        rows.forEach(function(r) { tbody.appendChild(r); });
+    });
+})();
+
+// Filter chips
+(function() {
+    document.addEventListener('click', function(e) {
+        var chip = e.target.closest('.filter-chip');
+        if (!chip) return;
+        var bar = chip.closest('.filter-chips');
+        if (!bar) return;
+        bar.querySelectorAll('.filter-chip').forEach(function(c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        var col = +bar.dataset.col;
+        var val = chip.dataset.val;
+        var tbody = document.querySelector(bar.dataset.target + ' tbody');
+        if (!tbody) return;
+        tbody.querySelectorAll('tr').forEach(function(row) {
+            var text = (row.cells[col] ? row.cells[col].textContent : '').trim().toLowerCase();
+            row.hidden = val !== 'all' && text !== val;
+        });
+    });
+})();
 </script>
 {% endblock %}

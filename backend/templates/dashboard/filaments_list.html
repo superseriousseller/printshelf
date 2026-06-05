@@ -10,11 +10,24 @@
 {% if cap_hit %}<p class="notice notice-warn">You've hit the 10-filament free-tier limit. <a href="/dashboard/upgrade">Upgrade to Pro</a> for unlimited spools.</p>{% endif %}
 
 {% if filaments %}
+<div class="filter-chips" data-col="6" data-target="#filaments-table">
+    <button class="filter-chip active" data-val="all">All</button>
+    <button class="filter-chip" data-val="own">Own</button>
+    <button class="filter-chip" data-val="want">Want</button>
+    <button class="filter-chip" data-val="empty">Empty</button>
+</div>
 <div class="table-scroll">
-<table class="dash-table">
+<table class="dash-table" id="filaments-table">
     <thead>
         <tr>
-            <th></th><th>Brand</th><th>Material</th><th>Finish</th><th>Color</th><th>Diameter</th><th>Status</th><th></th>
+            <th></th>
+            <th data-sort data-col="1">Brand</th>
+            <th data-sort data-col="2">Material</th>
+            <th data-sort data-col="3">Finish</th>
+            <th data-sort data-col="4">Color</th>
+            <th data-sort data-col="5" data-numeric="1">Diameter</th>
+            <th data-sort data-col="6">Status</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
