@@ -44,11 +44,13 @@
                 {% else %}<span class="badge badge-ok">Printed</span>{% endif %}
             </div>
 
-            {% if current_user and current_user.id != user.id %}
+            {% if current_user and current_user.id == user.id %}
+            <a href="/dashboard/prints/new?reprint={{ print_.id }}" class="btn-secondary" style="display:inline-block;margin-top:14px">Print again</a>
+            {% elif current_user %}
             <form method="post" action="/@{{ user.username }}/prints/{{ print_.id }}/queue" style="margin-top:14px">
                 <button type="submit" class="btn-primary">+ Add to my queue</button>
             </form>
-            {% elif not current_user %}
+            {% else %}
             <a href="/login?next=/@{{ user.username }}/prints/{{ print_.id }}" class="btn-secondary" style="display:inline-block;margin-top:14px">Log in to queue this</a>
             {% endif %}
 

@@ -618,6 +618,7 @@ def new_print(
     request: Request,
     queued: Optional[str] = None,
     import_url: Optional[str] = None,
+    reprint: Optional[int] = None,
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -632,6 +633,24 @@ def new_print(
     import_error: Optional[str] = None
     import_notice: Optional[str] = None
     import_partial: bool = False
+
+    if reprint:
+        src = db.query(Print).filter(Print.id == reprint, Print.user_id == user.id).first()
+        if src:
+            defaults.update({
+                "title": src.title or "",
+                "designer": src.designer or "",
+                "source_platform": src.source_platform or "manual",
+                "source_url": src.source_url or "",
+                "thumbnail_url": src.thumbnail_url or "",
+                "printer_id": str(src.printer_id) if src.printer_id else "",
+                "filament_ids": src.filament_ids or [],
+                "layer_height": str(src.layer_height) if src.layer_height else "",
+                "infill_pct": str(src.infill_pct) if src.infill_pct is not None else "",
+                "supports": "1" if src.supports else "",
+                "is_public": "1" if src.is_public else "",
+            })
+            import_notice = f"Pre-filled from \"{src.title}\". Add a new photo and set your outcome."
     if import_url:
         # Check cache first; on miss, scrape.
         from datetime import datetime, timedelta
