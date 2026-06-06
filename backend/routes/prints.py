@@ -16,11 +16,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from affiliate import is_allowed_link_domain
 from auth import get_current_user
 from limits import enforce_print_limit
 from models import (
     Filament,
     Print,
+    PrintLink,
     PrintStatus,
     Printer,
     SourcePlatform,
@@ -32,6 +34,11 @@ router = APIRouter(prefix="/api/prints", tags=["prints"])
 
 VALID_PRINT_STATUSES = {s.value for s in PrintStatus}
 VALID_PLATFORMS = {p.value for p in SourcePlatform}
+
+
+class PrintLinkItem(BaseModel):
+    label: str = Field(max_length=200)
+    url: str = Field(max_length=2000)
 
 
 class PrintCreate(BaseModel):
@@ -50,6 +57,7 @@ class PrintCreate(BaseModel):
     is_public: bool = True
     print_date: Optional[date] = None
     video_url: Optional[str] = Field(default=None, max_length=1000)
+    links: List[PrintLinkItem] = Field(default_factory=list)
 
 
 class PrintUpdate(BaseModel):
@@ -68,6 +76,21 @@ class PrintUpdate(BaseModel):
     is_public: Optional[bool] = None
     print_date: Optional[date] = None
     video_url: Optional[str] = Field(default=None, max_length=1000)
+    links: Optional[List[PrintLinkItem]] = None
+
+
+def _save_links(db: Session, print_id: int, user_id: int, links: List[PrintLinkItem]) -> None:
+    db.query(PrintLink).filter(PrintLink.print_id == print_id).delete()
+    for i, lk in enumerate(links[:5]):
+        url = lk.url.strip()
+        if not is_allowed_link_domain(url):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Link URL not from a supported store: {url}. "
+                       "Supported: Amazon, Bambu Lab, Polymaker, Anycubic, MatterHackers, SUNLU, FlashForge.",
+            )
+        db.add(PrintLink(print_id=print_id, user_id=user_id, label=lk.label.strip(), url=url, sort_order=i))
+    db.commit()
 
 
 def _own_or_404(db: Session, user: User, print_id: int) -> Print:
@@ -143,6 +166,8 @@ def _create_print(db: Session, user: User, body: PrintCreate, *, force_queued: O
     db.add(p)
     db.commit()
     db.refresh(p)
+    if body.links:
+        _save_links(db, p.id, user.id, body.links)
     return p
 
 
@@ -209,6 +234,7 @@ def update_print(
 ) -> dict:
     p = _own_or_404(db, user, print_id)
     data = body.model_dump(exclude_unset=True)
+    links = data.pop("links", None)
     _validate_enums(data.get("status"), data.get("source_platform"))
     _validate_refs(db, user, data.get("printer_id"), data.get("filament_ids"))
     for k, v in data.items():
@@ -217,6 +243,8 @@ def update_print(
         setattr(p, k, v)
     db.commit()
     db.refresh(p)
+    if links is not None:
+        _save_links(db, p.id, user.id, [PrintLinkItem(**lk) for lk in links])
     return p.to_dict()
 
 
