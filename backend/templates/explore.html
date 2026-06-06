@@ -41,7 +41,14 @@
             <div class="card-body">
                 <h3>{{ p.title }}</h3>
                 <div class="card-meta">
-                    <a class="explore-user" href="/@{{ p.username }}">@{{ p.username }}</a>
+                    <div class="explore-user-row">
+                        {% if p.avatar_url %}
+                        <img src="{{ p.avatar_url }}" alt="{{ p.username }}" class="explore-avatar">
+                        {% else %}
+                        <span class="explore-avatar explore-avatar-fallback">{{ p.username[0]|upper }}</span>
+                        {% endif %}
+                        <a class="explore-user" href="/@{{ p.username }}">@{{ p.username }}</a>
+                    </div>
                     {% if p.rating %}<span class="rating">{% for _ in range(p.rating) %}★{% endfor %}</span>{% endif %}
                 </div>
             </div>

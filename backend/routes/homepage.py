@@ -132,7 +132,7 @@ def explore(
     sort = sort if sort in _EXPLORE_SORT else "newest"
     offset = (page - 1) * EXPLORE_LIMIT
     rows = (
-        db.query(Print, User.username, User.display_name)
+        db.query(Print, User.username, User.avatar_url)
         .join(User, Print.user_id == User.id)
         .filter(
             Print.is_public == True,  # noqa: E712
@@ -153,9 +153,10 @@ def explore(
             "thumbnail": p.photo_url or p.thumbnail_url,
             "rating": p.rating,
             "username": uname,
+            "avatar_url": avatar_url,
             "status": p.status,
         }
-        for p, uname, _ in rows
+        for p, uname, avatar_url in rows
     ]
     return templates.TemplateResponse(
         request,
