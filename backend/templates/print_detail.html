@@ -25,7 +25,14 @@
         <div class="detail-photo">
             {% set img = print_.photo_url or print_.thumbnail_url %}
             {% if img %}
+                {% if print_.video_url %}
+                <a href="{{ print_.video_url }}" target="_blank" rel="noopener" class="detail-photo-video-link" title="Watch video">
+                    <img src="{{ img }}" alt="{{ print_.title }}">
+                    <span class="detail-play-badge">▶ Watch</span>
+                </a>
+                {% else %}
                 <img src="{{ img }}" alt="{{ print_.title }}">
+                {% endif %}
             {% else %}
                 <div class="thumb-fallback-lg">🧊</div>
             {% endif %}
@@ -45,7 +52,10 @@
             </div>
 
             {% if current_user and current_user.id == user.id %}
-            <a href="/dashboard/prints/new?reprint={{ print_.id }}" class="btn-secondary" style="display:inline-block;margin-top:14px">Print again</a>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+                <a href="/dashboard/prints/{{ print_.id }}/edit" class="btn-primary">Edit</a>
+                <a href="/dashboard/prints/new?reprint={{ print_.id }}" class="btn-secondary">Print again</a>
+            </div>
             {% elif current_user %}
             <form method="post" action="/@{{ user.username }}/prints/{{ print_.id }}/queue" style="margin-top:14px">
                 <button type="submit" class="btn-primary">+ Add to my queue</button>
@@ -81,7 +91,7 @@
 
             {% if links_ctx %}
             <div class="detail-links">
-                <p class="detail-section-label">Goes great with</p>
+                <p class="detail-section-label">Items used in this print</p>
                 <ul class="chip-list">
                     {% for lk in links_ctx %}
                     <li><a href="{{ lk.url }}" class="chip chip-link" target="_blank" rel="noopener sponsored">{{ lk.label }} →</a></li>
