@@ -153,6 +153,34 @@
         Notes
         <textarea name="notes" rows="3" placeholder="Print settings, fixes that worked, lessons learned…">{{ values.notes or '' }}</textarea>
     </label>
+    <fieldset class="filaments-picker">
+        <legend>What goes with this print? <span class="hint">(accessories, companion purchases — max 5)</span></legend>
+        <p class="hint" style="margin:0 0 10px">Supported stores: Amazon, Bambu Lab, Polymaker, Anycubic, MatterHackers, SUNLU, FlashForge.</p>
+        <div id="print-links">
+            {% for lk in values.links or [] %}
+            <div class="link-row">
+                <input type="text" name="link_labels" maxlength="200" value="{{ lk.label }}" placeholder="e.g. Violin Strings">
+                <input type="url" name="link_urls" maxlength="2000" value="{{ lk.url }}" placeholder="https://amazon.com/…">
+                <button type="button" class="linklike link-remove">Remove</button>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" id="add-link-btn" class="btn-secondary" style="margin-top:8px">+ Add item</button>
+    </fieldset>
+    <script>
+    (function(){
+        var box=document.getElementById('print-links'),btn=document.getElementById('add-link-btn'),MAX=5;
+        function upd(){btn.disabled=box.children.length>=MAX;}
+        btn.addEventListener('click',function(){
+            if(box.children.length>=MAX)return;
+            var row=document.createElement('div');row.className='link-row';
+            row.innerHTML='<input type="text" name="link_labels" maxlength="200" placeholder="e.g. Violin Strings"><input type="url" name="link_urls" maxlength="2000" placeholder="https://amazon.com/…"><button type="button" class="linklike link-remove">Remove</button>';
+            box.appendChild(row);row.querySelector('input').focus();upd();
+        });
+        box.addEventListener('click',function(e){if(e.target.classList.contains('link-remove')){e.target.closest('.link-row').remove();upd();}});
+        upd();
+    })();
+    </script>
     <div class="form-actions">
         <button type="submit" class="btn-primary">{% if print_ %}Save changes{% else %}Save print{% endif %}</button>
         <a href="/dashboard/prints">Cancel</a>

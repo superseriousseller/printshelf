@@ -267,6 +267,19 @@ Index("ix_prints_user_queued", Print.user_id, Print.queued)
 Index("ix_prints_user_created", Print.user_id, Print.created_at.desc())
 
 
+# ============== PrintLink ==============
+
+class PrintLink(Base):
+    __tablename__ = "print_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    print_id = Column(Integer, ForeignKey("prints.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    label = Column(String(200), nullable=False)
+    url = Column(String(2000), nullable=False)
+    sort_order = Column(Integer, default=0, nullable=False)
+
+
 # ============== Follow ==============
 
 class Follow(Base):

@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from affiliate import apply_affiliate
 from auth import get_current_user_web_optional
 from email_service import send_follow_notification
-from models import Filament, Follow, Print, Printer, User, get_db
+from models import Filament, Follow, Print, PrintLink, Printer, User, get_db
 
 router = APIRouter(tags=["profile"])
 
@@ -294,6 +294,9 @@ def public_print_detail(
         buy_url = apply_affiliate(f.source_url) if f.source_url else None
         filaments_ctx.append({"f": f, "price_per_kg": price_per_kg, "buy_url": buy_url})
 
+    raw_links = db.query(PrintLink).filter(PrintLink.print_id == p.id).order_by(PrintLink.sort_order).all()
+    links_ctx = [{"label": lk.label, "url": apply_affiliate(lk.url)} for lk in raw_links]
+
     return templates.TemplateResponse(
         request,
         "print_detail.html",
@@ -302,6 +305,7 @@ def public_print_detail(
             "print_": p,
             "filaments": filaments,
             "filaments_ctx": filaments_ctx,
+            "links_ctx": links_ctx,
             "printer": printer,
             "print_cost": print_cost,
             "related_by_filament": related_by_filament,
