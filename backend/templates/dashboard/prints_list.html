@@ -52,7 +52,7 @@
                 {{ p.source_platform }}
                 {% if p.printer_id and printer_names[p.printer_id] %} · {{ printer_names[p.printer_id] }}{% endif %}
                 {% if p.rating %} · {{ "★" * p.rating }}{% endif %}
-                {% if p.print_date %} · {{ p.print_date.isoformat() }}{% endif %}
+                {% if p.print_date %} · {{ p.print_date.strftime('%b %-d, %Y') }}{% endif %}
             </p>
             {% if p.filament_ids %}
             <p class="filament-chips">

@@ -55,7 +55,7 @@
             {% endif %}
 
             {% if print_.print_date %}
-            <p class="detail-date">Printed {{ print_.print_date.isoformat() }}</p>
+            <p class="detail-date">Printed {{ print_.print_date.strftime('%B %-d, %Y') }}</p>
             {% endif %}
 
             {% if printer %}

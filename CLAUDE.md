@@ -12,6 +12,7 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- UX audit fixes (2026-06-06) — filament typeahead search on print form; Explore sort control (Newest/Oldest/Top rated); ghost button contrast fix; Cancel button styling; human-readable print dates.
 - Filament search API + Print Links API (2026-06-06) — GET /api/filaments?q= fuzzy search; POST/PATCH /api/prints accepts links[] array. On prod (4e752b6).
 - Chrome extension v0.3.8 submitted to Chrome Web Store (2026-06-06) — SUNLU + FlashForge stores, finish field extraction, Bambu Lab screenshot added.
 - Print Links (2026-06-05) — per-print labeled affiliate links (max 5) to accessories (Amazon, Bambu, Polymaker, Anycubic, MatterHackers, SUNLU, FlashForge); domain allowlist enforced server-side; tags injected at render-time; "Goes great with" chips on public detail page. 5/5 QA (3-fix cycle: HTML field name mismatch, update-path validation, URL-only validation). On prod (1bfe7bb).
@@ -141,8 +142,11 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 - Filament finish field — Silk/Matte/Glow/etc. free-text with datalist — prod (0db617c)
 - Print again button — pre-fills new print form from existing print, 8/8 QA — prod (ba09c69)
 
+**Completed 2026-06-06 (session 21):**
+- UX audit batch 1 — filament typeahead search, Explore sort, ghost button contrast, Cancel button, human-readable dates
+
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars still pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`
 
-**Immediate next step:** Next feature TBD — dogfooding in progress.
+**Immediate next step:** Push to staging, QA, merge to prod. Then address remaining audit items (P2-01 card engagement signals, P2-04 quick-log nav button, P2-09 avatar in nav, etc.).

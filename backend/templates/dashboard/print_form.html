@@ -93,17 +93,29 @@
     <fieldset class="filaments-picker">
         <legend>Filaments used <span class="hint">(pick one or more)</span></legend>
         {% if filaments %}
-        <ul class="checkbox-list">
+        <input type="search" id="filament-search" class="filament-search" placeholder="Search filaments…" autocomplete="off">
+        <ul class="checkbox-list" id="filament-list">
             {% for f in filaments %}
             <li>
                 <label class="checkbox-label">
                     <input type="checkbox" name="filament_ids" value="{{ f.id }}" {% if f.id in values.filament_ids %}checked{% endif %}>
                     {% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span>{% endif %}
-                    {{ f.brand }} {{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}
+                    {{ f.brand }} {{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}{% if f.finish %} {{ f.finish }}{% endif %}
                 </label>
             </li>
             {% endfor %}
         </ul>
+        <script>
+        (function(){
+            var inp=document.getElementById('filament-search'),list=document.getElementById('filament-list');
+            inp.addEventListener('input',function(){
+                var q=this.value.toLowerCase();
+                Array.from(list.children).forEach(function(li){
+                    li.style.display=li.textContent.toLowerCase().includes(q)?'':'none';
+                });
+            });
+        })();
+        </script>
         {% else %}
         <p class="hint">No filaments in your library yet. <a href="/dashboard/filaments/new">Add one</a> to attach it here.</p>
         {% endif %}
@@ -183,7 +195,7 @@
     </script>
     <div class="form-actions">
         <button type="submit" class="btn-primary">{% if print_ %}Save changes{% else %}Save print{% endif %}</button>
-        <a href="/dashboard/prints">Cancel</a>
+        <a href="/dashboard/prints" class="btn-secondary">Cancel</a>
     </div>
 </form>
 {% endblock %}

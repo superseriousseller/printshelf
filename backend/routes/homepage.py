@@ -15,6 +15,8 @@ from sqlalchemy.orm import Session
 from auth import get_current_user_web_optional
 from sqlalchemy import or_
 
+from sqlalchemy import nullslast
+
 from models import Print, User, get_db
 
 router = APIRouter(tags=["homepage"])
@@ -111,14 +113,23 @@ def search(
 EXPLORE_LIMIT = 24
 
 
+_EXPLORE_SORT = {
+    "newest": Print.created_at.desc(),
+    "oldest": Print.created_at.asc(),
+    "rating": nullslast(Print.rating.desc()),
+}
+
+
 @router.get("/explore", response_class=HTMLResponse)
 def explore(
     request: Request,
     page: int = 1,
+    sort: str = "newest",
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     page = max(1, page)
+    sort = sort if sort in _EXPLORE_SORT else "newest"
     offset = (page - 1) * EXPLORE_LIMIT
     rows = (
         db.query(Print, User.username, User.display_name)
@@ -128,7 +139,7 @@ def explore(
             Print.queued == False,    # noqa: E712
             or_(Print.photo_url.isnot(None), Print.thumbnail_url.isnot(None)),
         )
-        .order_by(Print.created_at.desc())
+        .order_by(_EXPLORE_SORT[sort])
         .offset(offset)
         .limit(EXPLORE_LIMIT + 1)  # fetch one extra to detect next page
         .all()
@@ -155,6 +166,7 @@ def explore(
             "page": page,
             "has_next": has_next,
             "has_prev": page > 1,
+            "sort": sort,
         },
     )
 
