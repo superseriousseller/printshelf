@@ -12,23 +12,15 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Print Links (2026-06-05) — per-print labeled affiliate links (max 5) to accessories (Amazon, Bambu, Polymaker, Anycubic, MatterHackers, SUNLU, FlashForge); domain allowlist enforced server-side; tags injected at render-time; "Goes great with" chips on public detail page. 5/5 QA (3-fix cycle: HTML field name mismatch, update-path validation, URL-only validation). On prod (1bfe7bb).
+- Sortable table headers + filter chips (2026-06-05) — filaments + printers tables sortable by column; filament status filter chips; admin Refresh button + mobile layout; site-wide mobile CSS. On prod (49ce449).
 - Chrome extension v0.3.8 (2026-06-04) — SUNLU + FlashForge store support; finish extraction from product title (Silk/Matte/Glow/etc.); SUNLU brand fix (Shopify JSON-LD override). 8/8 QA. On prod (027dbc3).
 - Affiliate disclosure footer (2026-06-04) — FTC + Amazon Associates required language. On prod (bac0c83).
 - Print again button (2026-06-04) — owner sees "Print again" on detail page; pre-fills new print form with title, designer, source, printer, filaments, slicer settings; photo blank; notice banner shown. 8/8 QA. On prod (ba09c69).
 - Filament finish field (2026-06-04) — free-text finish field (Silk, Matte, Glow, etc.) on filament form with datalist suggestions; shown on chips + list. On prod (0db617c).
 - Affiliate expansion (2026-06-04) — Anycubic (Awin), SUNLU, FlashForge (Impact), filament price/kg + Buy link on print detail, filament own/want UX. On prod (eb22374). Env vars set: `AMAZON_AFFILIATE_TAG`, `AWIN_AFFILIATE_ID`, `ANYCUBIC_AWIN_MERCHANT_ID`, `SUNLU_AFFILIATE_REF`, `FLASHFORGE_IMPACT_PID`.
 - Signup fix (2026-06-04) — removed HTML5 pattern attr blocking all signups. On prod (adf981d).
-- Shelf analytics + API docs (2026-06-02) — profile_views counter (owner-only, atomic), /developers page, footer API link. 8/8 QA. On prod (5a3fa53).
-- Print cost tracking (2026-06-02) — spool_weight_g on filaments, cost-per-print on detail page, total spend on dashboard. 7/7 QA. On prod (fd32413).
-- Per-print video URL (2026-06-02) — YouTube/TikTok/Instagram detection, ▶ badge on profile cards. 8/8 QA. On prod (0e6401d).
-- Social link UX fix (2026-06-02) — "Use @handle" fill button, Instagram content blocker fix. On prod (7d66031).
-- Onboarding drip emails (2026-06-02) — Day-2 + Day-7, /internal/drip cron endpoint. 10/10 QA. On prod (117002a).
-- Welcome email / sitemap / profile stats / print view links (2026-06-02) — 5/5 QA. On prod (6e50872).
-- Queue IA / Explore / Scroll bug (2026-06-02) — Queue removed from sidebar, /explore page, sidebar column fill fix, fieldset overflow fix. On prod (db4dc26).
-- Audit fixes (2026-06-01) — mobile hamburger nav, footer Privacy/Terms/Contact, Terms of Service, hero gallery caption, logged-out CTA → example shelf. On prod (ba66a17).
-- Stripe Pro billing (2026-06-01) — $4.99/mo or $39/yr. 8/8 QA. On prod (62d914c).
-- Chrome extension v0.3.7 — Polymaker, Bambu Lab, Anycubic, MatterHackers, Amazon filament buttons + brand fix.
-- Email notifications + verification, follow/feed, search, profile discovery, affiliate redirector, filament URL import — on prod (sessions 9–13).
+- Shelf analytics + API docs (2026-06-02) — on prod (5a3fa53). Print cost tracking (fd32413). Per-print video URL (0e6401d). Onboarding drip emails (117002a). Stripe Pro billing (62d914c). Sessions 9–13 features.
 
 ### 🔧 Tech Debt
 - None flagged
@@ -136,6 +128,10 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
+**Completed 2026-06-05 (session 20):**
+- Print Links — per-print labeled affiliate links, "Goes great with" chips, domain allowlist, affiliate tags at render-time — prod (1bfe7bb)
+- Sortable table columns + filament filter chips + admin mobile + site mobile CSS — prod (49ce449)
+
 **Completed 2026-06-04 (session 19):**
 - Signup fix — removed HTML5 pattern attr blocking all signups — prod (adf981d)
 - Filament own/want UX — default own, wishlist checkbox, "Mark as owned" quick action — prod (ef2ed25)
@@ -147,4 +143,4 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars still pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`
 
-**Immediate next step:** Reload extension to v0.3.8 (chrome://extensions → Reload). Next feature TBD.
+**Immediate next step:** Next feature TBD — dogfooding in progress.
