@@ -128,7 +128,7 @@ def public_profile(
         except (TypeError, ValueError):
             pass
 
-    rows = q.order_by(Print.created_at.desc()).limit(200).all()
+    rows = q.order_by(Print.print_date.desc().nullslast(), Print.created_at.desc()).limit(200).all()
 
     # Filter by material AFTER pulling — material lives on Filament, joined via Print.filament_ids JSON
     materials_present = set()

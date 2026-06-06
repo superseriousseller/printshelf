@@ -166,7 +166,7 @@
         <textarea name="notes" rows="3" placeholder="Print settings, fixes that worked, lessons learned…">{{ values.notes or '' }}</textarea>
     </label>
     <fieldset class="filaments-picker">
-        <legend>What goes with this print? <span class="hint">(accessories, companion purchases — max 5)</span></legend>
+        <legend>Items used in this print <span class="hint">(accessories, purchases, supplies — max 5)</span></legend>
         <p class="hint" style="margin:0 0 10px">Supported stores: Amazon, Bambu Lab, Polymaker, Anycubic, MatterHackers, SUNLU, FlashForge.</p>
         <div id="print-links">
             {% for lk in values.links or [] %}
