@@ -12,8 +12,8 @@
 {% if stats and stats.total_prints > 0 %}
 <section class="dash-stats">
     <div class="stat-item"><span class="stat-value">{{ stats.total_prints }}</span><span class="stat-label">prints</span></div>
-    <div class="stat-item"><span class="stat-value">{{ stats.queued }}</span><span class="stat-label">queued</span></div>
-    <div class="stat-item"><span class="stat-value">{{ stats.success_pct }}%</span><span class="stat-label">success</span></div>
+    <div class="stat-item stat-queued"><span class="stat-value">{{ stats.queued }}</span><span class="stat-label">queued</span></div>
+    <div class="stat-item stat-success"><span class="stat-value">{{ stats.success_pct }}%</span><span class="stat-label">success</span></div>
     <div class="stat-item"><span class="stat-value">{{ stats.filaments }}</span><span class="stat-label">filaments</span></div>
     <div class="stat-item"><span class="stat-value">{{ stats.printers }}</span><span class="stat-label">printers</span></div>
     {% if stats.total_spend %}<div class="stat-item"><span class="stat-value">${{ "%.2f"|format(stats.total_spend) }}</span><span class="stat-label">filament spend</span></div>{% endif %}
