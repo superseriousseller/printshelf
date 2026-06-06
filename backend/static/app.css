@@ -151,6 +151,8 @@ a:hover { text-decoration: underline; }
 .photo-picker .current-photo { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .photo-picker .current-photo img { max-width: 220px; max-height: 220px; border-radius: 8px; border: 1px solid var(--border); }
 .photo-file-label input[type="file"] { background: var(--bg-card); color: var(--text); padding: 8px 10px; }
+.filament-search { width: 100%; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; font-family: inherit; margin-bottom: 8px; }
+.filament-search:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 .checkbox-list { list-style: none; padding: 0; margin: 4px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
 .checkbox-label { flex-direction: row !important; align-items: center; gap: 8px; color: var(--text); cursor: pointer; padding: 6px 8px; border-radius: 6px; }
 .checkbox-label:hover { background: var(--bg-card); }
@@ -319,7 +321,7 @@ a:hover { text-decoration: underline; }
 .hero-sub { font-size: 1.15rem; color: var(--text-dim); margin: 0 0 28px; max-width: 48ch; line-height: 1.5; }
 .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .btn-lg { padding: 13px 22px; font-size: 1rem; }
-.btn-ghost { background: transparent; color: var(--text); padding: 13px 22px; border-radius: 8px; border: 1px solid var(--border); font-weight: 500; }
+.btn-ghost { background: transparent; color: var(--text); padding: 13px 22px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.35); font-weight: 500; }
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
 .hero-fineprint { font-size: 0.85rem; color: var(--text-dim); margin: 8px 0 0; }
 
@@ -538,8 +540,10 @@ footer {
 /* Explore page */
 .explore-page { max-width: 1100px; margin: 0 auto; padding: 32px 0; }
 .explore-header { margin-bottom: 28px; }
+.explore-header-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .explore-header h1 { margin: 0 0 6px; font-size: 1.8rem; }
 .explore-sub { margin: 0; color: var(--text-dim); }
+.explore-sort-form { flex-shrink: 0; }
 .explore-user { color: var(--text-dim); font-size: 0.82rem; position: relative; z-index: 2; }
 .explore-user:hover { color: var(--accent); text-decoration: none; }
 .explore-pager { display: flex; align-items: center; gap: 16px; margin-top: 32px; }

@@ -13,8 +13,19 @@
 {% block content %}
 <div class="explore-page">
     <header class="explore-header">
-        <h1>Explore</h1>
-        <p class="explore-sub">Recent prints from the community. Click any card to see the full shelf.</p>
+        <div class="explore-header-top">
+            <div>
+                <h1>Explore</h1>
+                <p class="explore-sub">Recent prints from the community. Click any card to see the full shelf.</p>
+            </div>
+            <form class="explore-sort-form" method="get" action="/explore">
+                <select name="sort" class="filter-sort" onchange="this.form.submit()" aria-label="Sort by">
+                    <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
+                    <option value="oldest" {% if sort == "oldest" %}selected{% endif %}>Oldest</option>
+                    <option value="rating" {% if sort == "rating" %}selected{% endif %}>Top rated</option>
+                </select>
+            </form>
+        </div>
     </header>
 
     {% if prints %}
@@ -39,9 +50,9 @@
     </section>
     {% if has_prev or has_next %}
     <nav class="explore-pager">
-        {% if has_prev %}<a href="/explore?page={{ page - 1 }}" class="btn-secondary">← Newer</a>{% endif %}
+        {% if has_prev %}<a href="/explore?page={{ page - 1 }}&sort={{ sort }}" class="btn-secondary">← Newer</a>{% endif %}
         <span class="explore-page-num">Page {{ page }}</span>
-        {% if has_next %}<a href="/explore?page={{ page + 1 }}" class="btn-secondary">Older →</a>{% endif %}
+        {% if has_next %}<a href="/explore?page={{ page + 1 }}&sort={{ sort }}" class="btn-secondary">Older →</a>{% endif %}
     </nav>
     {% endif %}
     {% else %}
