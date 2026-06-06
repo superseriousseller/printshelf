@@ -11,22 +11,18 @@ Paste-ready copy for the Chrome Web Store developer dashboard.
 
 ### Detailed description
 > PrintShelf is a tracker for makers who 3D print. This extension adds a
-> one-click button on supported pages so you can save models and filaments
-> to your library without copy-pasting anything.
+> one-click button on model and filament pages so you can save items to your
+> PrintShelf library without copy-pasting anything.
 >
-> Supported sites:
->  - Model platforms: Printables, Makerworld, Cults3D, Thingiverse
->  - Filament retailers: Amazon, Bambu Lab, Polymaker, Anycubic,
->    MatterHackers, SUNLU, FlashForge
+> On model pages (Printables, Makerworld, Cults3D, Thingiverse), one click
+> saves the model to your print queue with title, designer, and thumbnail
+> pre-filled.
 >
-> What you get:
->  - One click saves a model to your print queue with title, designer, and
->    thumbnail pre-filled
->  - On filament retailer pages, one click saves the filament to your library
->    with brand, material, color name, hex code, price, and finish (Silk,
->    Matte, Glow, etc.) pulled from the page
->  - Your selected color variant is captured from the live page — not just
->    the default variant shown in metadata
+> On filament retailer pages, one click saves the filament to your library
+> with brand, material, color name, hex code, price, and finish (Silk, Matte,
+> Glow, etc.) pulled automatically from the page. The color variant you have
+> selected is captured from the live page — not just the default shown in
+> metadata.
 >
 > Requires a free PrintShelf account at https://printshelf.app — paste your
 > API key into the extension popup once and you're done. Your key is stored
