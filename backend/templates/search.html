@@ -3,12 +3,9 @@
 
 {% block content %}
 <div class="search-page">
-    <form class="search-form" method="get" action="/search">
-        <input class="search-input" type="search" name="q" value="{{ q or '' }}" placeholder="Search users and prints…" autofocus>
-        <button type="submit" class="btn-primary">Search</button>
-    </form>
-
-    {% if q %}
+    {% if not q %}
+    <p class="search-empty">Use the search bar above to find users and prints.</p>
+    {% else %}
         {% if not users and not prints %}
         <p class="search-empty">No results for <strong>{{ q }}</strong>.</p>
         {% endif %}
