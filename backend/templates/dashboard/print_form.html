@@ -159,8 +159,8 @@
         <div id="print-links">
             {% for lk in values.links or [] %}
             <div class="link-row">
-                <input type="text" name="link_label" maxlength="200" value="{{ lk.label }}" placeholder="e.g. Violin Strings">
-                <input type="url" name="link_url" maxlength="2000" value="{{ lk.url }}" placeholder="https://amazon.com/…">
+                <input type="text" name="link_labels" maxlength="200" value="{{ lk.label }}" placeholder="e.g. Violin Strings">
+                <input type="url" name="link_urls" maxlength="2000" value="{{ lk.url }}" placeholder="https://amazon.com/…">
                 <button type="button" class="linklike link-remove">Remove</button>
             </div>
             {% endfor %}
@@ -174,7 +174,7 @@
         btn.addEventListener('click',function(){
             if(box.children.length>=MAX)return;
             var row=document.createElement('div');row.className='link-row';
-            row.innerHTML='<input type="text" name="link_label" maxlength="200" placeholder="e.g. Violin Strings"><input type="url" name="link_url" maxlength="2000" placeholder="https://amazon.com/…"><button type="button" class="linklike link-remove">Remove</button>';
+            row.innerHTML='<input type="text" name="link_labels" maxlength="200" placeholder="e.g. Violin Strings"><input type="url" name="link_urls" maxlength="2000" placeholder="https://amazon.com/…"><button type="button" class="linklike link-remove">Remove</button>';
             box.appendChild(row);row.querySelector('input').focus();upd();
         });
         box.addEventListener('click',function(e){if(e.target.classList.contains('link-remove')){e.target.closest('.link-row').remove();upd();}});

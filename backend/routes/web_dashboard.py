@@ -1067,8 +1067,30 @@ async def update_print(
     p.print_time_mins = _parse_int(print_time_mins, min_val=1)
     p.filament_used_g = _parse_float(filament_used_g)
     p.video_url = video_url.strip() or None
+
+    link_errors: list[str] = []
+    valid_links = _parse_links(link_labels, link_urls, link_errors)
+    if link_errors:
+        db.rollback()
+        values = {
+            "title": title, "designer": designer, "source_platform": source_platform,
+            "source_url": source_url, "thumbnail_url": thumbnail_url, "photo_url": photo_url,
+            "printer_id": printer_id, "filament_ids": fil_ids,
+            "status": "queued" if p.queued else p.status,
+            "rating": rating, "notes": notes, "print_date": print_date,
+            "queued": "1" if p.queued else "", "is_public": is_public,
+            "layer_height": layer_height, "infill_pct": infill_pct,
+            "supports": supports, "print_time_mins": print_time_mins,
+            "filament_used_g": filament_used_g, "video_url": video_url,
+            "links": [{"label": l, "url": u} for l, u in zip(link_labels, link_urls)],
+        }
+        return templates.TemplateResponse(
+            request, "dashboard/print_form.html",
+            _print_form_ctx(user, db, p, link_errors, values),
+            status_code=400,
+        )
+
     db.commit()
-    valid_links = _parse_links(link_labels, link_urls, [])
     _save_links(db, p.id, user.id, valid_links)
     return RedirectResponse("/dashboard/prints", status_code=303)
 
