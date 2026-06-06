@@ -604,15 +604,24 @@ def list_prints(
 
 
 def _parse_links(labels: list[str], urls: list[str], errors: list) -> list[tuple[str, str]]:
-    """Zip label/url pairs, validate domain allowlist, cap at 5."""
-    pairs = [(l.strip(), u.strip()) for l, u in zip(labels, urls) if l.strip() and u.strip()]
+    """Validate all submitted URLs (even without a label), then collect labeled pairs."""
+    # Check every non-empty URL regardless of whether a label was provided
+    for url in urls:
+        if url.strip() and not is_allowed_link_domain(url.strip()):
+            errors.append(
+                "Only links to supported stores are allowed "
+                "(Amazon, Bambu Lab, Polymaker, Anycubic, MatterHackers, SUNLU, FlashForge)."
+            )
+            break
+    # Save only pairs where both label and URL are provided and domain is allowed
+    pairs = [
+        (l.strip(), u.strip())
+        for l, u in zip(labels, urls)
+        if l.strip() and u.strip() and is_allowed_link_domain(u.strip())
+    ]
     if len(pairs) > 5:
         errors.append("Maximum 5 links per print.")
         pairs = pairs[:5]
-    invalid = [u for _, u in pairs if not is_allowed_link_domain(u)]
-    if invalid:
-        errors.append("Only links to supported stores are allowed (Amazon, Bambu Lab, Polymaker, Anycubic, MatterHackers, SUNLU, FlashForge).")
-        pairs = [(l, u) for l, u in pairs if is_allowed_link_domain(u)]
     return pairs
 
 
