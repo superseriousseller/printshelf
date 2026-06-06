@@ -12,6 +12,7 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Filament search API + Print Links API (2026-06-06) — GET /api/filaments?q= fuzzy search; POST/PATCH /api/prints accepts links[] array. On prod (4e752b6).
 - Chrome extension v0.3.8 submitted to Chrome Web Store (2026-06-06) — SUNLU + FlashForge stores, finish field extraction, Bambu Lab screenshot added.
 - Print Links (2026-06-05) — per-print labeled affiliate links (max 5) to accessories (Amazon, Bambu, Polymaker, Anycubic, MatterHackers, SUNLU, FlashForge); domain allowlist enforced server-side; tags injected at render-time; "Goes great with" chips on public detail page. 5/5 QA (3-fix cycle: HTML field name mismatch, update-path validation, URL-only validation). On prod (1bfe7bb).
 - Sortable table headers + filter chips (2026-06-05) — filaments + printers tables sortable by column; filament status filter chips; admin Refresh button + mobile layout; site-wide mobile CSS. On prod (49ce449).
