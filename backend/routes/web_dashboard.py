@@ -25,6 +25,7 @@ from models import (
     FilamentStatus,
     Follow,
     Print,
+    PrintLink,
     PrintStatus,
     Printer,
     SourcePlatform,
@@ -34,7 +35,7 @@ from models import (
 from email_service import send_feed_notification
 from import_service import ImportError_, extract as extract_url
 from filament_import_service import extract as extract_filament_url
-from affiliate import apply_affiliate
+from affiliate import apply_affiliate, is_allowed_link_domain
 from models import ImportCache
 from storage import MAX_UPLOAD_BYTES, UploadError, delete_image, upload_image
 
@@ -602,6 +603,26 @@ def list_prints(
     )
 
 
+def _parse_links(labels: list[str], urls: list[str], errors: list) -> list[tuple[str, str]]:
+    """Zip label/url pairs, validate domain allowlist, cap at 5."""
+    pairs = [(l.strip(), u.strip()) for l, u in zip(labels, urls) if l.strip() and u.strip()]
+    if len(pairs) > 5:
+        errors.append("Maximum 5 links per print.")
+        pairs = pairs[:5]
+    invalid = [u for _, u in pairs if not is_allowed_link_domain(u)]
+    if invalid:
+        errors.append("Only links to supported stores are allowed (Amazon, Bambu Lab, Polymaker, Anycubic, MatterHackers, SUNLU, FlashForge).")
+        pairs = [(l, u) for l, u in pairs if is_allowed_link_domain(u)]
+    return pairs
+
+
+def _save_links(db: Session, print_id: int, user_id: int, pairs: list[tuple[str, str]]) -> None:
+    db.query(PrintLink).filter(PrintLink.print_id == print_id).delete()
+    for i, (label, url) in enumerate(pairs):
+        db.add(PrintLink(print_id=print_id, user_id=user_id, label=label, url=url, sort_order=i))
+    db.commit()
+
+
 def _print_form_ctx(user: User, db: Session, p: Optional[Print], errors: list, values: dict) -> dict:
     printers = db.query(Printer).filter(Printer.user_id == user.id).order_by(Printer.name).all()
     filaments = db.query(Filament).filter(Filament.user_id == user.id).order_by(Filament.brand, Filament.material).all()
@@ -752,6 +773,8 @@ async def create_print(
     print_time_mins: str = Form(""),
     filament_used_g: str = Form(""),
     video_url: str = Form(""),
+    link_labels: list[str] = Form(default=[]),
+    link_urls: list[str] = Form(default=[]),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -841,6 +864,8 @@ async def create_print(
     print_time_i = _parse_int(print_time_mins, min_val=1)
     filament_used_f = _parse_float(filament_used_g)
 
+    valid_links = _parse_links(link_labels, link_urls, errors)
+
     if errors:
         values = {
             "title": title, "designer": designer, "source_platform": source_platform,
@@ -851,6 +876,7 @@ async def create_print(
             "layer_height": layer_height, "infill_pct": infill_pct,
             "supports": supports, "print_time_mins": print_time_mins,
             "filament_used_g": filament_used_g, "video_url": video_url,
+            "links": [{"label": l, "url": u} for l, u in zip(link_labels, link_urls)],
         }
         return templates.TemplateResponse(
             request, "dashboard/print_form.html",
@@ -881,6 +907,7 @@ async def create_print(
     )
     db.add(p)
     db.commit()
+    _save_links(db, p.id, user.id, valid_links)
 
     # Notify followers when a public non-queued print is logged
     if p.is_public and not p.queued:
@@ -911,6 +938,7 @@ def edit_print(
     p = db.query(Print).filter(Print.id == print_id, Print.user_id == user.id).first()
     if p is None:
         return RedirectResponse("/dashboard/prints", status_code=303)
+    existing_links = db.query(PrintLink).filter(PrintLink.print_id == p.id).order_by(PrintLink.sort_order).all()
     values = {
         "title": p.title, "designer": p.designer or "",
         "source_platform": p.source_platform, "source_url": p.source_url or "",
@@ -928,6 +956,7 @@ def edit_print(
         "print_time_mins": str(p.print_time_mins) if p.print_time_mins is not None else "",
         "filament_used_g": str(p.filament_used_g) if p.filament_used_g is not None else "",
         "video_url": p.video_url or "",
+        "links": [{"label": lk.label, "url": lk.url} for lk in existing_links],
     }
     return templates.TemplateResponse(
         request, "dashboard/print_form.html",
@@ -960,6 +989,8 @@ async def update_print(
     print_time_mins: str = Form(""),
     filament_used_g: str = Form(""),
     video_url: str = Form(""),
+    link_labels: list[str] = Form(default=[]),
+    link_urls: list[str] = Form(default=[]),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -1037,6 +1068,8 @@ async def update_print(
     p.filament_used_g = _parse_float(filament_used_g)
     p.video_url = video_url.strip() or None
     db.commit()
+    valid_links = _parse_links(link_labels, link_urls, [])
+    _save_links(db, p.id, user.id, valid_links)
     return RedirectResponse("/dashboard/prints", status_code=303)
 
 

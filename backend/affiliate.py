@@ -28,6 +28,29 @@ from urllib.parse import parse_qsl, quote_plus, urlencode, urlparse, urlunparse
 
 from filament_import_service import detect_store
 
+# Domains from which Print Links are accepted. Only supported affiliate
+# stores — ensures every saved link gets a tag and prevents spam/off-topic links.
+_ALLOWED_LINK_DOMAINS: frozenset[str] = frozenset({
+    "www.amazon.com", "amazon.com", "amzn.to",
+    "us.store.bambulab.com", "eu.store.bambulab.com", "store.bambulab.com",
+    "us.polymaker.com", "polymaker.com", "shop.polymaker.com",
+    "store.anycubic.com",
+    "www.matterhackers.com", "matterhackers.com",
+    "store.sunlu.com", "www.sunlu.com", "sunlu.com",
+    "www.flashforge.com", "flashforge.com",
+})
+
+
+def is_allowed_link_domain(url: str) -> bool:
+    """Return True if url is from a supported affiliate store."""
+    if not url or not url.startswith(("http://", "https://")):
+        return False
+    try:
+        host = (urlparse(url).hostname or "").lower()
+        return host in _ALLOWED_LINK_DOMAINS
+    except Exception:
+        return False
+
 
 _AWIN_BASE = "https://www.awin1.com/cread.php"
 

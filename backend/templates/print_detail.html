@@ -79,6 +79,17 @@
             </div>
             {% endif %}
 
+            {% if links_ctx %}
+            <div class="detail-links">
+                <p class="detail-section-label">Goes great with</p>
+                <ul class="chip-list">
+                    {% for lk in links_ctx %}
+                    <li><a href="{{ lk.url }}" class="chip chip-link" target="_blank" rel="noopener sponsored">{{ lk.label }} →</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
             {% if print_.layer_height or print_.infill_pct is not none or print_.supports is not none or print_.print_time_mins or print_.filament_used_g %}
             <div class="detail-settings">
                 <p class="detail-section-label">Print settings</p>
