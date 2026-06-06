@@ -79,18 +79,27 @@ def list_filaments(
     db: Session = Depends(get_db),
     status_filter: Optional[str] = Query(default=None, alias="status"),
     material: Optional[str] = None,
+    q: Optional[str] = Query(default=None, description="Search across brand, material, color name, and finish"),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> dict:
-    q = db.query(Filament).filter(Filament.user_id == user.id)
+    query = db.query(Filament).filter(Filament.user_id == user.id)
     if status_filter:
         _validate_status(status_filter)
-        q = q.filter(Filament.status == status_filter)
+        query = query.filter(Filament.status == status_filter)
     if material:
-        q = q.filter(Filament.material == material)
-    q = q.order_by(Filament.created_at.desc())
-    total = q.count()
-    items = q.offset(offset).limit(limit).all()
+        query = query.filter(Filament.material == material)
+    if q:
+        term = f"%{q.strip()}%"
+        query = query.filter(
+            Filament.brand.ilike(term)
+            | Filament.material.ilike(term)
+            | Filament.color_name.ilike(term)
+            | Filament.finish.ilike(term)
+        )
+    query = query.order_by(Filament.created_at.desc())
+    total = query.count()
+    items = query.offset(offset).limit(limit).all()
     return {"items": [f.to_dict() for f in items], "total": total, "limit": limit, "offset": offset}
 
 
