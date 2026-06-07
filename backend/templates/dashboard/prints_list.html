@@ -11,7 +11,7 @@
             <a href="/dashboard/prints?queued=false" {% if queued_filter == "false" %}class="active"{% endif %}>Printed</a>
             <a href="/dashboard/prints?queued=true" {% if queued_filter == "true" %}class="active"{% endif %}>Queued</a>
         </div>
-        <a href="/dashboard/prints/new{% if queued_filter == 'true' %}?queued=true{% endif %}" class="btn-primary">+ {% if queued_filter == "true" %}Queue print{% else %}Log print{% endif %}</a>
+        <a href="/dashboard/prints/new{% if queued_filter == 'true' %}?queued=true{% endif %}" class="btn-primary">+ {% if queued_filter == "true" %}Queue print{% else %}Add print{% endif %}</a>
     </div>
 </header>
 
@@ -51,9 +51,13 @@
                 {% if p.designer %}by {{ p.designer }} · {% endif %}
                 {{ p.source_platform }}
                 {% if p.printer_id and printer_names[p.printer_id] %} · {{ printer_names[p.printer_id] }}{% endif %}
-                {% if p.rating %} · {{ "★" * p.rating }}{% endif %}
                 {% if p.print_date %} · {{ p.print_date.strftime('%b %-d, %Y') }}{% endif %}
             </p>
+            {% if not p.queued %}
+            <div class="inline-stars" data-print-id="{{ p.id }}" data-rating="{{ p.rating or 0 }}">
+                {% for i in range(1, 6) %}<button type="button" class="star-btn{% if p.rating and i <= p.rating %} on{% endif %}" data-val="{{ i }}" aria-label="{{ i }} star">★</button>{% endfor %}
+            </div>
+            {% endif %}
             {% if p.filament_ids %}
             <p class="filament-chips">
                 {% for fid in p.filament_ids %}
@@ -89,4 +93,32 @@
     {% endif %}
 </div>
 {% endif %}
+<script>
+(function() {
+  var API_KEY = {{ current_user.api_key | tojson }};
+  document.querySelectorAll('.inline-stars').forEach(function(widget) {
+    var printId = widget.dataset.printId;
+    var current = parseInt(widget.dataset.rating) || 0;
+    var btns = widget.querySelectorAll('.star-btn');
+    function paint(n) {
+      btns.forEach(function(b) { b.classList.toggle('on', parseInt(b.dataset.val) <= n); });
+    }
+    btns.forEach(function(btn) {
+      btn.addEventListener('mouseenter', function() { paint(parseInt(btn.dataset.val)); });
+      btn.addEventListener('mouseleave', function() { paint(current); });
+      btn.addEventListener('click', function() {
+        var val = parseInt(btn.dataset.val);
+        var newRating = val === current ? null : val;
+        fetch('/api/prints/' + printId, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
+          body: JSON.stringify({ rating: newRating })
+        }).then(function(r) {
+          if (r.ok) { current = newRating || 0; paint(current); widget.dataset.rating = current; }
+        });
+      });
+    });
+  });
+})();
+</script>
 {% endblock %}

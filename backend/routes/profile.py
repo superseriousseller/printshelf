@@ -18,6 +18,7 @@ from affiliate import apply_affiliate
 from auth import get_current_user_web_optional
 from email_service import send_follow_notification
 from models import Filament, Follow, Print, PrintLink, Printer, User, get_db
+from sqlalchemy import func
 
 router = APIRouter(tags=["profile"])
 
@@ -97,7 +98,7 @@ def public_profile(
     rating: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
-    user = db.query(User).filter(User.username == username).first()
+    user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
     if user is None:
         return templates.TemplateResponse(
             request,
@@ -105,6 +106,8 @@ def public_profile(
             {"username": username, "current_user": current_user},
             status_code=404,
         )
+    if user.username != username:
+        return RedirectResponse(url=f"/@{user.username}", status_code=301)
 
     # Count the visit — skip if the owner is viewing their own shelf
     if current_user is None or current_user.id != user.id:
@@ -203,13 +206,15 @@ def public_print_detail(
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
-    user = db.query(User).filter(User.username == username).first()
+    user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
     if user is None:
         return templates.TemplateResponse(
             request, "404_user.html",
             {"username": username, "current_user": current_user},
             status_code=404,
         )
+    if user.username != username:
+        return RedirectResponse(url=f"/@{user.username}/prints/{print_id}", status_code=301)
     p = db.query(Print).filter(
         Print.id == print_id,
         Print.user_id == user.id,
@@ -327,7 +332,7 @@ def follow_user(
 ):
     if current_user is None:
         return RedirectResponse("/login", status_code=303)
-    target = db.query(User).filter(User.username == username).first()
+    target = db.query(User).filter(func.lower(User.username) == username.lower()).first()
     if target and target.id != current_user.id:
         exists = db.query(Follow).filter(
             Follow.follower_id == current_user.id, Follow.following_id == target.id
@@ -353,7 +358,7 @@ def unfollow_user(
 ):
     if current_user is None:
         return RedirectResponse("/login", status_code=303)
-    target = db.query(User).filter(User.username == username).first()
+    target = db.query(User).filter(func.lower(User.username) == username.lower()).first()
     if target:
         db.query(Follow).filter(
             Follow.follower_id == current_user.id, Follow.following_id == target.id
@@ -375,7 +380,7 @@ def queue_print(
 
     source = db.query(Print).filter(
         Print.id == print_id,
-        Print.user_id == db.query(User.id).filter(User.username == username).scalar_subquery(),
+        Print.user_id == db.query(User.id).filter(func.lower(User.username) == username.lower()).scalar_subquery(),
         Print.is_public == True,   # noqa: E712
         Print.queued == False,     # noqa: E712
     ).first()
