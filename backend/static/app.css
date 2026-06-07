@@ -563,6 +563,7 @@ footer {
 .detail-breadcrumb a { color: var(--accent); text-decoration: none; }
 .detail-breadcrumb a:hover { text-decoration: underline; }
 .detail-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.detail-info { position: sticky; top: 80px; align-self: start; }
 .detail-photo img { width: 100%; border-radius: var(--radius); border: 1px solid var(--border); display: block; }
 .detail-photo-video-link { display: block; position: relative; }
 .detail-photo-video-link:hover img { opacity: 0.85; }
@@ -572,7 +573,12 @@ footer {
 .detail-designer { margin: 0 0 16px; color: var(--text-dim); font-size: 0.95rem; }
 .detail-badges { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 .detail-rating { color: #ffc857; font-size: 1.1rem; letter-spacing: 1px; }
-.detail-date, .detail-printer { color: var(--text-dim); font-size: 0.9rem; margin: 4px 0; }
+.detail-stats-row { display: flex; gap: 20px; flex-wrap: wrap; margin: 14px 0 0; padding: 14px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.detail-stat { display: flex; flex-direction: column; gap: 2px; }
+.detail-stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 600; }
+.detail-stat-value { font-size: 0.95rem; color: var(--text); font-weight: 500; }
+.detail-cta { display: flex; flex-direction: column; gap: 8px; margin: 20px 0; }
+.detail-cta form { display: contents; }
 .detail-section-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 20px 0 8px; }
 .chip-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .detail-settings { margin-top: 20px; }

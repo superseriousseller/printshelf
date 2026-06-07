@@ -51,27 +51,49 @@
                 {% else %}<span class="badge badge-ok">Printed</span>{% endif %}
             </div>
 
-            {% if current_user and current_user.id == user.id %}
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-                <a href="/dashboard/prints/{{ print_.id }}/edit" class="btn-primary">Edit</a>
-                <a href="/dashboard/prints/new?reprint={{ print_.id }}" class="btn-secondary">Print again</a>
+            {% if print_.print_date or printer or print_.print_time_mins or print_.filament_used_g %}
+            <div class="detail-stats-row">
+                {% if print_.print_date %}
+                <div class="detail-stat">
+                    <span class="detail-stat-label">Printed</span>
+                    <span class="detail-stat-value">{{ print_.print_date.strftime('%b %-d, %Y') }}</span>
+                </div>
+                {% endif %}
+                {% if printer %}
+                {% set make_model = ((printer.brand or "") + " " + (printer.model or "")).strip() %}
+                <div class="detail-stat">
+                    <span class="detail-stat-label">Printer</span>
+                    <span class="detail-stat-value">{% if make_model %}{{ make_model }}{% else %}{{ printer.name }}{% endif %}</span>
+                </div>
+                {% endif %}
+                {% if print_.print_time_mins %}
+                {% set h = print_.print_time_mins // 60 %}{% set m = print_.print_time_mins % 60 %}
+                <div class="detail-stat">
+                    <span class="detail-stat-label">Print time</span>
+                    <span class="detail-stat-value">{% if h %}{{ h }}h {% endif %}{% if m %}{{ m }}m{% endif %}</span>
+                </div>
+                {% endif %}
+                {% if print_.filament_used_g %}
+                <div class="detail-stat">
+                    <span class="detail-stat-label">Filament</span>
+                    <span class="detail-stat-value">{{ print_.filament_used_g }}g{% if print_cost %} · <span class="cost-est">${{ "%.2f"|format(print_cost) }}</span>{% endif %}</span>
+                </div>
+                {% endif %}
             </div>
-            {% elif current_user %}
-            <form method="post" action="/@{{ user.username }}/prints/{{ print_.id }}/queue" style="margin-top:14px">
-                <button type="submit" class="btn-primary">+ Add to my queue</button>
-            </form>
-            {% else %}
-            <a href="/login?next=/@{{ user.username }}/prints/{{ print_.id }}" class="btn-secondary" style="display:inline-block;margin-top:14px">Log in to queue this</a>
             {% endif %}
 
-            {% if print_.print_date %}
-            <p class="detail-date">Printed {{ print_.print_date.strftime('%B %-d, %Y') }}</p>
-            {% endif %}
-
-            {% if printer %}
-            {% set make_model = ((printer.brand or "") + " " + (printer.model or "")).strip() %}
-            <p class="detail-printer">Printer: {% if make_model %}{{ make_model }}{% if printer.name %} ({{ printer.name }}){% endif %}{% else %}{{ printer.name }}{% endif %}</p>
-            {% endif %}
+            <div class="detail-cta">
+                {% if current_user and current_user.id == user.id %}
+                <a href="/dashboard/prints/{{ print_.id }}/edit" class="btn-primary btn-full">Edit</a>
+                <a href="/dashboard/prints/new?reprint={{ print_.id }}" class="btn-secondary btn-full">Print again</a>
+                {% elif current_user %}
+                <form method="post" action="/@{{ user.username }}/prints/{{ print_.id }}/queue">
+                    <button type="submit" class="btn-primary btn-full">+ Add to my queue</button>
+                </form>
+                {% else %}
+                <a href="/login?next=/@{{ user.username }}/prints/{{ print_.id }}" class="btn-secondary btn-full">Log in to queue this</a>
+                {% endif %}
+            </div>
 
             {% if filaments %}
             <div class="detail-filaments">
@@ -100,20 +122,13 @@
             </div>
             {% endif %}
 
-            {% if print_.layer_height or print_.infill_pct is not none or print_.supports is not none or print_.print_time_mins or print_.filament_used_g %}
+            {% if print_.layer_height or print_.infill_pct is not none or print_.supports is not none %}
             <div class="detail-settings">
                 <p class="detail-section-label">Print settings</p>
                 <ul class="settings-list">
                     {% if print_.layer_height %}<li><span class="setting-key">Layer height</span> {{ print_.layer_height }}mm</li>{% endif %}
                     {% if print_.infill_pct is not none %}<li><span class="setting-key">Infill</span> {{ print_.infill_pct }}%</li>{% endif %}
                     {% if print_.supports is not none %}<li><span class="setting-key">Supports</span> {{ "Yes" if print_.supports else "No" }}</li>{% endif %}
-                    {% if print_.print_time_mins %}
-                    <li><span class="setting-key">Print time</span>
-                        {% set h = print_.print_time_mins // 60 %}{% set m = print_.print_time_mins % 60 %}
-                        {% if h %}{{ h }}h {% endif %}{% if m %}{{ m }}m{% endif %}
-                    </li>
-                    {% endif %}
-                    {% if print_.filament_used_g %}<li><span class="setting-key">Filament used</span> {{ print_.filament_used_g }}g{% if print_cost %} · <span class="cost-est">${{ "%.2f"|format(print_cost) }} est.</span>{% endif %}</li>{% endif %}
                 </ul>
             </div>
             {% endif %}
