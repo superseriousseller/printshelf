@@ -24,10 +24,10 @@
         <div class="hero-cta">
             {% if current_user %}
                 <a href="/dashboard" class="btn-primary btn-lg">Open your dashboard</a>
-                <a href="/@{{ current_user.username }}" class="btn-ghost btn-lg">See your shelf</a>
+                <a href="/@{{ current_user.username }}" class="btn-secondary btn-lg">See your shelf</a>
             {% else %}
                 <a href="/signup" class="btn-primary btn-lg">Start your shelf — free</a>
-                <a href="/@PluggedIn3d" class="btn-ghost btn-lg">See an example shelf →</a>
+                <a href="/@PluggedIn3d" class="btn-secondary btn-lg">See an example shelf →</a>
             {% endif %}
         </div>
         <p class="hero-fineprint">Free tier: 50 prints · 10 filaments. <a href="/dashboard/upgrade">Pro $4.99/mo</a> for unlimited.</p>

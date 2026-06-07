@@ -12,6 +12,16 @@
 
 {% block content %}
 <div class="explore-page">
+    <nav class="category-bar" aria-label="Browse by category">
+        <a class="filter-pill {% if not sort or sort == 'newest' %}active{% endif %}" href="/explore">All</a>
+        <a class="filter-pill {% if sort == 'rating' %}active{% endif %}" href="/explore?sort=rating">Top Rated</a>
+        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Tools</span>
+        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Household</span>
+        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Art</span>
+        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Toys &amp; Games</span>
+        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Miniatures</span>
+        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Functional</span>
+    </nav>
     <header class="explore-header">
         <div class="explore-header-top">
             <div>

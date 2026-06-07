@@ -143,7 +143,10 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 - Print again button — pre-fills new print form from existing print, 8/8 QA — prod (ba09c69)
 
 **Completed 2026-06-06 (session 21):**
-- UX audit batch 1 — filament typeahead search, Explore sort, ghost button contrast, Cancel button, human-readable dates
+- UX audit batch 4 — hero images eager-load; stat tiles queued=blue/success=green; card footer min-height 80px; hero top padding 72px; feed empty state icon; social fill buttons pill style. On prod (ca11745).
+- UX audit batch 3 — nav: orange "+ Log" shortcut, avatar replaces "My shelf" text; explore cards show user avatars; search page deduped (single nav search box). On prod (18c8a01).
+- UX audit batch 2 — edit button on detail page; photo → video link with ▶ Watch badge; shelf sort by print_date; "Items used in this print" label. On prod (80caa83).
+- UX audit batch 1 — filament typeahead search, Explore sort, ghost button contrast, Cancel button, human-readable dates. On prod (22f4e60).
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
