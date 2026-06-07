@@ -284,6 +284,7 @@ a:hover { text-decoration: underline; }
 @media (max-width: 600px) {
     /* Global spacing */
     main { padding: 16px 12px 60px; }
+    .category-bar { flex-wrap: nowrap; }
 
     /* Topbar + hamburger */
     .topbar { padding: 12px 14px; position: relative; }
