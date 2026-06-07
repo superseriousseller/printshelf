@@ -281,10 +281,11 @@ a:hover { text-decoration: underline; }
     .thumb-sm { width: 70px; height: 70px; }
 }
 
+.nav-shelf-label { display: none; }
 @media (max-width: 600px) {
     /* Global spacing */
     main { padding: 16px 12px 60px; }
-    .category-bar { flex-wrap: nowrap; }
+    .nav-shelf-label { display: inline; font-size: 0.95rem; }
 
     /* Topbar + hamburger */
     .topbar { padding: 12px 14px; position: relative; }
@@ -598,7 +599,7 @@ footer {
 .explore-user:hover { color: var(--accent); text-decoration: none; }
 .explore-pager { display: flex; align-items: center; gap: 16px; margin-top: 32px; }
 .explore-page-num { color: var(--text-dim); font-size: 0.9rem; }
-.category-bar { display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; scrollbar-width: none; flex-wrap: wrap; }
+.category-bar { display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; scrollbar-width: none; }
 .category-bar::-webkit-scrollbar { display: none; }
 .filter-pill { height: 30px; padding: 0 14px; border-radius: var(--radius-full); font-size: 13px; font-weight: 500; color: var(--text-dim); background: transparent; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: color 0.15s, background 0.15s, border-color 0.15s; text-decoration: none; display: inline-flex; align-items: center; }
 .filter-pill:hover { color: var(--text); background: rgba(255,255,255,0.06); text-decoration: none; }

@@ -35,6 +35,7 @@
                     {% else %}
                     <span class="nav-avatar nav-avatar-fallback">{{ (current_user.display_name or current_user.username)[0]|upper }}</span>
                     {% endif %}
+                    <span class="nav-shelf-label">My shelf</span>
                 </a>
                 <form method="post" action="/logout" style="display:inline">
                     <button type="submit" class="linklike">Log out</button>
