@@ -231,6 +231,7 @@ class Print(Base):
     video_url = Column(String(1000), nullable=True)   # YouTube/TikTok/Instagram link
     focal_x = Column(Float, nullable=True)             # thumbnail focus point, 0–100 (default 50)
     focal_y = Column(Float, nullable=True)             # thumbnail focus point, 0–100 (default 50)
+    category = Column(String(50), nullable=True)       # explore filter category
 
     print_date = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -264,8 +265,20 @@ class Print(Base):
             "videoUrl": self.video_url,
             "focalX": self.focal_x,
             "focalY": self.focal_y,
+            "category": self.category,
         }
 
+
+PRINT_CATEGORIES = [
+    ("tools", "Tools"),
+    ("household", "Household"),
+    ("art", "Art"),
+    ("toys-games", "Toys & Games"),
+    ("miniatures", "Miniatures"),
+    ("functional", "Functional"),
+    ("other", "Other"),
+]
+VALID_PRINT_CATEGORIES = {slug for slug, _ in PRINT_CATEGORIES}
 
 Index("ix_prints_user_queued", Print.user_id, Print.queued)
 Index("ix_prints_user_created", Print.user_id, Print.created_at.desc())

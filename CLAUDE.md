@@ -12,6 +12,7 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Design system cleanup (2026-06-08) — base font 16px; --stat-queued/--stat-done tokens; removed --radius-lg/--radius-xl; table border-radius fixed (border-collapse: separate); all pill radii tokenized; filter bar pills; Go button removed. 14/14 QA PASS. On prod (9183a43).
 - P0 mobile blockers (2026-06-08) — hamburger 44×44px; filter chip + Edit/Delete tap targets 44px; iOS input zoom fix (16px !important); sidebar overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
 - Thumbnail focal point drag (2026-06-07) — drag crosshair overlay on photo upload page saves focal_x/focal_y via PATCH API; all thumbnails (profile, explore, homepage, dashboard, feed) respect object-position. Migration a2b3c4d5e6f7. 11/11 QA PASS. On prod (c0177eb).
 - UX audit fixes (2026-06-06) — filament typeahead search on print form; Explore sort control (Newest/Oldest/Top rated); ghost button contrast fix; Cancel button styling; human-readable print dates.
@@ -134,7 +135,8 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 
 ## Next Session Starts Here
 **Completed 2026-06-08 (session 23):**
-- P0 mobile blockers — all 6 fixed: hamburger 44×44px; filter chip + Edit/Delete tap targets 44px min-height; iOS input zoom (!important + removed conflicting 600px override); sidebar background cleared + overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
+- Design system cleanup — base font 16px; stat color tokens; table border-radius fix; all pill radii tokenized (999px/20px → var(--radius-full)); filter bar pill shape; Go button removed. 14/14 QA PASS. On prod (9183a43).
+- P0 mobile blockers — all 6 fixed: hamburger 44×44px; filter chip + Edit/Delete tap targets 44px; iOS input zoom (!important); sidebar overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
 
 **Completed 2026-06-07 (session 22):**
 - Thumbnail focal point drag — drag crosshair on photo page saves focal_x/focal_y; all card thumbnails respect object-position. 11/11 QA PASS. On prod (c0177eb).
@@ -144,10 +146,4 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars still pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`
 
-**Immediate next step:** Design system cleanup (P1, CSS-only):
-1. Standardize 3 filter components → 1 rounded pill
-2. Tokenize #7b9cf0/#6ee7b7 stat colors
-3. Remove --radius duplicate, fix orphan radii
-4. Fix 15px → 16px base font size
-5. Table border-radius fix
-6. Remove "Go" button on prints list, wire sort onChange
+**Immediate next step:** Remaining audit items (P2) or new features — Cam's call.

@@ -27,6 +27,8 @@ from models import (
     Print,
     PrintLink,
     PrintStatus,
+    PRINT_CATEGORIES,
+    VALID_PRINT_CATEGORIES,
     Printer,
     SourcePlatform,
     User,
@@ -640,6 +642,7 @@ def _print_form_ctx(user: User, db: Session, p: Optional[Print], errors: list, v
         printers=printers, filaments=filaments,
         platforms=[p.value for p in SourcePlatform],
         statuses=[s.value for s in PrintStatus],
+        categories=PRINT_CATEGORIES,
     )
 
 
@@ -784,6 +787,7 @@ async def create_print(
     video_url: str = Form(""),
     link_labels: list[str] = Form(default=[]),
     link_urls: list[str] = Form(default=[]),
+    category: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -828,6 +832,10 @@ async def create_print(
         errors.append("Title is required (or paste a source URL we can pull a title from).")
     if source_platform not in {p.value for p in SourcePlatform}:
         errors.append("Invalid source platform.")
+    category_val = category.strip() or None
+    if category_val and category_val not in VALID_PRINT_CATEGORIES:
+        errors.append("Invalid category.")
+        category_val = None
     if status == "queued":
         queued = "1"
         status = "printed"
@@ -886,6 +894,7 @@ async def create_print(
             "supports": supports, "print_time_mins": print_time_mins,
             "filament_used_g": filament_used_g, "video_url": video_url,
             "links": [{"label": l, "url": u} for l, u in zip(link_labels, link_urls)],
+            "category": category,
         }
         return templates.TemplateResponse(
             request, "dashboard/print_form.html",
@@ -913,6 +922,7 @@ async def create_print(
         print_time_mins=print_time_i,
         filament_used_g=filament_used_f,
         video_url=video_url.strip() or None,
+        category=category_val,
     )
     db.add(p)
     db.commit()
@@ -966,6 +976,7 @@ def edit_print(
         "filament_used_g": str(p.filament_used_g) if p.filament_used_g is not None else "",
         "video_url": p.video_url or "",
         "links": [{"label": lk.label, "url": lk.url} for lk in existing_links],
+        "category": p.category or "",
     }
     return templates.TemplateResponse(
         request, "dashboard/print_form.html",
@@ -1000,6 +1011,7 @@ async def update_print(
     video_url: str = Form(""),
     link_labels: list[str] = Form(default=[]),
     link_urls: list[str] = Form(default=[]),
+    category: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -1076,6 +1088,8 @@ async def update_print(
     p.print_time_mins = _parse_int(print_time_mins, min_val=1)
     p.filament_used_g = _parse_float(filament_used_g)
     p.video_url = video_url.strip() or None
+    category_val = category.strip() or None
+    p.category = category_val if (category_val is None or category_val in VALID_PRINT_CATEGORIES) else p.category
 
     link_errors: list[str] = []
     valid_links = _parse_links(link_labels, link_urls, link_errors)

@@ -127,13 +127,15 @@ def explore(
     request: Request,
     page: int = 1,
     sort: str = "newest",
+    category: Optional[str] = None,
+    failed: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     page = max(1, page)
     sort = sort if sort in _EXPLORE_SORT else "newest"
     offset = (page - 1) * EXPLORE_LIMIT
-    rows = (
+    q = (
         db.query(Print, User.username, User.avatar_url)
         .join(User, Print.user_id == User.id)
         .filter(
@@ -141,9 +143,17 @@ def explore(
             Print.queued == False,    # noqa: E712
             or_(Print.photo_url.isnot(None), Print.thumbnail_url.isnot(None)),
         )
-        .order_by(_EXPLORE_SORT[sort])
+    )
+    category_filter = category if category and category != "all" else None
+    failed_filter = failed == "1"
+    if category_filter:
+        q = q.filter(Print.category == category_filter)
+    if failed_filter:
+        q = q.filter(Print.status == "failed")
+    rows = (
+        q.order_by(_EXPLORE_SORT[sort])
         .offset(offset)
-        .limit(EXPLORE_LIMIT + 1)  # fetch one extra to detect next page
+        .limit(EXPLORE_LIMIT + 1)
         .all()
     )
     has_next = len(rows) > EXPLORE_LIMIT
@@ -172,6 +182,8 @@ def explore(
             "has_next": has_next,
             "has_prev": page > 1,
             "sort": sort,
+            "category": category_filter,
+            "failed": failed_filter,
         },
     )
 
