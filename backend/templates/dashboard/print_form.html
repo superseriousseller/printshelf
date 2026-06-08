@@ -89,6 +89,13 @@
                 {% for r in [1, 2, 3, 4, 5] %}<option value="{{ r }}" {% if values.rating|string == r|string %}selected{% endif %}>{{ "★" * r }}</option>{% endfor %}
             </select>
         </label>
+        <label>
+            Category
+            <select name="category">
+                <option value="" {% if not values.category %}selected{% endif %}>— none —</option>
+                {% for slug, label in categories %}<option value="{{ slug }}" {% if values.category == slug %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </label>
     </div>
     <fieldset class="filaments-picker">
         <legend>Filaments used <span class="hint">(pick one or more)</span></legend>

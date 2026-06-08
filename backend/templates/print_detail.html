@@ -49,6 +49,7 @@
                 {% if print_.status == "failed" %}<span class="badge badge-fail">Failed</span>
                 {% elif print_.status == "partial" %}<span class="badge badge-partial">Partial</span>
                 {% else %}<span class="badge badge-ok">Printed</span>{% endif %}
+                {% if print_.category %}<a href="/explore?category={{ print_.category }}" class="badge badge-category">{{ print_.category | replace("-", " ") | title }}</a>{% endif %}
             </div>
 
             {% if print_.print_date or printer or print_.print_time_mins or print_.filament_used_g %}

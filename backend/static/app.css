@@ -571,6 +571,9 @@ footer {
 
 /* badge-ok (success) on detail pages */
 .badge-ok { background: var(--success, #1a4731); color: #6ee7b7; }
+.badge-category { background: rgba(255,255,255,0.08); color: var(--text-dim); text-decoration: none; font-size: 12px; }
+.badge-category:hover { color: var(--text); background: rgba(255,255,255,0.14); }
+.filter-pill-failed.active { background: var(--fail); color: white; }
 
 /* Print detail page */
 .print-detail-page { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }

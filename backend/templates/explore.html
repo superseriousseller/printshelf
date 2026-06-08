@@ -13,14 +13,15 @@
 {% block content %}
 <div class="explore-page">
     <nav class="category-bar" aria-label="Browse by category">
-        <a class="filter-pill {% if not sort or sort == 'newest' %}active{% endif %}" href="/explore">All</a>
-        <a class="filter-pill {% if sort == 'rating' %}active{% endif %}" href="/explore?sort=rating">Top Rated</a>
-        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Tools</span>
-        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Household</span>
-        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Art</span>
-        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Toys &amp; Games</span>
-        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Miniatures</span>
-        <span class="filter-pill filter-pill-soon" title="Category filtering coming soon">Functional</span>
+        <a class="filter-pill {% if not category and not failed %}active{% endif %}" href="/explore{% if sort != 'newest' %}?sort={{ sort }}{% endif %}">All</a>
+        <a class="filter-pill {% if category == 'tools' %}active{% endif %}" href="/explore?category=tools{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">Tools</a>
+        <a class="filter-pill {% if category == 'household' %}active{% endif %}" href="/explore?category=household{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">Household</a>
+        <a class="filter-pill {% if category == 'art' %}active{% endif %}" href="/explore?category=art{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">Art</a>
+        <a class="filter-pill {% if category == 'toys-games' %}active{% endif %}" href="/explore?category=toys-games{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">Toys &amp; Games</a>
+        <a class="filter-pill {% if category == 'miniatures' %}active{% endif %}" href="/explore?category=miniatures{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">Miniatures</a>
+        <a class="filter-pill {% if category == 'functional' %}active{% endif %}" href="/explore?category=functional{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">Functional</a>
+        <a class="filter-pill {% if category == 'other' %}active{% endif %}" href="/explore?category=other{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">Other</a>
+        <a class="filter-pill filter-pill-failed {% if failed %}active{% endif %}" href="/explore?failed=1{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">Failed</a>
     </nav>
     <header class="explore-header">
         <div class="explore-header-top">
@@ -29,6 +30,8 @@
                 <p class="explore-sub">Recent prints from the community. Click any card to see the full shelf.</p>
             </div>
             <form class="explore-sort-form" method="get" action="/explore">
+                {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+                {% if failed %}<input type="hidden" name="failed" value="1">{% endif %}
                 <select name="sort" class="filter-sort" onchange="this.form.submit()" aria-label="Sort by">
                     <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
                     <option value="oldest" {% if sort == "oldest" %}selected{% endif %}>Oldest</option>
@@ -67,9 +70,12 @@
     </section>
     {% if has_prev or has_next %}
     <nav class="explore-pager">
-        {% if has_prev %}<a href="/explore?page={{ page - 1 }}&sort={{ sort }}" class="btn-secondary">← Newer</a>{% endif %}
+        {% set pgbase = "/explore?sort=" + sort %}
+        {% if category %}{% set pgbase = pgbase + "&category=" + category %}{% endif %}
+        {% if failed %}{% set pgbase = pgbase + "&failed=1" %}{% endif %}
+        {% if has_prev %}<a href="{{ pgbase }}&page={{ page - 1 }}" class="btn-secondary">← Newer</a>{% endif %}
         <span class="explore-page-num">Page {{ page }}</span>
-        {% if has_next %}<a href="/explore?page={{ page + 1 }}&sort={{ sort }}" class="btn-secondary">Older →</a>{% endif %}
+        {% if has_next %}<a href="{{ pgbase }}&page={{ page + 1 }}" class="btn-secondary">Older →</a>{% endif %}
     </nav>
     {% endif %}
     {% else %}

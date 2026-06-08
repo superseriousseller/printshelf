@@ -27,6 +27,7 @@ from models import (
     Printer,
     SourcePlatform,
     User,
+    VALID_PRINT_CATEGORIES,
     get_db,
 )
 
@@ -58,6 +59,7 @@ class PrintCreate(BaseModel):
     print_date: Optional[date] = None
     video_url: Optional[str] = Field(default=None, max_length=1000)
     links: List[PrintLinkItem] = Field(default_factory=list)
+    category: Optional[str] = None
 
 
 class PrintUpdate(BaseModel):
@@ -79,6 +81,7 @@ class PrintUpdate(BaseModel):
     links: Optional[List[PrintLinkItem]] = None
     focal_x: Optional[float] = Field(default=None, ge=0, le=100)
     focal_y: Optional[float] = Field(default=None, ge=0, le=100)
+    category: Optional[str] = None
 
 
 def _save_links(db: Session, print_id: int, user_id: int, links: List[PrintLinkItem]) -> None:
@@ -128,7 +131,7 @@ def _validate_refs(
             )
 
 
-def _validate_enums(status: Optional[str], platform: Optional[str]) -> None:
+def _validate_enums(status: Optional[str], platform: Optional[str], category: Optional[str] = None) -> None:
     if status is not None and status not in VALID_PRINT_STATUSES:
         raise HTTPException(
             status_code=400,
@@ -139,11 +142,16 @@ def _validate_enums(status: Optional[str], platform: Optional[str]) -> None:
             status_code=400,
             detail=f"Invalid source_platform. Must be one of: {sorted(VALID_PLATFORMS)}",
         )
+    if category is not None and category not in VALID_PRINT_CATEGORIES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid category. Must be one of: {sorted(VALID_PRINT_CATEGORIES)}",
+        )
 
 
 def _create_print(db: Session, user: User, body: PrintCreate, *, force_queued: Optional[bool] = None) -> Print:
     enforce_print_limit(db, user)
-    _validate_enums(body.status, body.source_platform)
+    _validate_enums(body.status, body.source_platform, body.category)
     _validate_refs(db, user, body.printer_id, body.filament_ids)
 
     queued = body.queued if force_queued is None else force_queued
@@ -164,6 +172,7 @@ def _create_print(db: Session, user: User, body: PrintCreate, *, force_queued: O
         is_public=body.is_public,
         print_date=body.print_date,
         video_url=body.video_url,
+        category=body.category,
     )
     db.add(p)
     db.commit()
@@ -237,7 +246,7 @@ def update_print(
     p = _own_or_404(db, user, print_id)
     data = body.model_dump(exclude_unset=True)
     links = data.pop("links", None)
-    _validate_enums(data.get("status"), data.get("source_platform"))
+    _validate_enums(data.get("status"), data.get("source_platform"), data.get("category"))
     _validate_refs(db, user, data.get("printer_id"), data.get("filament_ids"))
     for k, v in data.items():
         if isinstance(v, str):
