@@ -37,7 +37,7 @@
     <li class="prints-row">
         <div class="thumb-sm">
             {% set img = p.photo_url or p.thumbnail_url %}
-            {% if img %}<img src="{{ img }}" alt="" loading="lazy">{% else %}<div class="thumb-fallback-sm">🧊</div>{% endif %}
+            {% if img %}<img src="{{ img }}" alt="{{ p.title }}" loading="lazy" style="object-position:{{ p.focal_x or 50 }}% {{ p.focal_y or 50 }}%">{% else %}<div class="thumb-fallback-sm">🧊</div>{% endif %}
         </div>
         <div class="prints-row-body">
             <h3>
