@@ -12,6 +12,7 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Thumbnail focal point drag (2026-06-07) — drag crosshair overlay on photo upload page saves focal_x/focal_y via PATCH API; all thumbnails (profile, explore, homepage, dashboard, feed) respect object-position. Migration a2b3c4d5e6f7. 11/11 QA PASS. On prod (c0177eb).
 - UX audit fixes (2026-06-06) — filament typeahead search on print form; Explore sort control (Newest/Oldest/Top rated); ghost button contrast fix; Cancel button styling; human-readable print dates.
 - Filament search API + Print Links API (2026-06-06) — GET /api/filaments?q= fuzzy search; POST/PATCH /api/prints accepts links[] array. On prod (4e752b6).
 - Chrome extension v0.3.8 submitted to Chrome Web Store (2026-06-06) — SUNLU + FlashForge stores, finish field extraction, Bambu Lab screenshot added.
@@ -131,25 +132,23 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-05 (session 20):**
-- Print Links — per-print labeled affiliate links, "Goes great with" chips, domain allowlist, affiliate tags at render-time — prod (1bfe7bb)
-- Sortable table columns + filament filter chips + admin mobile + site mobile CSS — prod (49ce449)
-
-**Completed 2026-06-04 (session 19):**
-- Signup fix — removed HTML5 pattern attr blocking all signups — prod (adf981d)
-- Filament own/want UX — default own, wishlist checkbox, "Mark as owned" quick action — prod (ef2ed25)
-- Affiliate expansion — Anycubic (Awin), SUNLU (sca_ref), FlashForge (Impact), all env vars set — prod (eb22374)
-- Filament finish field — Silk/Matte/Glow/etc. free-text with datalist — prod (0db617c)
-- Print again button — pre-fills new print form from existing print, 8/8 QA — prod (ba09c69)
+**Completed 2026-06-07 (session 22):**
+- Thumbnail focal point drag — drag crosshair on photo page saves focal_x/focal_y; all card thumbnails respect object-position. 11/11 QA PASS. On prod (c0177eb).
+- Fixed duplicate Alembic revision ID `a1b2c3d4e5f6` (collision with drip-email migration from 2026-06-02) that caused Railway healthcheck failure. Renamed to `a2b3c4d5e6f7`. (cbd805f)
+- Three UX improvements: nav "+ Print" rename, case-insensitive usernames (301 canonical redirect), inline star rating on prints list. On prod (2ad22a5).
+- Design audit sessions 21–22: MakerWorld parity batches 1–5, detail panel sticky restructure, category bar, explore user avatars, "My shelf" mobile label, B5-19 flex-wrap source-order fix.
 
 **Completed 2026-06-06 (session 21):**
-- UX audit batch 4 — hero images eager-load; stat tiles queued=blue/success=green; card footer min-height 80px; hero top padding 72px; feed empty state icon; social fill buttons pill style. On prod (ca11745).
-- UX audit batch 3 — nav: orange "+ Log" shortcut, avatar replaces "My shelf" text; explore cards show user avatars; search page deduped (single nav search box). On prod (18c8a01).
-- UX audit batch 2 — edit button on detail page; photo → video link with ▶ Watch badge; shelf sort by print_date; "Items used in this print" label. On prod (80caa83).
-- UX audit batch 1 — filament typeahead search, Explore sort, ghost button contrast, Cancel button, human-readable dates. On prod (22f4e60).
+- UX audit batches 1–4 — filament typeahead, Explore sort, ghost contrast, Cancel, human dates, edit button, video badge, shelf print_date sort, stat tiles, eager hero images, feed empty icon, pill social buttons, deduped search nav. On prod (22f4e60 → ca11745).
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars still pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`
 
-**Immediate next step:** Push to staging, QA, merge to prod. Then address remaining audit items (P2-01 card engagement signals, P2-04 quick-log nav button, P2-09 avatar in nav, etc.).
+**Immediate next step:** Design audit P0 mobile blockers (6 items):
+1. Dashboard sidebar overflow 240px on mobile
+2. Prints page header off-screen on mobile
+3. Input font-size < 16px causing iOS zoom
+4. Edit/Delete tap targets 23px → 44px
+5. Filter chip tap targets 24px → 44px
+6. Hamburger button 29×30px → 44×44px
