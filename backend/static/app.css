@@ -282,8 +282,8 @@ a:hover { text-decoration: underline; }
     .prints-row .actions { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
     .thumb-sm { width: 70px; height: 70px; }
 
-    /* iOS input zoom prevention — all form inputs must be >= 16px */
-    input, select, textarea { font-size: 16px; }
+    /* iOS input zoom prevention — !important beats class-level font-size overrides */
+    input, select, textarea { font-size: 16px !important; }
 }
 
 .nav-shelf-label { display: none; }
@@ -644,7 +644,7 @@ footer {
 .search-user-handle { margin: 0; color: var(--text-dim); font-size: 0.82rem; }
 .search-user-bio { margin: 2px 0 0; color: var(--text-dim); font-size: 0.82rem; }
 .search-prints { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-@media (max-width: 600px) { .nav-search { max-width: 140px; } .nav-search input { font-size: 0.8rem; } }
+@media (max-width: 600px) { .nav-search { max-width: 140px; } }
 
 .related-section { max-width: 1000px; margin: 32px auto 0; padding: 0 24px; }
 .related-heading { font-size: 1rem; font-weight: 600; margin: 0 0 14px; color: var(--text-dim); }
