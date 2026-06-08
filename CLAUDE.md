@@ -12,6 +12,7 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- P0 mobile blockers (2026-06-08) — hamburger 44×44px; filter chip + Edit/Delete tap targets 44px; iOS input zoom fix (16px !important); sidebar overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
 - Thumbnail focal point drag (2026-06-07) — drag crosshair overlay on photo upload page saves focal_x/focal_y via PATCH API; all thumbnails (profile, explore, homepage, dashboard, feed) respect object-position. Migration a2b3c4d5e6f7. 11/11 QA PASS. On prod (c0177eb).
 - UX audit fixes (2026-06-06) — filament typeahead search on print form; Explore sort control (Newest/Oldest/Top rated); ghost button contrast fix; Cancel button styling; human-readable print dates.
 - Filament search API + Print Links API (2026-06-06) — GET /api/filaments?q= fuzzy search; POST/PATCH /api/prints accepts links[] array. On prod (4e752b6).
@@ -132,23 +133,21 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
+**Completed 2026-06-08 (session 23):**
+- P0 mobile blockers — all 6 fixed: hamburger 44×44px; filter chip + Edit/Delete tap targets 44px min-height; iOS input zoom (!important + removed conflicting 600px override); sidebar background cleared + overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
+
 **Completed 2026-06-07 (session 22):**
 - Thumbnail focal point drag — drag crosshair on photo page saves focal_x/focal_y; all card thumbnails respect object-position. 11/11 QA PASS. On prod (c0177eb).
-- Fixed duplicate Alembic revision ID `a1b2c3d4e5f6` (collision with drip-email migration from 2026-06-02) that caused Railway healthcheck failure. Renamed to `a2b3c4d5e6f7`. (cbd805f)
-- Three UX improvements: nav "+ Print" rename, case-insensitive usernames (301 canonical redirect), inline star rating on prints list. On prod (2ad22a5).
-- Design audit sessions 21–22: MakerWorld parity batches 1–5, detail panel sticky restructure, category bar, explore user avatars, "My shelf" mobile label, B5-19 flex-wrap source-order fix.
-
-**Completed 2026-06-06 (session 21):**
-- UX audit batches 1–4 — filament typeahead, Explore sort, ghost contrast, Cancel, human dates, edit button, video badge, shelf print_date sort, stat tiles, eager hero images, feed empty icon, pill social buttons, deduped search nav. On prod (22f4e60 → ca11745).
+- Fixed duplicate Alembic revision ID that crashed staging; three UX improvements (nav rename, case-insensitive usernames, inline stars). On prod (2ad22a5).
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars still pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`
 
-**Immediate next step:** Design audit P0 mobile blockers (6 items):
-1. Dashboard sidebar overflow 240px on mobile
-2. Prints page header off-screen on mobile
-3. Input font-size < 16px causing iOS zoom
-4. Edit/Delete tap targets 23px → 44px
-5. Filter chip tap targets 24px → 44px
-6. Hamburger button 29×30px → 44×44px
+**Immediate next step:** Design system cleanup (P1, CSS-only):
+1. Standardize 3 filter components → 1 rounded pill
+2. Tokenize #7b9cf0/#6ee7b7 stat colors
+3. Remove --radius duplicate, fix orphan radii
+4. Fix 15px → 16px base font size
+5. Table border-radius fix
+6. Remove "Go" button on prints list, wire sort onChange

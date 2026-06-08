@@ -27,7 +27,6 @@
         <option value="rating" {% if sort == "rating" %}selected{% endif %}>Rating ↓</option>
         <option value="date" {% if sort == "date" %}selected{% endif %}>Print date ↓</option>
     </select>
-    <button type="submit" class="btn-secondary">Go</button>
     {% if search %}<a href="/dashboard/prints{% if queued_filter %}?queued={{ queued_filter }}{% endif %}" class="clear-link">Clear</a>{% endif %}
 </form>
 
