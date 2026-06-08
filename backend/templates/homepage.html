@@ -40,7 +40,7 @@
             {% for f in featured %}
             <a class="home-card" href="/@{{ f.username }}">
                 <div class="home-thumb">
-                    <img src="{{ f.thumbnail }}" alt="{{ f.title }}" loading="eager">
+                    <img src="{{ f.thumbnail }}" alt="{{ f.title }}" loading="eager" style="object-position:{{ f.focal_x or 50 }}% {{ f.focal_y or 50 }}%">
                     {% if f.status == "failed" %}<span class="badge-pill badge-fail">Failed</span>
                     {% elif f.status == "partial" %}<span class="badge-pill badge-partial">Partial</span>{% endif %}
                 </div>

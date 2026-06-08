@@ -15,7 +15,7 @@
         <a href="/@{{ u.username }}/prints/{{ p.id }}" class="card-link" aria-label="{{ p.title }}"></a>
         <div class="thumb">
             {% set img = p.photo_url or p.thumbnail_url %}
-            {% if img %}<img src="{{ img }}" alt="{{ p.title }}" loading="lazy">
+            {% if img %}<img src="{{ img }}" alt="{{ p.title }}" loading="lazy" style="object-position:{{ p.focal_x or 50 }}% {{ p.focal_y or 50 }}%">
             {% else %}<div class="thumb-fallback">🧊</div>{% endif %}
             {% if p.status == "failed" %}<span class="badge badge-fail">Failed</span>
             {% elif p.status == "partial" %}<span class="badge badge-partial">Partial</span>{% endif %}

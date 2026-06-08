@@ -229,6 +229,8 @@ class Print(Base):
     filament_used_g = Column(Float, nullable=True)   # grams
 
     video_url = Column(String(1000), nullable=True)   # YouTube/TikTok/Instagram link
+    focal_x = Column(Float, nullable=True)             # thumbnail focus point, 0–100 (default 50)
+    focal_y = Column(Float, nullable=True)             # thumbnail focus point, 0–100 (default 50)
 
     print_date = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -260,6 +262,8 @@ class Print(Base):
             "printTimeMins": self.print_time_mins,
             "filamentUsedG": self.filament_used_g,
             "videoUrl": self.video_url,
+            "focalX": self.focal_x,
+            "focalY": self.focal_y,
         }
 
 

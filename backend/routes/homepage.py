@@ -55,6 +55,8 @@ def homepage(
             "username": uname,
             "maker": display_name or uname,
             "status": p.status,
+            "focal_x": p.focal_x,
+            "focal_y": p.focal_y,
         }
         for p, uname, display_name in rows
         if p.photo_url or p.thumbnail_url  # require an image — visual hook only
@@ -155,6 +157,8 @@ def explore(
             "username": uname,
             "avatar_url": avatar_url,
             "status": p.status,
+            "focal_x": p.focal_x,
+            "focal_y": p.focal_y,
         }
         for p, uname, avatar_url in rows
     ]

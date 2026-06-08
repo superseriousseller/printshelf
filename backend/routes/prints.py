@@ -77,6 +77,8 @@ class PrintUpdate(BaseModel):
     print_date: Optional[date] = None
     video_url: Optional[str] = Field(default=None, max_length=1000)
     links: Optional[List[PrintLinkItem]] = None
+    focal_x: Optional[float] = Field(default=None, ge=0, le=100)
+    focal_y: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 def _save_links(db: Session, print_id: int, user_id: int, links: List[PrintLinkItem]) -> None:
