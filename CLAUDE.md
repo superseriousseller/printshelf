@@ -12,6 +12,8 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Mobile form fix + polish (2026-06-08) — form rows collapse at ≤600px (was ≤480px); link-row stacks on mobile; sidebar nav 44px tap targets + scroll fade; modal shadow. 7/7 QA PASS. On prod (c332545).
+- Chrome extension v0.3.9 (2026-06-08) — removed brand names from manifest + store description to pass keyword spam review. No functional changes.
 - Category field + explore filtering (2026-06-08) — category on print form (tools/household/art/toys-games/miniatures/functional/other); explore pills now live filters; Failed pill added; sort/pagination preserve filters; detail page badge links to explore. 11/11 QA PASS. On prod (bcce5c2).
 - Design system cleanup (2026-06-08) — base font 16px; --stat-queued/--stat-done tokens; removed --radius-lg/--radius-xl; table border-radius fixed (border-collapse: separate); all pill radii tokenized; filter bar pills; Go button removed. 14/14 QA PASS. On prod (9183a43).
 - P0 mobile blockers (2026-06-08) — hamburger 44×44px; filter chip + Edit/Delete tap targets 44px; iOS input zoom fix (16px !important); sidebar overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
@@ -136,9 +138,10 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 
 ## Next Session Starts Here
 **Completed 2026-06-08 (session 24):**
-- Category field + explore filtering — category select on print form; explore pill bar live (was "coming soon"); Failed pill added; sort/pagination preserve filters; detail page category badge. 11/11 QA PASS. On prod (bcce5c2).
-- Design system cleanup — base font 16px; stat color tokens; table border-radius fix; all pill radii tokenized; filter bar pill shape; Go button removed. 14/14 QA PASS. On prod (9183a43).
-- P0 mobile blockers — hamburger 44×44px; filter chip + Edit/Delete tap targets 44px; iOS input zoom (!important); sidebar overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
+- Mobile form fix + polish — rows collapse at ≤600px; link-row stacks; sidebar 44px nav + scroll fade; modal shadow. 7/7 QA PASS. On prod (c332545).
+- Chrome extension v0.3.9 — brand names removed from manifest/store description; keyword spam rejection resolved.
+- Category field + explore filtering — category select on print form; explore pill bar live; Failed pill; sort/pagination preserve filters; detail page badge. 11/11 QA PASS. On prod (bcce5c2).
+- Design system cleanup + P0 mobile blockers — font 16px; stat tokens; table border-radius; pill radii tokenized; hamburger 44px; iOS zoom fix; sidebar overflow. On prod (9183a43, f8a05f5).
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
