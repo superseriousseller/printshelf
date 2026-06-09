@@ -7,7 +7,7 @@ Paste-ready copy for the Chrome Web Store developer dashboard.
 ## Listing fields
 
 ### Short description (132 chars max)
-> Save 3D models and filaments to PrintShelf from Printables, Makerworld, Cults3D, Thingiverse, Amazon, Bambu Lab, and more.
+> Log 3D prints and save filaments in one click. Open a model or filament page, click the button, and it's saved — no copy-pasting.
 
 ### Detailed description
 > PrintShelf is a tracker for makers who 3D print. This extension adds a
@@ -38,10 +38,10 @@ English (US)
 
 ## "What's new" copy (for this update)
 
-> v0.3.8: Added SUNLU and FlashForge filament store support. Finish type
-> (Silk, Matte, High Speed, Glow, etc.) is now auto-extracted from product
-> titles across all filament stores. Previous updates added Bambu Lab,
-> Anycubic, MatterHackers, and Amazon.
+> v0.3.9: No functional changes — metadata update for store compliance.
+> v0.3.8: Added two more filament store integrations. Finish type (Silk,
+> Matte, High Speed, Glow, etc.) now auto-extracted from product titles
+> across all supported stores.
 
 ---
 
@@ -99,9 +99,9 @@ https://printshelf.app/privacy
 
 ## Pre-submission checklist
 
-- [ ] Manifest version is 0.3.8
+- [ ] Manifest version is 0.3.9
 - [ ] Privacy policy live at https://printshelf.app/privacy (returns 200)
-- [ ] Popup displays correct version (0.3.8)
+- [ ] Popup displays correct version (0.3.9)
 - [ ] Two 1280×800 screenshots captured (clean Chrome window, devtools closed)
 - [ ] Zipped `chrome-extension/` directory (exclude `QA.md`, `PUBLISH.md`)
 - [ ] Logged into Chrome Web Store developer console with the right account
