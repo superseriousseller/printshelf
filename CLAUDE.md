@@ -12,6 +12,7 @@
 - Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
 
 ### ✅ Done (recent)
+- Category field + explore filtering (2026-06-08) — category on print form (tools/household/art/toys-games/miniatures/functional/other); explore pills now live filters; Failed pill added; sort/pagination preserve filters; detail page badge links to explore. 11/11 QA PASS. On prod (bcce5c2).
 - Design system cleanup (2026-06-08) — base font 16px; --stat-queued/--stat-done tokens; removed --radius-lg/--radius-xl; table border-radius fixed (border-collapse: separate); all pill radii tokenized; filter bar pills; Go button removed. 14/14 QA PASS. On prod (9183a43).
 - P0 mobile blockers (2026-06-08) — hamburger 44×44px; filter chip + Edit/Delete tap targets 44px; iOS input zoom fix (16px !important); sidebar overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
 - Thumbnail focal point drag (2026-06-07) — drag crosshair overlay on photo upload page saves focal_x/focal_y via PATCH API; all thumbnails (profile, explore, homepage, dashboard, feed) respect object-position. Migration a2b3c4d5e6f7. 11/11 QA PASS. On prod (c0177eb).
@@ -134,16 +135,13 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-08 (session 23):**
-- Design system cleanup — base font 16px; stat color tokens; table border-radius fix; all pill radii tokenized (999px/20px → var(--radius-full)); filter bar pill shape; Go button removed. 14/14 QA PASS. On prod (9183a43).
-- P0 mobile blockers — all 6 fixed: hamburger 44×44px; filter chip + Edit/Delete tap targets 44px; iOS input zoom (!important); sidebar overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
-
-**Completed 2026-06-07 (session 22):**
-- Thumbnail focal point drag — drag crosshair on photo page saves focal_x/focal_y; all card thumbnails respect object-position. 11/11 QA PASS. On prod (c0177eb).
-- Fixed duplicate Alembic revision ID that crashed staging; three UX improvements (nav rename, case-insensitive usernames, inline stars). On prod (2ad22a5).
+**Completed 2026-06-08 (session 24):**
+- Category field + explore filtering — category select on print form; explore pill bar live (was "coming soon"); Failed pill added; sort/pagination preserve filters; detail page category badge. 11/11 QA PASS. On prod (bcce5c2).
+- Design system cleanup — base font 16px; stat color tokens; table border-radius fix; all pill radii tokenized; filter bar pill shape; Go button removed. 14/14 QA PASS. On prod (9183a43).
+- P0 mobile blockers — hamburger 44×44px; filter chip + Edit/Delete tap targets 44px; iOS input zoom (!important); sidebar overflow-x hidden; prints header full-width. 12/12 QA PASS. On prod (f8a05f5).
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars still pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`
 
-**Immediate next step:** Remaining audit items (P2) or new features — Cam's call.
+**Immediate next step:** Next feature — Cam's call.
