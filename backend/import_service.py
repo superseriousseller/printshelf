@@ -245,6 +245,11 @@ def extract(url: str) -> dict:
     designer = _extract_designer(soup, title)  # uses raw title to pull "by Author" attribution
     if title:
         title = _clean_title(title)
+    # Strip Makerworld's " - Free/Paid 3D Print Model - MakerWorld" suffix
+    if platform == "makerworld" and title:
+        m = re.match(r"^(.*?)\s+-\s+(?:Free|Paid)\s+3D Print Model\b", title)
+        if m and m.group(1).strip():
+            title = m.group(1).strip()
 
     if _looks_generic(platform, title, description, thumbnail):
         # Page metadata is JS-hydrated. Salvage the title from the URL slug if possible.
