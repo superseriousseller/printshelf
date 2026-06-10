@@ -16,9 +16,10 @@ Per-platform behavior (decided in the spike):
 """
 import json
 import logging
+import os
 import re
 from typing import Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
 
 import httpx
 from bs4 import BeautifulSoup
@@ -43,6 +44,11 @@ BROWSER_HEADERS = {
 UNFURL_HEADERS = {"User-Agent": UNFURL_UA, "Accept": "text/html"}
 
 REQUEST_TIMEOUT = 15.0
+
+# Optional Cloudflare Worker proxy for sites that block Railway IPs (e.g. Makerworld).
+# Set CF_FETCH_PROXY_URL and CF_FETCH_PROXY_SECRET in env to enable.
+_CF_PROXY_URL = os.environ.get("CF_FETCH_PROXY_URL", "").rstrip("/")
+_CF_PROXY_SECRET = os.environ.get("CF_FETCH_PROXY_SECRET", "")
 
 
 class ImportError_(Exception):
@@ -168,6 +174,20 @@ def _looks_generic(platform: str, title: Optional[str], description: Optional[st
     return False
 
 
+def _fetch_via_proxy(url: str) -> httpx.Response:
+    """Fetch url through the Cloudflare Worker proxy, returning an httpx.Response-like object."""
+    proxy_url = _CF_PROXY_URL + "?" + urlencode({"url": url, "token": _CF_PROXY_SECRET})
+    with httpx.Client(timeout=REQUEST_TIMEOUT, follow_redirects=True) as c:
+        resp = c.get(proxy_url)
+    # Surface the original URL from the proxy response header if available
+    proxied_url = resp.headers.get("x-proxied-url", url)
+    proxied_status = int(resp.headers.get("x-proxied-status", resp.status_code))
+    # Patch status_code so downstream error handling sees the real target's status
+    resp._proxied_url = proxied_url
+    resp._proxied_status = proxied_status
+    return resp
+
+
 def extract(url: str) -> dict:
     """Fetch and parse a model URL.
 
@@ -178,10 +198,19 @@ def extract(url: str) -> dict:
         raise ImportError_("Provide a full http(s) URL")
 
     platform = detect_platform(url)
+    use_proxy = platform == "makerworld" and bool(_CF_PROXY_URL and _CF_PROXY_SECRET)
 
     try:
-        with httpx.Client(timeout=REQUEST_TIMEOUT, follow_redirects=True, headers=_headers_for(platform)) as c:
-            r = c.get(url)
+        if use_proxy:
+            r = _fetch_via_proxy(url)
+            effective_url = getattr(r, "_proxied_url", url)
+            effective_status = getattr(r, "_proxied_status", r.status_code)
+            logger.info("makerworld proxy fetch: status=%s url=%s", effective_status, effective_url)
+        else:
+            with httpx.Client(timeout=REQUEST_TIMEOUT, follow_redirects=True, headers=_headers_for(platform)) as c:
+                r = c.get(url)
+            effective_url = str(r.url)
+            effective_status = r.status_code
     except httpx.RequestError as e:
         logger.warning("import fetch failed for %s: %s", url, e)
         # Even with a network failure we can sometimes salvage a title from the URL slug.
@@ -193,19 +222,19 @@ def extract(url: str) -> dict:
             }
         raise ImportError_("Could not reach that URL")
 
-    if r.status_code >= 400:
+    if effective_status >= 400:
         # Source blocked us (Cloudflare / Railway IP rep / etc). Try the slug.
-        slug_title = _title_from_url_slug(str(r.url))
+        slug_title = _title_from_url_slug(effective_url)
         if slug_title:
             return {
                 "platform": platform, "title": slug_title, "designer": None,
-                "thumbnail_url": None, "source_url": str(r.url), "partial": True,
+                "thumbnail_url": None, "source_url": effective_url, "partial": True,
             }
         if platform == "makerworld":
             raise ImportError_(
                 "Makerworld blocks server-side imports — paste the title and photo manually for now"
             )
-        raise ImportError_(f"Source returned {r.status_code} — try a different URL or paste manually")
+        raise ImportError_(f"Source returned {effective_status} — try a different URL or paste manually")
 
     soup = BeautifulSoup(r.text, "html.parser")
     title = _og(soup, "title")
@@ -218,16 +247,15 @@ def extract(url: str) -> dict:
         title = _clean_title(title)
 
     if _looks_generic(platform, title, description, thumbnail):
-        # Page metadata is JS-hydrated (Makerworld). Salvage the title
-        # from the URL slug if possible — better than rejecting outright.
-        slug_title = _title_from_url_slug(str(r.url))
+        # Page metadata is JS-hydrated. Salvage the title from the URL slug if possible.
+        slug_title = _title_from_url_slug(effective_url)
         if slug_title:
             return {
                 "platform": platform,
                 "title": slug_title,
                 "designer": None,
                 "thumbnail_url": None,
-                "source_url": str(r.url),
+                "source_url": effective_url,
                 "partial": True,
             }
         raise ImportError_(
@@ -237,14 +265,14 @@ def extract(url: str) -> dict:
 
     if not title:
         # Last-ditch: try the slug
-        slug_title = _title_from_url_slug(str(r.url))
+        slug_title = _title_from_url_slug(effective_url)
         if slug_title:
             return {
                 "platform": platform,
                 "title": slug_title,
                 "designer": None,
                 "thumbnail_url": thumbnail,
-                "source_url": str(r.url),
+                "source_url": effective_url,
                 "partial": True,
             }
         raise ImportError_("No title found at that URL")
@@ -254,6 +282,6 @@ def extract(url: str) -> dict:
         "title": title.strip(),
         "designer": designer,
         "thumbnail_url": thumbnail,
-        "source_url": str(r.url),
+        "source_url": effective_url,
         "partial": False,
     }
