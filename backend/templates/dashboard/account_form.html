@@ -115,18 +115,18 @@
     {% endif %}
 </section>
 
-<section class="danger-zone" style="margin-top:32px">
-    <h3 style="color:var(--fail);margin:0 0 8px">Danger zone</h3>
-    <p style="color:var(--text-dim);font-size:0.9rem;margin:0 0 12px">Permanently delete your account and all your data.</p>
-    <a href="/dashboard/account/delete" class="btn-danger">Delete account</a>
-</section>
-
 <section class="dash-apikey" style="margin-top:32px">
     <details id="api-key">
         <summary>Chrome extension API key</summary>
         <pre class="apikey">{{ user.api_key }}</pre>
         <p class="hint">Use this as the Bearer token in the extension. Keep it secret.</p>
     </details>
+</section>
+
+<section class="danger-zone" style="margin-top:32px">
+    <h3 style="color:var(--fail);margin:0 0 8px">Danger zone</h3>
+    <p style="color:var(--text-dim);font-size:0.9rem;margin:0 0 12px">Permanently delete your account and all your data.</p>
+    <a href="/dashboard/account/delete" class="btn-danger">Delete account</a>
 </section>
 <script>
 (function(){
