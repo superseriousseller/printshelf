@@ -1,0 +1,6 @@
+{
+  "name": "printshelf-fetch-proxy",
+  "main": "fetch-proxy.js",
+  "compatibility_date": "2026-06-09"
+  // PROXY_SECRET is set via: cd cloudflare-worker && npx wrangler secret put PROXY_SECRET
+}
