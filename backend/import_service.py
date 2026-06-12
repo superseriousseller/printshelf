@@ -242,6 +242,17 @@ def extract(url: str) -> dict:
         title = soup.title.string.strip()
     description = _og(soup, "description")
     thumbnail = _og(soup, "image")
+    # Makerworld CDN sometimes returns 503 for thumbnails of very recently uploaded models.
+    # Validate before storing so we don't save a broken URL.
+    if thumbnail and platform == "makerworld":
+        try:
+            with httpx.Client(timeout=5.0) as hc:
+                head = hc.head(thumbnail)
+            if head.status_code >= 400:
+                logger.info("makerworld thumbnail CDN %s for %s — skipping", head.status_code, thumbnail[:80])
+                thumbnail = None
+        except Exception:
+            thumbnail = None
     designer = _extract_designer(soup, title)  # uses raw title to pull "by Author" attribution
     if title:
         title = _clean_title(title)
