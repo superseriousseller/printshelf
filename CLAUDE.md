@@ -8,10 +8,9 @@
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 
-### 📋 Todo
-- Makerworld real imports — blocked by Railway IP; Chrome extension is the workaround
-
 ### ✅ Done (recent)
+- Makerworld CF proxy (2026-06-11) — Cloudflare Worker (`cloudflare-worker/fetch-proxy.js`) proxies Makerworld fetches through CF edge IPs, bypassing Railway's IP block; full title + thumbnail returned; OG title suffix stripped. 3/3 QA PASS. On prod (ae857fd). Env vars: `CF_FETCH_PROXY_URL`, `CF_FETCH_PROXY_SECRET` (both envs).
+- Account page: API key moved above Danger Zone (2026-06-11). On prod (ae857fd).
 - Mobile form fix + polish (2026-06-08) — form rows collapse at ≤600px (was ≤480px); link-row stacks on mobile; sidebar nav 44px tap targets + scroll fade; modal shadow. 7/7 QA PASS. On prod (c332545).
 - Chrome extension v0.3.9 (2026-06-08) — removed brand names from manifest + store description to pass keyword spam review. No functional changes.
 - Category field + explore filtering (2026-06-08) — category on print form (tools/household/art/toys-games/miniatures/functional/other); explore pills now live filters; Failed pill added; sort/pagination preserve filters; detail page badge links to explore. 11/11 QA PASS. On prod (bcce5c2).
@@ -137,14 +136,13 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-08 (session 24):**
-- Mobile form fix + polish — rows collapse at ≤600px; link-row stacks; sidebar 44px nav + scroll fade; modal shadow. 7/7 QA PASS. On prod (c332545).
-- Chrome extension v0.3.9 — brand names removed from manifest/store description; keyword spam rejection resolved.
-- Category field + explore filtering — category select on print form; explore pill bar live; Failed pill; sort/pagination preserve filters; detail page badge. 11/11 QA PASS. On prod (bcce5c2).
-- Design system cleanup + P0 mobile blockers — font 16px; stat tokens; table border-radius; pill radii tokenized; hamburger 44px; iOS zoom fix; sidebar overflow. On prod (9183a43, f8a05f5).
+**Completed 2026-06-11 (session 25):**
+- Makerworld CF proxy — Cloudflare Worker bypasses Railway IP block; full title + thumbnail on import. 3/3 QA PASS. On prod (ae857fd).
+- Account page — API key section moved above Danger Zone. On prod (ae857fd).
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
 - Affiliate env vars still pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF`
+- Prod env vars needed: `CF_FETCH_PROXY_URL`, `CF_FETCH_PROXY_SECRET` (set on Railway prod service)
 
-**Immediate next step:** Next feature — Cam's call.
+**Immediate next step:** Set CF proxy env vars on Railway prod, then next feature — Cam's call.
