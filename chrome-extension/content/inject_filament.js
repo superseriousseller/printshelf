@@ -199,24 +199,71 @@
       readVariant: () => ({ name: "", hex: "" }),
     },
     {
-      // Amazon. Selected color name shown in
-      // #inline-twister-expanded-dimension-text-color_name. No hex available.
+      // Amazon. Tries every known variant-color DOM pattern in priority order.
+      // Bambu Lab and many other brands use "style_name" rather than "color_name".
       store: "amazon",
       hosts: ["www.amazon.com", "amazon.com"],
       pathPattern: /\/dp\/[A-Z0-9]{10}|\/gp\/product\/[A-Z0-9]{10}/i,
       readVariant: () => {
-        // Primary: the inline twister selected-value span
-        const el = document.getElementById("inline-twister-expanded-dimension-text-color_name");
-        if (el) {
-          const name = (el.textContent || "").trim();
+        // 1. Inline twister: color_name dimension (most products)
+        const colorTwister = document.getElementById("inline-twister-expanded-dimension-text-color_name");
+        if (colorTwister) {
+          const name = (colorTwister.textContent || "").trim();
           if (name) return { name, hex: "" };
         }
-        // Fallback: aria-label on the dimension heading "Selected Color is X."
+
+        // 2. Inline twister: style_name dimension (Bambu Lab, eSUN, many others)
+        const styleTwister = document.getElementById("inline-twister-expanded-dimension-text-style_name");
+        if (styleTwister) {
+          const name = (styleTwister.textContent || "").trim();
+          if (name) return { name, hex: "" };
+        }
+
+        // 3. Selected swatch label in the variation widget
+        const swatchSelected = document.querySelector(
+          "#variation_color_name .selection .swatchName, " +
+          "#variation_color_name .selection .swatchNameText, " +
+          "#variation_color_name .selection span"
+        );
+        if (swatchSelected) {
+          const name = (swatchSelected.textContent || "").trim();
+          if (name) return { name, hex: "" };
+        }
+
+        // 4. Product overview table — "Color" row (detail page sidebar)
+        const overviewRows = document.querySelectorAll(
+          "#productOverview_feature_div tr, #prodDetails tr, .product-facts-detail tr"
+        );
+        for (const row of overviewRows) {
+          const label = (row.querySelector("td:first-child, th") || {}).textContent || "";
+          if (/\bcolou?r\b/i.test(label)) {
+            const val = (row.querySelector("td:last-child") || {}).textContent || "";
+            const name = val.trim();
+            if (name) return { name, hex: "" };
+          }
+        }
+
+        // 5. aria-label pattern "Selected Color is X."
         const heading = document.querySelector("[aria-label*='Selected Color']");
         if (heading) {
-          const m = (heading.getAttribute("aria-label") || "").match(/Selected Color is ([^.]+)\./i);
+          const m = (heading.getAttribute("aria-label") || "").match(/Selected Colou?r is ([^.]+)\./i);
           if (m) return { name: m[1].trim(), hex: "" };
         }
+
+        // 6. Any twister dimension whose label contains "Color" or "Colour"
+        const allTwisters = document.querySelectorAll("[id^='inline-twister-expanded-dimension-text-']");
+        for (const tw of allTwisters) {
+          // Resolve the dimension heading sibling to confirm it's color-related
+          const dimensionBlock = tw.closest("[id^='inline-twister-item-attrib-']");
+          if (dimensionBlock) {
+            const label = dimensionBlock.querySelector("[class*='dimension-label'], label, span");
+            if (label && /colou?r/i.test(label.textContent || "")) {
+              const name = (tw.textContent || "").trim();
+              if (name) return { name, hex: "" };
+            }
+          }
+        }
+
         return { name: "", hex: "" };
       },
     },
