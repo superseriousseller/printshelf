@@ -34,11 +34,15 @@ def _validate_status(value: Optional[str]) -> Optional[str]:
     return value
 
 
+VALID_HEX_SOURCES = {"scraped", "guessed"}
+
+
 class FilamentCreate(BaseModel):
     brand: str = Field(min_length=1, max_length=100)
     material: str = Field(min_length=1, max_length=50)
     color_name: Optional[str] = Field(default=None, max_length=100)
     color_hex: Optional[str] = Field(default=None, pattern=r"^#?[0-9A-Fa-f]{6}$")
+    color_hex_source: Optional[str] = Field(default=None, max_length=10)
     diameter: float = 1.75
     finish: Optional[str] = Field(default=None, max_length=100)
     status: str = "own"
@@ -52,6 +56,7 @@ class FilamentUpdate(BaseModel):
     material: Optional[str] = Field(default=None, max_length=50)
     color_name: Optional[str] = Field(default=None, max_length=100)
     color_hex: Optional[str] = Field(default=None, pattern=r"^#?[0-9A-Fa-f]{6}$")
+    color_hex_source: Optional[str] = Field(default=None, max_length=10)
     diameter: Optional[float] = None
     finish: Optional[str] = Field(default=None, max_length=100)
     status: Optional[str] = None
@@ -117,6 +122,7 @@ def create_filament(
         material=body.material.strip(),
         color_name=body.color_name,
         color_hex=_normalize_hex(body.color_hex),
+        color_hex_source=body.color_hex_source if body.color_hex_source in VALID_HEX_SOURCES else None,
         diameter=body.diameter,
         finish=body.finish,
         status=body.status,

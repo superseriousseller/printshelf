@@ -484,6 +484,7 @@ def update_filament(
     f.material = material.strip()
     f.color_name = color_name.strip() or None
     f.color_hex = _normalize_hex(color_hex)
+    f.color_hex_source = None  # user-confirmed via form edit
     f.diameter = diameter_f
     f.source_url = source_url.strip() or None
     if price_at_save.strip():

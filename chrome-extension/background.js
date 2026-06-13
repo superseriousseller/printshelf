@@ -156,6 +156,7 @@ async function addFilament(payload) {
   //    the server scrape doesn't currently extract hex codes.
   const colorName = (payload.colorName && payload.colorName.trim()) || (meta && meta.colorName) || null;
   const colorHex = (payload.colorHex && payload.colorHex.trim()) || null;
+  const colorHexSource = payload.colorHexSource || null;
   const brand = meta && meta.brand;
   const material = meta && meta.material;
   const finish = extractFinish((meta && meta.title) || "");
@@ -175,6 +176,7 @@ async function addFilament(payload) {
     material,
     color_name: colorName,
     color_hex: colorHex,
+    color_hex_source: colorHexSource,
     finish,
     source_url: sourceUrl,
     price_at_save: meta && typeof meta.price === "number" ? meta.price : null,

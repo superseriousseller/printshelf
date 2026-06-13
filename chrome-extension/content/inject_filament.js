@@ -363,13 +363,75 @@
     return CONFIG.pathPattern.test(window.location.pathname);
   }
 
+  // Static color name → hex fallback. Used when the DOM has a color name
+  // but no hex code. Normalized by stripping brand/finish prefixes first.
+  const COLOR_MAP = {
+    // Whites & Creams
+    "white": "#f5f5f5", "pure white": "#f5f5f5", "cold white": "#eef0f2",
+    "warm white": "#f5f0e8", "cotton white": "#f4efeb", "creamy white": "#f5f0e6",
+    "ivory": "#fffff0", "pearl white": "#f0ede8", "silk white": "#f2f0ec",
+    // Blacks & Greys
+    "black": "#1a1a1a", "pure black": "#111111", "matte black": "#1c1c1c",
+    "dark grey": "#4a4a4a", "grey": "#808080", "gray": "#808080",
+    "light grey": "#c0c0c0", "silver": "#c0c0c0", "charcoal": "#3c3c3c",
+    // Reds & Pinks
+    "red": "#cc2200", "dark red": "#8b0000", "crimson": "#dc143c",
+    "rose red": "#c41e3a", "pink": "#ff69b4", "hot pink": "#ff1493",
+    "light pink": "#ffb6c1", "salmon": "#fa8072", "coral": "#ff6b6b",
+    // Oranges & Yellows
+    "orange": "#ff6600", "dark orange": "#cc4400",
+    "yellow": "#ffd700", "lemon yellow": "#fff44f", "gold": "#ffd700",
+    // Greens
+    "green": "#228b22", "dark green": "#006400", "lime green": "#32cd32",
+    "army green": "#4b5320", "olive green": "#808000", "sage": "#9daf8e",
+    "mint": "#98ff98", "mint green": "#98ff98", "teal": "#008080",
+    // Blues
+    "blue": "#1e5fcc", "dark blue": "#003399", "navy": "#001f5b",
+    "sky blue": "#87ceeb", "baby blue": "#89cff0", "ice blue": "#99c5c4",
+    "royal blue": "#4169e1", "cobalt blue": "#0047ab",
+    // Purples & Violets
+    "purple": "#800080", "dark purple": "#4b0082", "violet": "#7f00ff",
+    "lavender": "#9572bf", "lavender purple": "#9572bf", "magenta": "#ff00aa",
+    // Browns & Naturals
+    "brown": "#8b4513", "wood": "#a0522d", "bronze": "#cd7f32",
+    "copper": "#b87333", "tan": "#d2b48c", "beige": "#f5f0dc",
+    // Special / Multicolor
+    "transparent": "#e8f4f8", "clear": "#e8f4f8", "natural": "#f5f0e6",
+    "glow in the dark": "#ccff66", "glow": "#ccff66",
+  };
+
+  // Normalize a color name for lookup: lowercase, strip common brand/finish
+  // prefixes (Panchroma, PolyLite, Matte, Silk, etc.), collapse whitespace.
+  function normalizeColorName(name) {
+    return (name || "")
+      .toLowerCase()
+      .replace(/\b(panchroma|polylite|polywood|polyterra|matte|silk|satin|glow|galaxy|marble|sparkle|metallic|dual|tri|pla\+?|abs|petg|asa|tpu)\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function guessHex(colorName) {
+    if (!colorName) return null;
+    const key = normalizeColorName(colorName);
+    if (COLOR_MAP[key]) return COLOR_MAP[key];
+    // Partial match: return first entry whose key appears in the normalized name
+    for (const [k, v] of Object.entries(COLOR_MAP)) {
+      if (key.includes(k)) return v;
+    }
+    return null;
+  }
+
   function extract() {
     const variant = CONFIG.readVariant ? CONFIG.readVariant() : { name: "", hex: "" };
+    const scrapedHex = (variant.hex || "").trim() || null;
+    const colorName = (variant.name || "").trim() || null;
+    const guessedHex = !scrapedHex && colorName ? guessHex(colorName) : null;
     return {
       sourceUrl: window.location.href,
       store: CONFIG.store,
-      colorName: (variant.name || "").trim() || null,
-      colorHex: (variant.hex || "").trim() || null,
+      colorName,
+      colorHex: scrapedHex || guessedHex || null,
+      colorHexSource: scrapedHex ? "scraped" : (guessedHex ? "guessed" : null),
     };
   }
 
