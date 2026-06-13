@@ -553,19 +553,19 @@
       }
 
       if (resp && resp.ok) {
-        setState("success", "Added to wishlist", { icon: "✓" });
+        setState("success", "Added to filaments", { icon: "✓" });
         const labelText = resp.filament
           ? `${resp.filament.brand || ""} ${resp.filament.material || ""}${resp.filament.colorName ? " · " + resp.filament.colorName : ""}`.trim()
           : "filament";
         if (resp.filamentUrl) {
           showToast(
-            `Added ${escapeHtml(labelText)} to your wishlist. ` +
+            `Added ${escapeHtml(labelText)} to your filaments. ` +
               `<a href="${escapeHtml(resp.filamentUrl)}" target="_blank" rel="noopener">View in PrintShelf →</a>`,
             "html",
             8000
           );
         } else {
-          showToast(`Added ${labelText} to your wishlist.`, "text");
+          showToast(`Added ${labelText} to your filaments.`, "text");
         }
         setTimeout(() => setState("idle", "Add filament to PrintShelf"), 3500);
         return;

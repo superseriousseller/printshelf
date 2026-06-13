@@ -168,9 +168,8 @@ async function addFilament(payload) {
     return { ok: false, needsManual: true, manualUrl };
   }
 
-  // 3) Create the filament. Default to "want" status — one-click adds from
-  //    a buy page are almost always future-purchase intent. ("want" is the
-  //    wishlist value in FilamentStatus.)
+  // 3) Create the filament as "own" — user is on the product page, implying
+  //    they have it or are actively buying it.
   const body = {
     brand,
     material,
@@ -180,7 +179,7 @@ async function addFilament(payload) {
     finish,
     source_url: sourceUrl,
     price_at_save: meta && typeof meta.price === "number" ? meta.price : null,
-    status: "want",
+    status: "own",
   };
 
   let res;
