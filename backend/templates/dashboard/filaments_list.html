@@ -33,7 +33,14 @@
     <tbody>
         {% for f in filaments %}
         <tr>
-            <td>{% if f.color_hex %}<span class="swatch" style="background:{{ f.color_hex }}"></span>{% endif %}</td>
+            <td>
+                {% if f.color_hex %}
+                <span class="swatch" style="background:{{ f.color_hex }}"></span>
+                {% if f.color_hex_source == "guessed" %}
+                <a href="/dashboard/filaments/{{ f.id }}/edit" class="swatch-guess-hint" title="Color guessed — tap to confirm">?</a>
+                {% endif %}
+                {% endif %}
+            </td>
             <td><strong>{{ f.brand }}</strong></td>
             <td>{{ f.material }}</td>
             <td>{{ f.finish or "—" }}</td>

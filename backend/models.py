@@ -161,6 +161,7 @@ class Filament(Base):
     material = Column(String(50), nullable=False)         # PLA, PETG, ABS, TPU, etc.
     color_name = Column(String(100), nullable=True)
     color_hex = Column(String(7), nullable=True)          # #RRGGBB
+    color_hex_source = Column(String(10), nullable=True)  # "scraped" | "guessed"
     diameter = Column(Float, default=1.75, nullable=False)  # 1.75 or 2.85
 
     finish = Column(String(100), nullable=True)      # Silk, Matte, Glow, Wood, Carbon Fiber, etc.
@@ -181,6 +182,7 @@ class Filament(Base):
             "material": self.material,
             "colorName": self.color_name,
             "colorHex": self.color_hex,
+            "colorHexSource": self.color_hex_source,
             "diameter": self.diameter,
             "status": self.status,
             "sourceUrl": self.source_url,
