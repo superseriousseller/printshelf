@@ -194,8 +194,17 @@ a:hover { text-decoration: underline; }
 .photo-picker .current-photo { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .photo-picker .current-photo img { max-width: 220px; max-height: 220px; border-radius: 8px; border: 1px solid var(--border); }
 .photo-file-label input[type="file"] { background: var(--bg-card); color: var(--text); padding: 8px 10px; }
-.filament-search { width: 100%; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; font-family: inherit; margin-bottom: 8px; }
+.filament-search { width: 100%; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; font-family: inherit; margin-bottom: 0; }
 .filament-search:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.filament-token-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 0; }
+.filament-token-chips:empty { margin-bottom: 0; }
+.filament-token { display: inline-flex; align-items: center; gap: 5px; background: var(--accent); color: #fff; border-radius: var(--radius-full); padding: 4px 6px 4px 10px; font-size: 0.82rem; }
+.token-remove { background: none; border: none; color: #fff; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 2px; opacity: 0.75; }
+.token-remove:hover { opacity: 1; }
+.filament-token-wrap { position: relative; }
+.filament-dropdown { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); list-style: none; margin: 0; padding: 4px 0; z-index: 200; max-height: 260px; overflow-y: auto; }
+.filament-dropdown li { padding: 8px 14px; cursor: pointer; font-size: 0.88rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.filament-dropdown li:hover { background: var(--bg); }
 .checkbox-list { list-style: none; padding: 0; margin: 4px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
 .checkbox-label { flex-direction: row !important; align-items: center; gap: 8px; color: var(--text); cursor: pointer; padding: 6px 8px; border-radius: 6px; }
 .checkbox-label:hover { background: var(--bg-card); }

@@ -4,6 +4,7 @@ All endpoints require an authenticated session cookie. No JS framework;
 forms POST → server redirects → page re-renders. Photo upload + URL import
 are wired in subsequent tasks.
 """
+import json
 import os
 from datetime import date
 
@@ -638,9 +639,14 @@ def _save_links(db: Session, print_id: int, user_id: int, pairs: list[tuple[str,
 def _print_form_ctx(user: User, db: Session, p: Optional[Print], errors: list, values: dict) -> dict:
     printers = db.query(Printer).filter(Printer.user_id == user.id).order_by(Printer.name).all()
     filaments = db.query(Filament).filter(Filament.user_id == user.id).order_by(Filament.brand, Filament.material).all()
+    filaments_json = json.dumps([
+        {"id": f.id, "brand": f.brand, "material": f.material,
+         "colorName": f.color_name, "colorHex": f.color_hex, "finish": f.finish}
+        for f in filaments
+    ])
     return _ctx(
         user, db=db, print_=p, errors=errors, values=values,
-        printers=printers, filaments=filaments,
+        printers=printers, filaments=filaments, filaments_json=filaments_json,
         platforms=[p.value for p in SourcePlatform],
         statuses=[s.value for s in PrintStatus],
         categories=PRINT_CATEGORIES,

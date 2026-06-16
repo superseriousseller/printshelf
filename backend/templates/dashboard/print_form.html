@@ -100,27 +100,108 @@
     <fieldset class="filaments-picker">
         <legend>Filaments used <span class="hint">(pick one or more)</span></legend>
         {% if filaments %}
-        <input type="search" id="filament-search" class="filament-search" placeholder="Search filaments…" autocomplete="off">
-        <ul class="checkbox-list" id="filament-list">
-            {% for f in filaments %}
-            <li>
-                <label class="checkbox-label">
-                    <input type="checkbox" name="filament_ids" value="{{ f.id }}" {% if f.id in values.filament_ids %}checked{% endif %}>
-                    {% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span>{% endif %}
-                    {{ f.brand }} {{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}{% if f.finish %} {{ f.finish }}{% endif %}
-                </label>
-            </li>
-            {% endfor %}
-        </ul>
+        <div id="filament-chips" class="filament-token-chips"></div>
+        <div class="filament-token-wrap">
+            <input type="text" id="filament-token-input" class="filament-search" placeholder="Type to search filaments…" autocomplete="off">
+            <ul id="filament-dropdown" class="filament-dropdown" hidden></ul>
+        </div>
         <script>
         (function(){
-            var inp=document.getElementById('filament-search'),list=document.getElementById('filament-list');
-            inp.addEventListener('input',function(){
-                var q=this.value.toLowerCase();
-                Array.from(list.children).forEach(function(li){
-                    li.style.display=li.textContent.toLowerCase().includes(q)?'':'none';
+            const FILAMENTS = {{ filaments_json | safe }};
+            const PRESELECTED = new Set({{ (values.filament_ids or []) | tojson }});
+            const selected = new Set();
+            const chipsEl = document.getElementById('filament-chips');
+            const input = document.getElementById('filament-token-input');
+            const dropdown = document.getElementById('filament-dropdown');
+
+            function label(f) {
+                return [f.brand, f.material, f.colorName, f.finish].filter(Boolean).join(' · ');
+            }
+
+            function addChip(f) {
+                if (selected.has(f.id)) return;
+                selected.add(f.id);
+                const chip = document.createElement('span');
+                chip.className = 'filament-token';
+                chip.dataset.id = f.id;
+                if (f.colorHex) {
+                    const sw = document.createElement('span');
+                    sw.className = 'swatch-sm';
+                    sw.style.background = f.colorHex;
+                    chip.appendChild(sw);
+                }
+                chip.appendChild(document.createTextNode(' ' + label(f) + ' '));
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'token-remove';
+                btn.textContent = '×';
+                btn.setAttribute('aria-label', 'Remove');
+                btn.onclick = () => removeChip(f.id);
+                chip.appendChild(btn);
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'filament_ids';
+                hidden.value = f.id;
+                chip.appendChild(hidden);
+                chipsEl.appendChild(chip);
+            }
+
+            function removeChip(id) {
+                selected.delete(id);
+                const chip = chipsEl.querySelector('[data-id="' + id + '"]');
+                if (chip) chip.remove();
+            }
+
+            function renderDropdown(q) {
+                const matches = FILAMENTS.filter(f => !selected.has(f.id) && label(f).toLowerCase().includes(q)).slice(0, 10);
+                dropdown.innerHTML = '';
+                if (!matches.length) { dropdown.hidden = true; return; }
+                matches.forEach(f => {
+                    const li = document.createElement('li');
+                    if (f.colorHex) {
+                        const sw = document.createElement('span');
+                        sw.className = 'swatch-sm';
+                        sw.style.background = f.colorHex;
+                        li.appendChild(sw);
+                        li.appendChild(document.createTextNode(' '));
+                    }
+                    li.appendChild(document.createTextNode(label(f)));
+                    li.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        addChip(f);
+                        input.value = '';
+                        dropdown.hidden = true;
+                        input.focus();
+                    });
+                    dropdown.appendChild(li);
                 });
+                dropdown.hidden = false;
+            }
+
+            input.addEventListener('input', function() {
+                const q = this.value.toLowerCase().trim();
+                if (!q) { dropdown.hidden = true; return; }
+                renderDropdown(q);
             });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') { dropdown.hidden = true; input.value = ''; }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const first = dropdown.querySelector('li');
+                    if (first) first.dispatchEvent(new MouseEvent('mousedown'));
+                }
+                if (e.key === 'Backspace' && !this.value) {
+                    const chips = chipsEl.querySelectorAll('[data-id]');
+                    if (chips.length) removeChip(Number(chips[chips.length - 1].dataset.id));
+                }
+            });
+
+            document.addEventListener('click', e => {
+                if (!input.contains(e.target) && !dropdown.contains(e.target)) dropdown.hidden = true;
+            });
+
+            FILAMENTS.filter(f => PRESELECTED.has(f.id)).forEach(addChip);
         })();
         </script>
         {% else %}
