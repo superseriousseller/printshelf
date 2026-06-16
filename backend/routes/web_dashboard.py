@@ -644,9 +644,13 @@ def _print_form_ctx(user: User, db: Session, p: Optional[Print], errors: list, v
          "colorName": f.color_name, "colorHex": f.color_hex, "finish": f.finish}
         for f in filaments
     ])
+    selected_ids = set(int(i) for i in (values.get("filament_ids") or []) if i)
+    filament_by_id = {f.id: f for f in filaments}
+    selected_filaments = [filament_by_id[i] for i in selected_ids if i in filament_by_id]
     return _ctx(
         user, db=db, print_=p, errors=errors, values=values,
         printers=printers, filaments=filaments, filaments_json=filaments_json,
+        selected_filaments=selected_filaments,
         platforms=[p.value for p in SourcePlatform],
         statuses=[s.value for s in PrintStatus],
         categories=PRINT_CATEGORIES,

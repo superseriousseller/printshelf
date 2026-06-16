@@ -100,7 +100,16 @@
     <fieldset class="filaments-picker">
         <legend>Filaments used <span class="hint">(pick one or more)</span></legend>
         {% if filaments %}
-        <div id="filament-chips" class="filament-token-chips"></div>
+        <div id="filament-chips" class="filament-token-chips">
+            {% for f in selected_filaments %}
+            <span class="filament-token" data-id="{{ f.id }}">
+                {% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span> {% endif %}
+                {{ f.brand }} {{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}{% if f.finish %} {{ f.finish }}{% endif %}
+                <button type="button" class="token-remove" aria-label="Remove">×</button>
+                <input type="hidden" name="filament_ids" value="{{ f.id }}">
+            </span>
+            {% endfor %}
+        </div>
         <div class="filament-token-wrap">
             <input type="text" id="filament-token-input" class="filament-search" placeholder="Type to search filaments…" autocomplete="off">
             <ul id="filament-dropdown" class="filament-dropdown" hidden></ul>
@@ -108,8 +117,11 @@
         <script>
         (function(){
             const FILAMENTS = {{ filaments_json | safe }};
-            const PRESELECTED = new Set({{ (values.filament_ids or []) | tojson }});
-            const selected = new Set();
+            // Initialize selected from server-rendered chips (avoids JS ID-matching issues)
+            const selected = new Set(
+                Array.from(document.querySelectorAll('#filament-chips [data-id]'))
+                     .map(el => Number(el.dataset.id))
+            );
             const chipsEl = document.getElementById('filament-chips');
             const input = document.getElementById('filament-token-input');
             const dropdown = document.getElementById('filament-dropdown');
@@ -201,7 +213,11 @@
                 if (!input.contains(e.target) && !dropdown.contains(e.target)) dropdown.hidden = true;
             });
 
-            FILAMENTS.filter(f => PRESELECTED.has(f.id)).forEach(addChip);
+            // Wire remove buttons on server-rendered chips
+            chipsEl.querySelectorAll('.token-remove').forEach(btn => {
+                const chip = btn.closest('[data-id]');
+                if (chip) btn.onclick = () => removeChip(Number(chip.dataset.id));
+            });
         })();
         </script>
         {% else %}
