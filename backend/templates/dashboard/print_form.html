@@ -114,6 +114,25 @@
             <input type="text" id="filament-token-input" class="filament-search" placeholder="Type to search filaments…" autocomplete="off">
             <ul id="filament-dropdown" class="filament-dropdown" hidden></ul>
         </div>
+        <div class="filament-browse">
+            <span class="filament-browse-label">or browse by brand</span>
+            {% for brand, items in filaments | groupby('brand') %}
+            <details class="filament-group">
+                <summary>{{ brand }} <span class="filament-group-count">{{ items | list | length }}</span></summary>
+                <ul class="filament-group-list">
+                    {% for f in items %}
+                    <li>
+                        <label class="filament-row">
+                            <input type="checkbox" class="filament-row-check" value="{{ f.id }}" {% if f.id in selected_ids %}checked{% endif %}>
+                            {% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span>{% endif %}
+                            <span>{{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}{% if f.finish %} {{ f.finish }}{% endif %}</span>
+                        </label>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </details>
+            {% endfor %}
+        </div>
         <script>
         (function(){
             const FILAMENTS = {{ filaments_json | safe }};
@@ -125,9 +144,17 @@
             const chipsEl = document.getElementById('filament-chips');
             const input = document.getElementById('filament-token-input');
             const dropdown = document.getElementById('filament-dropdown');
+            const byId = {};
+            FILAMENTS.forEach(f => { byId[f.id] = f; });
 
             function label(f) {
                 return [f.brand, f.material, f.colorName, f.finish].filter(Boolean).join(' · ');
+            }
+
+            // Keep the browse-by-brand checkbox in sync with chip state
+            function setRowChecked(id, val) {
+                const cb = document.querySelector('.filament-row-check[value="' + id + '"]');
+                if (cb) cb.checked = val;
             }
 
             function addChip(f) {
@@ -156,12 +183,14 @@
                 hidden.value = f.id;
                 chip.appendChild(hidden);
                 chipsEl.appendChild(chip);
+                setRowChecked(f.id, true);
             }
 
             function removeChip(id) {
                 selected.delete(id);
                 const chip = chipsEl.querySelector('[data-id="' + id + '"]');
                 if (chip) chip.remove();
+                setRowChecked(id, false);
             }
 
             function renderDropdown(q) {
@@ -217,6 +246,15 @@
             chipsEl.querySelectorAll('.token-remove').forEach(btn => {
                 const chip = btn.closest('[data-id]');
                 if (chip) btn.onclick = () => removeChip(Number(chip.dataset.id));
+            });
+
+            // Wire browse-by-brand checkboxes (toggle a chip on/off)
+            document.querySelectorAll('.filament-row-check').forEach(cb => {
+                cb.addEventListener('change', function() {
+                    const id = Number(this.value);
+                    if (this.checked) { addChip(byId[id]); }
+                    else { removeChip(id); }
+                });
             });
         })();
         </script>

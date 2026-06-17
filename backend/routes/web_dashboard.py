@@ -650,7 +650,7 @@ def _print_form_ctx(user: User, db: Session, p: Optional[Print], errors: list, v
     return _ctx(
         user, db=db, print_=p, errors=errors, values=values,
         printers=printers, filaments=filaments, filaments_json=filaments_json,
-        selected_filaments=selected_filaments,
+        selected_filaments=selected_filaments, selected_ids=selected_ids,
         platforms=[p.value for p in SourcePlatform],
         statuses=[s.value for s in PrintStatus],
         categories=PRINT_CATEGORIES,

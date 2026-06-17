@@ -205,6 +205,18 @@ a:hover { text-decoration: underline; }
 .filament-dropdown { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); list-style: none; margin: 0; padding: 4px 0; z-index: 200; max-height: 260px; overflow-y: auto; }
 .filament-dropdown li { padding: 8px 14px; cursor: pointer; font-size: 0.88rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
 .filament-dropdown li:hover { background: var(--bg); }
+.filament-browse { margin-top: 10px; }
+.filament-browse-label { display: block; font-size: 0.78rem; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.filament-group { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; background: var(--bg-card); }
+.filament-group summary { cursor: pointer; padding: 10px 14px; font-size: 0.88rem; color: var(--text); list-style: none; display: flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; }
+.filament-group summary::-webkit-details-marker { display: none; }
+.filament-group summary::before { content: '▸'; color: var(--text-dim); font-size: 0.8rem; transition: transform 0.15s; }
+.filament-group[open] summary::before { transform: rotate(90deg); }
+.filament-group-count { margin-left: auto; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-full); padding: 1px 9px; font-size: 0.75rem; color: var(--text-dim); }
+.filament-group-list { list-style: none; margin: 0; padding: 4px 8px 8px; }
+.filament-row { display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 6px; cursor: pointer; color: var(--text); font-size: 0.86rem; min-height: 40px; box-sizing: border-box; }
+.filament-row:hover { background: var(--bg); }
+.filament-row input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
 .checkbox-list { list-style: none; padding: 0; margin: 4px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
 .checkbox-label { flex-direction: row !important; align-items: center; gap: 8px; color: var(--text); cursor: pointer; padding: 6px 8px; border-radius: 6px; }
 .checkbox-label:hover { background: var(--bg-card); }
