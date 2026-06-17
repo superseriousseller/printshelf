@@ -89,7 +89,7 @@ python backend/scripts/qa.py --base https://staging.printshelf.app
 ```
 Deploy: push `staging` → smoke test → 85/85 QA → merge to `main` → push → return to `staging`. Never force-push main. Never work directly on main.
 
-**Browser/visual QA (Playwright):** Point Playwright at the **deployed staging URL** (`https://staging.printshelf.app`), NOT `http://127.0.0.1` — the sandboxed browser can't reach the host's localhost, but public URLs work fine. This is how SS Book Tracker's `e2e/` does it (`STAGING_URL` const). Use `/Library/Frameworks/Python.framework/Versions/3.14/bin/python3` (has playwright 1.57) for real rendered screenshots + true mobile-pixel layout checks. jsdom-against-local is still fine for pure JS/DOM logic, but use real Playwright-vs-staging for anything visual/layout. Owner-only surfaces need a staging login (ask Cam for a test account).
+**Browser/visual QA (Playwright):** The sandboxed browser can't reach `127.0.0.1`, but it CAN reach the Mac's **LAN IP** or any public URL. Best for iterating on uncommitted changes: bind uvicorn `--host 0.0.0.0` and point Playwright at `http://<LAN-IP>:<port>` (`ipconfig getifaddr en0` → e.g. `192.168.50.250`). Renders local code, no deploy. Or use `https://staging.printshelf.app` for deployed code (how SS Book Tracker's `e2e/` does it). Driver: `/Library/Frameworks/Python.framework/Versions/3.14/bin/python3` (playwright 1.57). Set `viewport` for mobile (390/375) + `page.screenshot()` for true pixel-layout proof. Gotcha: other projects squat ports (saw `app.main:app` on 8765) — pick a clean port (8770) and don't kill non-printshelf servers. jsdom-against-local still fine for pure JS/DOM logic. Local owner-only login: `filtest@printshelf.app` / `testpass1`.
 
 ---
 
