@@ -49,7 +49,7 @@
                 {% if print_.status == "failed" %}<span class="badge badge-fail">Failed</span>
                 {% elif print_.status == "partial" %}<span class="badge badge-partial">Partial</span>
                 {% else %}<span class="badge badge-ok">Printed</span>{% endif %}
-                {% if print_.category %}<a href="/explore?category={{ print_.category }}" class="badge badge-category">{{ print_.category | replace("-", " ") | title }}</a>{% endif %}
+                {% if print_.category %}<a href="/explore?category={{ print_.category }}" class="badge badge-category">{{ category_label or (print_.category | replace("-", " ") | title) }}</a>{% endif %}
             </div>
 
             {% if print_.print_date or printer or print_.print_time_mins or print_.filament_used_g %}
@@ -85,6 +85,15 @@
 
             <div class="detail-cta">
                 {% if current_user and current_user.id == user.id %}
+                <form class="rate-widget" method="post" action="/@{{ user.username }}/prints/{{ print_.id }}/rate" data-rating="{{ print_.rating or 0 }}">
+                    <span class="rate-widget-label">Your rating</span>
+                    <span class="rate-stars">
+                        {% for n in [1, 2, 3, 4, 5] %}
+                        <button type="submit" name="rating" value="{{ n }}" class="rate-star{% if print_.rating and n <= print_.rating %} filled{% endif %}" data-val="{{ n }}" aria-label="{{ n }} star{{ 's' if n > 1 else '' }}">★</button>
+                        {% endfor %}
+                        <button type="submit" name="rating" value="0" class="rate-clear{% if not print_.rating %} hidden{% endif %}" aria-label="Clear rating">Clear</button>
+                    </span>
+                </form>
                 <a href="/dashboard/prints/{{ print_.id }}/edit" class="btn-primary btn-full">Edit</a>
                 <a href="/dashboard/prints/new?reprint={{ print_.id }}" class="btn-secondary btn-full">Print again</a>
                 {% elif current_user %}
@@ -208,5 +217,54 @@
         {% endfor %}
     </div>
 </section>
+{% endif %}
+
+{% if current_user and current_user.id == user.id %}
+<script>
+(function(){
+    const form = document.querySelector('.rate-widget');
+    if (!form) return;
+    const stars = Array.from(form.querySelectorAll('.rate-star'));
+    const clearBtn = form.querySelector('.rate-clear');
+
+    function paint(n) {
+        stars.forEach(s => s.classList.toggle('filled', Number(s.dataset.val) <= n));
+    }
+    function current() { return Number(form.dataset.rating) || 0; }
+
+    stars.forEach(star => {
+        star.addEventListener('mouseenter', () => paint(Number(star.dataset.val)));
+    });
+    form.querySelector('.rate-stars').addEventListener('mouseleave', () => paint(current()));
+
+    async function submit(value, btn) {
+        const prev = current();
+        // optimistic
+        form.dataset.rating = value;
+        paint(value);
+        clearBtn.classList.toggle('hidden', value === 0);
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'rating=' + value,
+            });
+            if (!res.ok) throw new Error('rate failed');
+        } catch (e) {
+            // revert on failure
+            form.dataset.rating = prev;
+            paint(prev);
+            clearBtn.classList.toggle('hidden', prev === 0);
+        }
+    }
+
+    form.addEventListener('submit', e => {
+        const btn = e.submitter;
+        if (!btn) return;  // no-JS path or programmatic — let it through
+        e.preventDefault();
+        submit(Number(btn.value), btn);
+    });
+})();
+</script>
 {% endif %}
 {% endblock %}

@@ -271,16 +271,22 @@ class Print(Base):
         }
 
 
+# Slugs are stable (existing prints keep working); display labels can change freely.
 PRINT_CATEGORIES = [
-    ("tools", "Tools"),
-    ("household", "Household"),
-    ("art", "Art"),
+    ("functional", "Functional Parts"),
+    ("tools", "Tools & Jigs"),
     ("toys-games", "Toys & Games"),
-    ("miniatures", "Miniatures"),
-    ("functional", "Functional"),
+    ("miniatures", "Miniatures & Figurines"),
+    ("household", "Home & Decor"),
+    ("art", "Art & Sculpture"),
+    ("gadgets", "Gadgets & Electronics"),
+    ("cosplay-props", "Cosplay & Props"),
+    ("replacement-parts", "Replacement Parts"),
+    ("education", "Education & Science"),
     ("other", "Other"),
 ]
 VALID_PRINT_CATEGORIES = {slug for slug, _ in PRINT_CATEGORIES}
+PRINT_CATEGORY_LABELS = dict(PRINT_CATEGORIES)
 
 Index("ix_prints_user_queued", Print.user_id, Print.queued)
 Index("ix_prints_user_created", Print.user_id, Print.created_at.desc())

@@ -8,7 +8,7 @@ import os
 from collections import Counter
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from limits import enforce_print_limit
 from fastapi.templating import Jinja2Templates
@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from affiliate import apply_affiliate
 from auth import get_current_user_web_optional
 from email_service import send_follow_notification
-from models import Filament, Follow, Print, PrintLink, Printer, User, get_db
+from models import Filament, Follow, Print, PrintLink, Printer, User, get_db, PRINT_CATEGORY_LABELS
 from sqlalchemy import func
 
 router = APIRouter(tags=["profile"])
@@ -308,6 +308,7 @@ def public_print_detail(
         {
             "user": user,
             "print_": p,
+            "category_label": PRINT_CATEGORY_LABELS.get(p.category),
             "filaments": filaments,
             "filaments_ctx": filaments_ctx,
             "links_ctx": links_ctx,
@@ -412,3 +413,40 @@ def queue_print(
     db.add(queued)
     db.commit()
     return RedirectResponse("/dashboard/prints?queued=true", status_code=303)
+
+
+@router.post("/@{username}/prints/{print_id}/rate")
+def rate_print(
+    username: str,
+    print_id: int,
+    request: Request,
+    rating: int = Form(...),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Owner sets/clears the star rating from the public detail page.
+
+    Session-cookie auth (the API PATCH is Bearer-only). rating 1-5 sets it;
+    0 clears it. JS posts here via fetch (gets a 204); no-JS falls back to a
+    full redirect back to the detail page.
+    """
+    detail_url = f"/@{username}/prints/{print_id}"
+    is_fetch = request.headers.get("x-requested-with") == "fetch"
+
+    def _done(ok: bool = True):
+        if is_fetch:
+            return Response(status_code=204 if ok else 403)
+        return RedirectResponse(detail_url, status_code=303)
+
+    if current_user is None:
+        if is_fetch:
+            return Response(status_code=401)
+        return RedirectResponse(f"/login?next={detail_url}", status_code=303)
+
+    p = db.query(Print).filter(Print.id == print_id, Print.user_id == current_user.id).first()
+    if p is None or rating < 0 or rating > 5:
+        return _done(ok=False)
+
+    p.rating = rating or None
+    db.commit()
+    return _done()

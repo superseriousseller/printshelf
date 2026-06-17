@@ -17,7 +17,7 @@ from sqlalchemy import or_
 
 from sqlalchemy import nullslast
 
-from models import Print, User, get_db
+from models import Print, User, get_db, PRINT_CATEGORIES
 
 router = APIRouter(tags=["homepage"])
 
@@ -184,6 +184,7 @@ def explore(
             "sort": sort,
             "category": category_filter,
             "failed": failed_filter,
+            "categories": PRINT_CATEGORIES,
         },
     )
 
