@@ -9,6 +9,7 @@
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 
 ### ✅ Done (recent)
+- Filament token/chip picker (2026-06-15) — replaced 200+ item checkbox list on print form with a compact token multi-select: type to filter (client-side over JSON-embedded filaments, dropdown capped at 10), click to add a colored chip, ×/Backspace to remove, no duplicate-add. Edit forms pre-populate chips **server-side** via `selected_filaments` ctx var (JS inits its `selected` Set from DOM `data-id`s — avoids ID-matching bugs). 11/11 QA PASS (1-fix cycle: edit pre-population). On prod (c1f6605).
 - Makerworld CF proxy (2026-06-11) — Cloudflare Worker (`cloudflare-worker/fetch-proxy.js`) proxies Makerworld fetches through CF edge IPs, bypassing Railway's IP block; full title + thumbnail returned; OG title suffix stripped. 3/3 QA PASS. On prod (ae857fd). Env vars: `CF_FETCH_PROXY_URL`, `CF_FETCH_PROXY_SECRET` (both envs).
 - Account page: API key moved above Danger Zone (2026-06-11). On prod (ae857fd).
 - Mobile form fix + polish (2026-06-08) — form rows collapse at ≤600px (was ≤480px); link-row stacks on mobile; sidebar nav 44px tap targets + scroll fade; modal shadow. 7/7 QA PASS. On prod (c332545).
@@ -136,9 +137,8 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
-**Completed 2026-06-11 (session 25):**
-- Makerworld CF proxy — Cloudflare Worker bypasses Railway IP block; full title + thumbnail on import. 3/3 QA PASS. On prod (ae857fd).
-- Account page — API key section moved above Danger Zone. On prod (ae857fd).
+**Completed 2026-06-15 (session 26):**
+- Filament token/chip picker — replaced 200+ item checkbox list on print form with token multi-select (type→filter→chip). Edit forms pre-populate chips server-side. 11/11 QA PASS. On prod (c1f6605).
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
