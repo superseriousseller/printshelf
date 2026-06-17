@@ -623,14 +623,18 @@ footer {
 .detail-stat-value { font-size: 0.95rem; color: var(--text); font-weight: 500; }
 .detail-cta { display: flex; flex-direction: column; gap: 8px; margin: 20px 0; }
 .detail-cta form { display: contents; }
-/* Inline star rating widget (owner-only, on public detail page) */
-.detail-cta form.rate-widget { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin-bottom: 4px; }
+/* Inline star rating widget (owner-only, on public detail page).
+   Blank input control: stars empty at rest, fill on hover/selection.
+   The saved value lives in the title .detail-rating badge. */
+.detail-cta form.rate-widget { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 4px; }
 .rate-widget-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
-.rate-stars { display: inline-flex; align-items: center; gap: 2px; }
-.rate-star { background: none; border: none; cursor: pointer; font-size: 1.6rem; line-height: 1; padding: 6px 4px; color: var(--border); transition: color 0.1s; }
-.rate-star.filled { color: #ffc857; }
-.rate-star:hover { color: #ffc857; }
-.rate-clear { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 0.78rem; padding: 4px 6px; margin-left: 4px; text-decoration: underline; }
+.rate-stars { display: inline-flex; align-items: center; gap: 0; flex-wrap: nowrap; flex-shrink: 0; }
+.rate-star { background: none; border: none; cursor: pointer; line-height: 1; padding: 6px 3px; font-size: 0; }
+.rate-star::before { content: '\2606'; font-size: 1.5rem; color: var(--text-dim); transition: color 0.1s; }  /* ☆ blank at rest */
+.rate-star.filled::before { content: '\2605'; color: #ffc857; }  /* ★ filled on hover/select */
+.rate-current { color: #ffc857; font-size: 0.9rem; font-weight: 600; }
+.rate-current.hidden { display: none; }
+.rate-clear { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 0.78rem; padding: 4px 6px; text-decoration: underline; }
 .rate-clear:hover { color: var(--text); }
 .rate-clear.hidden { display: none; }
 .detail-section-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 20px 0 8px; }

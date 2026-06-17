@@ -43,9 +43,7 @@
             {% if print_.designer %}<p class="detail-designer">by {{ print_.designer }}</p>{% endif %}
 
             <div class="detail-badges">
-                {% if print_.rating %}
-                <span class="detail-rating">{% for _ in range(print_.rating) %}★{% endfor %}{% for _ in range(5 - print_.rating) %}☆{% endfor %}</span>
-                {% endif %}
+                <span class="detail-rating" id="detail-rating-display" data-rating="{{ print_.rating or 0 }}">{% if print_.rating %}{% for _ in range(print_.rating) %}★{% endfor %}{% for _ in range(5 - print_.rating) %}☆{% endfor %}{% endif %}</span>
                 {% if print_.status == "failed" %}<span class="badge badge-fail">Failed</span>
                 {% elif print_.status == "partial" %}<span class="badge badge-partial">Partial</span>
                 {% else %}<span class="badge badge-ok">Printed</span>{% endif %}
@@ -89,10 +87,11 @@
                     <span class="rate-widget-label">Your rating</span>
                     <span class="rate-stars">
                         {% for n in [1, 2, 3, 4, 5] %}
-                        <button type="submit" name="rating" value="{{ n }}" class="rate-star{% if print_.rating and n <= print_.rating %} filled{% endif %}" data-val="{{ n }}" aria-label="{{ n }} star{{ 's' if n > 1 else '' }}">★</button>
+                        <button type="submit" name="rating" value="{{ n }}" class="rate-star" data-val="{{ n }}" aria-label="{{ n }} star{{ 's' if n > 1 else '' }}">★</button>
                         {% endfor %}
-                        <button type="submit" name="rating" value="0" class="rate-clear{% if not print_.rating %} hidden{% endif %}" aria-label="Clear rating">Clear</button>
                     </span>
+                    <span class="rate-current{% if not print_.rating %} hidden{% endif %}">{{ print_.rating or '' }}{% if print_.rating %}★{% endif %}</span>
+                    <button type="submit" name="rating" value="0" class="rate-clear{% if not print_.rating %} hidden{% endif %}" aria-label="Clear rating">Clear</button>
                 </form>
                 <a href="/dashboard/prints/{{ print_.id }}/edit" class="btn-primary btn-full">Edit</a>
                 <a href="/dashboard/prints/new?reprint={{ print_.id }}" class="btn-secondary btn-full">Print again</a>
@@ -226,23 +225,36 @@
     if (!form) return;
     const stars = Array.from(form.querySelectorAll('.rate-star'));
     const clearBtn = form.querySelector('.rate-clear');
+    const currentEl = form.querySelector('.rate-current');
+    const display = document.getElementById('detail-rating-display');
 
+    function current() { return Number(form.dataset.rating) || 0; }
+    // The widget stars are a blank input control: empty at rest, fill on hover.
     function paint(n) {
         stars.forEach(s => s.classList.toggle('filled', Number(s.dataset.val) <= n));
     }
-    function current() { return Number(form.dataset.rating) || 0; }
+    // Reflect the saved rating in the title badge + the inline "N★" hint.
+    function reflect(n) {
+        form.dataset.rating = n;
+        currentEl.textContent = n ? n + '★' : '';
+        currentEl.classList.toggle('hidden', n === 0);
+        clearBtn.classList.toggle('hidden', n === 0);
+        if (display) {
+            display.dataset.rating = n;
+            display.textContent = n ? '★'.repeat(n) + '☆'.repeat(5 - n) : '';
+        }
+    }
 
     stars.forEach(star => {
         star.addEventListener('mouseenter', () => paint(Number(star.dataset.val)));
     });
-    form.querySelector('.rate-stars').addEventListener('mouseleave', () => paint(current()));
+    // Resting state is blank (not the saved value) — saved value lives in the badge.
+    form.querySelector('.rate-stars').addEventListener('mouseleave', () => paint(0));
 
-    async function submit(value, btn) {
+    async function submit(value) {
         const prev = current();
-        // optimistic
-        form.dataset.rating = value;
-        paint(value);
-        clearBtn.classList.toggle('hidden', value === 0);
+        reflect(value);     // optimistic
+        paint(0);
         try {
             const res = await fetch(form.action, {
                 method: 'POST',
@@ -251,10 +263,7 @@
             });
             if (!res.ok) throw new Error('rate failed');
         } catch (e) {
-            // revert on failure
-            form.dataset.rating = prev;
-            paint(prev);
-            clearBtn.classList.toggle('hidden', prev === 0);
+            reflect(prev);  // revert on failure
         }
     }
 
@@ -262,7 +271,7 @@
         const btn = e.submitter;
         if (!btn) return;  // no-JS path or programmatic — let it through
         e.preventDefault();
-        submit(Number(btn.value), btn);
+        submit(Number(btn.value));
     });
 })();
 </script>
