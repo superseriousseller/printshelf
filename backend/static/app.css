@@ -544,6 +544,10 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
 .dev-table td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
 .dev-table td:first-child, .dev-table td:nth-child(2) { white-space: nowrap; }
 .dev-table code { background: var(--bg-elev); padding: 1px 6px; border-radius: 4px; font-size: 0.83rem; color: var(--accent); }
+/* Mobile: let the wide API table scroll within its box instead of overflowing the page */
+@media (max-width: 600px) {
+    .dev-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
 
 footer {
     border-top: 1px solid var(--border); padding: 18px 24px; text-align: center;
