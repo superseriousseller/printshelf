@@ -9,6 +9,7 @@
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 
 ### ✅ Done (recent)
+- Inline rating + 3D categories (2026-06-16) — owner-only **blank** star widget on public detail page (hollow ☆ at rest, fill on hover, click to set; saved value shows in title badge + "N★" hint; badge syncs live). Session-cookie route `POST /@{user}/prints/{id}/rate` (API PATCH is Bearer-only); non-owner 403, unauth 401; no-JS form fallback. Categories expanded to 11 3D-printing-focused (slugs preserved, existing tags safe); Explore pills now data-driven from `PRINT_CATEGORIES`, detail badge uses `PRINT_CATEGORY_LABELS`. Star widget mirrors SS Book Tracker `StarRating.jsx`. 7/7+2 QA PASS, 2-fix cycle (badge live-sync, mobile nowrap). On prod (3c8f66a). Verified JS via jsdom (Playwright can't reach host localhost in sandbox).
 - Browse-by-brand filament picker (2026-06-16) — added collapsible per-brand `<details>` groups below the token search (Jinja `groupby('brand')`, count badges). Chips stay the single source of truth: browse checkboxes carry **no name attr** (no double-submit), only mirror chip state. Bidirectional sync (tick row↔add chip, ×↔uncheck row, search-add↔check row) via `setRowChecked` helper. Edit pre-checks rows server-side from `selected_ids`. 7/7 + 3 edge QA PASS. On prod (b524f74). Verified JS sync via jsdom (Playwright can't reach host localhost in sandbox).
 - Filament token/chip picker (2026-06-15) — replaced 200+ item checkbox list on print form with a compact token multi-select: type to filter (client-side over JSON-embedded filaments, dropdown capped at 10), click to add a colored chip, ×/Backspace to remove, no duplicate-add. Edit forms pre-populate chips **server-side** via `selected_filaments` ctx var (JS inits its `selected` Set from DOM `data-id`s — avoids ID-matching bugs). 11/11 QA PASS (1-fix cycle: edit pre-population). On prod (c1f6605).
 - Makerworld CF proxy (2026-06-11) — Cloudflare Worker (`cloudflare-worker/fetch-proxy.js`) proxies Makerworld fetches through CF edge IPs, bypassing Railway's IP block; full title + thumbnail returned; OG title suffix stripped. 3/3 QA PASS. On prod (ae857fd). Env vars: `CF_FETCH_PROXY_URL`, `CF_FETCH_PROXY_SECRET` (both envs).
@@ -141,6 +142,7 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 **Completed 2026-06-16 (session 26):**
 - Filament token/chip picker — replaced 200+ item checkbox list on print form with token multi-select (type→filter→chip). Edit forms pre-populate chips server-side. 11/11 QA PASS. On prod (c1f6605).
 - Browse-by-brand groups — collapsible per-brand sections below the search, bidirectionally synced with chips. 7/7 + 3 edge QA PASS. On prod (b524f74).
+- Inline blank-star rating on detail page + 11 3D-printing categories (Explore pills data-driven). 7/7 + 2 edge QA PASS. On prod (3c8f66a).
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
