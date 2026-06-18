@@ -3,7 +3,10 @@
 Loads every HTML screen at desktop (1440) and mobile (390) widths and flags:
   - non-200 HTTP status
   - JS console errors / uncaught page errors
-  - horizontal overflow on mobile (scrollWidth > clientWidth — the #1 mobile bug)
+  - horizontal overflow on mobile (scrollWidth > clientWidth)
+  - clipped-unreachable content: an element extends past the viewport but no
+    ancestor scrolls to reach it (overflow:hidden clip / grid-blowout) — the
+    page-level scrollWidth check MISSES this, so it's checked separately
 Captures a screenshot of every screen/viewport, and runs a few functional
 interaction checks (filament picker, explore filter, rating widget).
 
@@ -67,13 +70,33 @@ def audit_screen(ctx, base, label, path, vp):
         status = resp.status if resp else 0
     except Exception as e:
         page.close()
-        return {"label": label, "vp": vp, "status": "ERR", "over": 0, "console": [str(e)], "pageerr": []}
+        return {"label": label, "vp": vp, "status": "ERR", "over": 0, "clipped": [], "console": [str(e)], "pageerr": []}
     page.wait_for_timeout(350)
     ov = page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
+    # Clipped-unreachable content: an element extends past the viewport but NO
+    # ancestor scrolls horizontally to reach it (an overflow:hidden ancestor, or
+    # none at all). This catches grid/flex blowouts that page-level scrollWidth
+    # misses because the overflow is clipped rather than scrollable.
+    clipped = page.evaluate("""() => {
+        const vw = document.documentElement.clientWidth, hits = [];
+        const scrolls = el => { const o = getComputedStyle(el).overflowX; return o === 'auto' || o === 'scroll'; };
+        for (const el of document.querySelectorAll('body *')) {
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0 || r.right <= vw + 2) continue;
+            let p = el.parentElement, reachable = false;
+            while (p) { if (scrolls(p) && p.scrollWidth > p.clientWidth) { reachable = true; break; } p = p.parentElement; }
+            if (!reachable) {
+                const c = (el.className || '').toString().trim().split(/\\s+/)[0] || el.tagName.toLowerCase();
+                hits.push(`${el.tagName.toLowerCase()}.${c} +${Math.round(r.right - vw)}px`);
+            }
+        }
+        return [...new Set(hits)].slice(0, 6);
+    }""")
     if shot_dir:
         page.screenshot(path=os.path.join(shot_dir, f"{label}_{vp}.png"))
     page.close()
-    return {"label": label, "vp": vp, "status": status, "over": ov, "console": list(errors), "pageerr": list(pageerrors)}
+    return {"label": label, "vp": vp, "status": status, "over": ov, "clipped": clipped,
+            "console": list(errors), "pageerr": list(pageerrors)}
 
 
 def login(page, base, email, password):
@@ -123,6 +146,8 @@ def main():
             flags.append(f"HTTP {r['status']}")
         if r["vp"] == "mobile" and r["over"] and r["over"] > 0:
             flags.append(f"H-OVERFLOW +{r['over']}px")
+        if r["vp"] == "mobile" and r.get("clipped"):
+            flags.append(f"CLIPPED-UNREACHABLE {r['clipped']}")
         if r["console"]:
             flags.append(f"CONSOLE {r['console'][:2]}")
         if r["pageerr"]:
