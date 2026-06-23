@@ -5,11 +5,11 @@
 ## Project Status
 
 ### 🔄 In Progress
-- **Human-readable print URLs (hybrid slug)** — `/@user/prints/{id}-{slug}` (e.g. `/@PluggedIn3d/prints/47-articulated-dragon`). Plan: (1) `slugify()` + `Print.slug` property in models.py (lowercase, alnum→hyphen, collapse, cap 60, empty→just id); (2) `public_print_detail` route takes `print_ref: str`, parses leading int, 301-canonicalizes to `{id}-{slug}` (handles bare `47`, stale/wrong slug, casing); (3) append `-{{ p.slug }}` to public detail links in profile/print_detail(og+canonical+related×2)/search/feed/prints_list templates; (4) explore route adds `"slug"` dict key + explore.html; (5) backend builders web_dashboard.py:950 (share) + homepage.py:234 (sitemap). `/queue` + `/rate` POSTs stay bare-int (no change). No DB migration, no per-user badge (Cam's call). Old `/prints/47` links 301-redirect → SEO-safe.
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 
 ### ✅ Done (recent)
+- Human-readable hybrid print URLs (2026-06-23) — `/@user/prints/{id}-{slug}` (e.g. `/@PluggedIn3d/prints/32-emergency-guitar-picks...`) replacing opaque `/prints/{id}`. Numeric ID stays the lookup key so the slug is **decorative** — old bare-ID links 301-redirect (zero breakage, no DB migration). `slugify()` in models.py (NFKD accent-fold→ascii, lowercase, alnum→hyphen, cap 60 at word boundary; empty/all-emoji title → bare `{id}`, no trailing hyphen) + `Print.slug`/`Print.url_id` props. `public_print_detail` takes `print_ref: str`, parses leading int, 301-canonicalizes bare-ID/stale-slug/wrong-case → current `{id}-{slug}`. All public links emit `url_id` (profile, explore[dict key], search, feed, prints_list, print_detail og:url+canonical+related, sitemap[query fetches title]). `/rate`+`/queue` POSTs stay bare-int. No per-user badge (Cam's call — global PK ≠ per-user count, so it'd mislead). 8/8 QA PASS + 85/85 + 6/6 redirect cases. On prod (902e89f).
 - Dashboard mobile grid blowout fix (2026-06-17) — `.dash-shell` used `grid-template-columns: 1fr` (=`minmax(auto,1fr)`); the auto-min forced the track to content min-content (~723px), so `.dash-main` overflowed and was clipped by an `overflow-x:hidden` band-aid → nav/stats/cards cut off & unreachable on ALL 12 dashboard pages. Fixed with `minmax(0,1fr)` on both shell rules; nav now wraps (all items tappable). Also fixed account `.dash-socials` fieldset overflow (`min-width:0`). **`visual_audit.py` upgraded** to flag CLIPPED-UNREACHABLE content (element past viewport w/ no scrollable ancestor) — the bug class the page-level scrollWidth check missed; proven to catch the regression. On prod (ed1fad0).
 - Full Playwright visual/function audit (2026-06-17) — `backend/scripts/visual_audit.py` loads every HTML screen at desktop+mobile, flags non-200/console errors/mobile horizontal overflow + screenshots. Found 1 bug: `/developers` API table overflowed mobile +23px → fixed (scrolls in its own box). 40 loads clean + 8 functional checks pass. On prod (68691e8 fix, b3acfc4 script).
 - Inline rating + 3D categories (2026-06-16) — owner-only **blank** star widget on public detail page (hollow ☆ at rest, fill on hover, click to set; saved value shows in title badge + "N★" hint; badge syncs live). Session-cookie route `POST /@{user}/prints/{id}/rate` (API PATCH is Bearer-only); non-owner 403, unauth 401; no-JS form fallback. Categories expanded to 11 3D-printing-focused (slugs preserved, existing tags safe); Explore pills now data-driven from `PRINT_CATEGORIES`, detail badge uses `PRINT_CATEGORY_LABELS`. Star widget mirrors SS Book Tracker `StarRating.jsx`. 7/7+2 QA PASS, 2-fix cycle (badge live-sync, mobile nowrap). On prod (3c8f66a). Verified JS via jsdom (Playwright can't reach host localhost in sandbox).
@@ -145,12 +145,13 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 ---
 
 ## Next Session Starts Here
+**Completed 2026-06-23 (session 27):**
+- Human-readable hybrid print URLs — `/@user/prints/{id}-{slug}`; numeric ID stays the lookup key, slug is decorative, old bare-ID links 301-redirect (no migration). `slugify()`+`Print.url_id` in models.py; route 301-canonicalizes bare/stale/wrong-case; all public links + sitemap emit slug. 8/8 QA + 85/85 + 6/6 redirect cases PASS. On prod (902e89f).
+
 **Completed 2026-06-16 (session 26):**
 - Filament token/chip picker — replaced 200+ item checkbox list on print form with token multi-select (type→filter→chip). Edit forms pre-populate chips server-side. 11/11 QA PASS. On prod (c1f6605).
 - Browse-by-brand groups — collapsible per-brand sections below the search, bidirectionally synced with chips. 7/7 + 3 edge QA PASS. On prod (b524f74).
 - Inline blank-star rating on detail page + 11 3D-printing categories (Explore pills data-driven). 7/7 + 2 edge QA PASS. On prod (3c8f66a).
-- Playwright LAN-IP workflow established + `visual_audit.py` all-screens audit. Found/fixed `/developers` mobile table overflow. On prod (68691e8, b3acfc4).
-- Dashboard mobile grid blowout (nav/stats/cards cut off on all dashboard pages) + account socials overflow. Upgraded audit to catch clipped-unreachable content. On prod (ed1fad0).
 
 **In progress:**
 - Cam dogfooding at `/@PluggedIn3d`
