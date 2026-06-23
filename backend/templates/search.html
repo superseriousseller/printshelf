@@ -37,7 +37,7 @@
             <div class="search-prints">
                 {% for item in prints %}
                 {% set p = item.print %}
-                <a class="related-card" href="/@{{ item.username }}/prints/{{ p.id }}">
+                <a class="related-card" href="/@{{ item.username }}/prints/{{ p.url_id }}">
                     <div class="related-thumb">
                         {% set img = p.photo_url or p.thumbnail_url %}
                         {% if img %}<img src="{{ img }}" alt="{{ p.title }}" loading="lazy">

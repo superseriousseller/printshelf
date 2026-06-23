@@ -4,7 +4,9 @@ Database models for PrintShelf
 """
 import enum
 import os
+import re
 import secrets
+import unicodedata
 from datetime import datetime
 
 from sqlalchemy import (
@@ -15,6 +17,23 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
 Base = declarative_base()
+
+
+def slugify(text_value: str, max_len: int = 60) -> str:
+    """URL-safe slug from a title: lowercase, alnum runs joined by hyphens.
+
+    Decorative only — the numeric ID is the real key, so an empty result
+    (e.g. an all-emoji title) is fine and yields a bare-ID URL.
+    """
+    if not text_value:
+        return ""
+    # Fold accents to ASCII (café → cafe) before stripping non-alnum.
+    folded = unicodedata.normalize("NFKD", text_value).encode("ascii", "ignore").decode()
+    slug = re.sub(r"[^a-z0-9]+", "-", folded.lower()).strip("-")
+    if len(slug) > max_len:
+        # trim to max_len, then back off to the last clean word boundary
+        slug = slug[:max_len].rsplit("-", 1)[0] if "-" in slug[:max_len] else slug[:max_len]
+    return slug.strip("-")
 
 
 # ============== Enums (stored as strings for migration flexibility) ==============
@@ -240,6 +259,16 @@ class Print(Base):
 
     user = relationship("User", back_populates="prints")
     printer = relationship("Printer", back_populates="prints")
+
+    @property
+    def slug(self) -> str:
+        """Decorative URL suffix derived from the title (see slugify)."""
+        return slugify(self.title)
+
+    @property
+    def url_id(self) -> str:
+        """Canonical path segment `{id}-{slug}`, or bare `{id}` if slug empty."""
+        return f"{self.id}-{self.slug}" if self.slug else str(self.id)
 
     def to_dict(self) -> dict:
         return {

@@ -17,7 +17,7 @@ from sqlalchemy import or_
 
 from sqlalchemy import nullslast
 
-from models import Print, User, get_db, PRINT_CATEGORIES
+from models import Print, User, get_db, slugify, PRINT_CATEGORIES
 
 router = APIRouter(tags=["homepage"])
 
@@ -161,6 +161,7 @@ def explore(
     prints = [
         {
             "id": p.id,
+            "url_id": p.url_id,
             "title": p.title,
             "thumbnail": p.photo_url or p.thumbnail_url,
             "rating": p.rating,
@@ -217,7 +218,7 @@ def sitemap(
     usernames = [r.username for r in user_rows]
 
     print_rows = (
-        db.query(Print.id, User.username)
+        db.query(Print.id, Print.title, User.username)
         .join(User, Print.user_id == User.id)
         .filter(Print.is_public == True, Print.queued == False)  # noqa: E712
         .order_by(Print.created_at.desc())
@@ -230,8 +231,10 @@ def sitemap(
         lines.append(f"  <url><loc>{app_url}{path}</loc></url>")
     for uname in usernames:
         lines.append(f"  <url><loc>{app_url}/@{uname}</loc></url>")
-    for print_id, uname in print_rows:
-        lines.append(f"  <url><loc>{app_url}/@{uname}/prints/{print_id}</loc></url>")
+    for print_id, title, uname in print_rows:
+        slug = slugify(title)
+        url_id = f"{print_id}-{slug}" if slug else str(print_id)
+        lines.append(f"  <url><loc>{app_url}/@{uname}/prints/{url_id}</loc></url>")
     lines.append("</urlset>")
 
     return Response("\n".join(lines), media_type="application/xml")

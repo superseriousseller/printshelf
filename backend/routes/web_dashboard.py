@@ -947,7 +947,7 @@ async def create_print(
             .filter(Follow.following_id == user.id, User.notify_feed == True, User.unsubscribe_token != None)  # noqa: E712
             .all()
         )
-        print_url = f"{os.environ.get('APP_URL', 'https://printshelf.app')}/@{user.username}/prints/{p.id}"
+        print_url = f"{os.environ.get('APP_URL', 'https://printshelf.app')}/@{user.username}/prints/{p.url_id}"
         display = user.display_name or user.username
         for follower in followers:
             send_feed_notification(follower.email, user.username, display, p.title, print_url, follower.unsubscribe_token)

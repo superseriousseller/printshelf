@@ -94,7 +94,7 @@
 <section class="print-grid">
     {% for p in prints %}
     <article class="print-card">
-        <a href="/@{{ user.username }}/prints/{{ p.id }}" class="card-link" aria-label="{{ p.title }}"></a>
+        <a href="/@{{ user.username }}/prints/{{ p.url_id }}" class="card-link" aria-label="{{ p.title }}"></a>
         <div class="thumb">
             {% set img = p.photo_url or p.thumbnail_url %}
             {% if img %}
