@@ -5,6 +5,7 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **Human-readable print URLs (hybrid slug)** — `/@user/prints/{id}-{slug}` (e.g. `/@PluggedIn3d/prints/47-articulated-dragon`). Plan: (1) `slugify()` + `Print.slug` property in models.py (lowercase, alnum→hyphen, collapse, cap 60, empty→just id); (2) `public_print_detail` route takes `print_ref: str`, parses leading int, 301-canonicalizes to `{id}-{slug}` (handles bare `47`, stale/wrong slug, casing); (3) append `-{{ p.slug }}` to public detail links in profile/print_detail(og+canonical+related×2)/search/feed/prints_list templates; (4) explore route adds `"slug"` dict key + explore.html; (5) backend builders web_dashboard.py:950 (share) + homepage.py:234 (sitemap). `/queue` + `/rate` POSTs stay bare-int (no change). No DB migration, no per-user badge (Cam's call). Old `/prints/47` links 301-redirect → SEO-safe.
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 

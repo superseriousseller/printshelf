@@ -8,9 +8,9 @@
     <meta property="og:title" content="{{ print_.title }}">
     {% set img = print_.photo_url or print_.thumbnail_url %}
     {% if img %}<meta property="og:image" content="{{ img }}">{% endif %}
-    <meta property="og:url" content="{{ app_url }}/@{{ user.username }}/prints/{{ print_.id }}">
+    <meta property="og:url" content="{{ app_url }}/@{{ user.username }}/prints/{{ print_.url_id }}">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="canonical" href="{{ app_url }}/@{{ user.username }}/prints/{{ print_.id }}">
+    <link rel="canonical" href="{{ app_url }}/@{{ user.username }}/prints/{{ print_.url_id }}">
 {% endblock %}
 
 {% block content %}
@@ -100,7 +100,7 @@
                     <button type="submit" class="btn-primary btn-full">+ Add to my queue</button>
                 </form>
                 {% else %}
-                <a href="/login?next=/@{{ user.username }}/prints/{{ print_.id }}" class="btn-secondary btn-full">Log in to queue this</a>
+                <a href="/login?next=/@{{ user.username }}/prints/{{ print_.url_id }}" class="btn-secondary btn-full">Log in to queue this</a>
                 {% endif %}
             </div>
 
@@ -177,7 +177,7 @@
         {% for rp in related_by_filament %}
         {% set ruser = users_by_id.get(rp.user_id) %}
         {% if ruser %}
-        <a class="related-card" href="/@{{ ruser.username }}/prints/{{ rp.id }}">
+        <a class="related-card" href="/@{{ ruser.username }}/prints/{{ rp.url_id }}">
             <div class="related-thumb">
                 {% set img = rp.photo_url or rp.thumbnail_url %}
                 {% if img %}<img src="{{ img }}" alt="{{ rp.title }}" loading="lazy">
@@ -201,7 +201,7 @@
         {% for rp in related_by_printer %}
         {% set ruser = users_by_id.get(rp.user_id) %}
         {% if ruser %}
-        <a class="related-card" href="/@{{ ruser.username }}/prints/{{ rp.id }}">
+        <a class="related-card" href="/@{{ ruser.username }}/prints/{{ rp.url_id }}">
             <div class="related-thumb">
                 {% set img = rp.photo_url or rp.thumbnail_url %}
                 {% if img %}<img src="{{ img }}" alt="{{ rp.title }}" loading="lazy">

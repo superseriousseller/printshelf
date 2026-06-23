@@ -41,7 +41,7 @@
     <section class="print-grid">
         {% for p in prints %}
         <article class="print-card">
-            <a href="/@{{ p.username }}/prints/{{ p.id }}" class="card-link" aria-label="{{ p.title }}"></a>
+            <a href="/@{{ p.username }}/prints/{{ p.url_id }}" class="card-link" aria-label="{{ p.title }}"></a>
             <div class="thumb">
                 <img src="{{ p.thumbnail }}" alt="{{ p.title }}" loading="lazy" style="object-position:{{ p.focal_x or 50 }}% {{ p.focal_y or 50 }}%">
                 {% if p.status == "failed" %}<span class="badge badge-fail">Failed</span>

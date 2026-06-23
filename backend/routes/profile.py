@@ -198,14 +198,20 @@ def public_profile(
     )
 
 
-@router.get("/@{username}/prints/{print_id}", response_class=HTMLResponse)
+@router.get("/@{username}/prints/{print_ref}", response_class=HTMLResponse)
 def public_print_detail(
     request: Request,
     username: str,
-    print_id: int,
+    print_ref: str,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
+    # URL is `{id}-{slug}` (slug decorative); old `{id}` links still resolve.
+    try:
+        print_id = int(print_ref.split("-", 1)[0])
+    except (ValueError, AttributeError):
+        return RedirectResponse(f"/@{username}", status_code=303)
+
     user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
     if user is None:
         return templates.TemplateResponse(
@@ -214,7 +220,7 @@ def public_print_detail(
             status_code=404,
         )
     if user.username != username:
-        return RedirectResponse(url=f"/@{user.username}/prints/{print_id}", status_code=301)
+        return RedirectResponse(url=f"/@{user.username}/prints/{print_ref}", status_code=301)
     p = db.query(Print).filter(
         Print.id == print_id,
         Print.user_id == user.id,
@@ -223,6 +229,10 @@ def public_print_detail(
     ).first()
     if p is None:
         return RedirectResponse(f"/@{username}", status_code=303)
+
+    # Canonicalize: bare ID or stale slug → 301 to the current `{id}-{slug}`.
+    if print_ref != p.url_id:
+        return RedirectResponse(url=f"/@{user.username}/prints/{p.url_id}", status_code=301)
 
     filaments = []
     if p.filament_ids:
