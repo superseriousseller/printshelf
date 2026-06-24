@@ -32,6 +32,7 @@
                     <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
                     <option value="oldest" {% if sort == "oldest" %}selected{% endif %}>Oldest</option>
                     <option value="rating" {% if sort == "rating" %}selected{% endif %}>Top rated</option>
+                    <option value="popular" {% if sort == "popular" %}selected{% endif %}>Most liked</option>
                 </select>
             </form>
         </div>
@@ -59,6 +60,7 @@
                         <a class="explore-user" href="/@{{ p.username }}">@{{ p.username }}</a>
                     </div>
                     {% if p.rating %}<span class="rating">{% for _ in range(p.rating) %}★{% endfor %}</span>{% endif %}
+                    {% if p.like_count %}<span class="like-count" title="{{ p.like_count }} like{{ 's' if p.like_count != 1 else '' }}">♥ {{ p.like_count }}</span>{% endif %}
                 </div>
             </div>
         </article>

@@ -5,6 +5,13 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **Likes + per-print views + "Most liked" explore sort (session 28)** — engagement loop. PLAN:
+  1. `models.py`: new `Like` model (`user_id`, `print_id`, `created_at`, unique pair index `ix_likes_pair`), + `Print.like_count`/`Print.view_count` Integer NOT NULL default 0 (mirror `profile_views`). Add to `Print.to_dict` (`likeCount`/`viewCount`).
+  2. Alembic migration `d5e6f7a8b9c0` (down_rev `c4d5e6f7a8b9`): create `likes` table + indexes, add 2 count cols (`server_default='0'`).
+  3. `profile.py`: `POST /@{u}/prints/{id}/like` + `/unlike` (mirror `/rate`: session-cookie, `X-Requested-With: fetch`→JSON `{liked,count}`, no-JS→303 back; unauth→401/login; owner can't like own→ok=false). Recompute `like_count` from `Like` table on each toggle (drift-proof). In `public_print_detail`: increment `view_count` for non-owner (mirror `profile_views`); compute `liked` for current non-owner; pass `liked`+counts to template.
+  4. Templates: `print_detail.html` heart toggle + view count (+fetch JS mirroring star widget); `explore.html`/`feed.html`/`profile.html` cards get ♥-count badge.
+  5. `homepage.py` explore: add `"popular": (like_count.desc(), created_at.desc())` to `_EXPLORE_SORT` (change `order_by` to `*tuple`), add `like_count` to prints dict, add "Most liked" `<option>`. ("Trending"/time-decay = future; v1 is honest all-time "Most liked".)
+  Not a breaking change (additive cols/table). QA: 85/85 + manual.
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 

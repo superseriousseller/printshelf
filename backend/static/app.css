@@ -620,6 +620,17 @@ footer {
 .detail-designer { margin: 0 0 16px; color: var(--text-dim); font-size: 0.95rem; }
 .detail-badges { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 .detail-rating { color: #ffc857; font-size: 1.1rem; letter-spacing: 1px; }
+/* Engagement row: like heart + view count on public detail page. */
+.detail-engagement { display: flex; align-items: center; gap: 14px; margin: 0 0 12px; }
+.like-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 0.95rem; font-weight: 600; cursor: pointer; line-height: 1; transition: border-color 0.1s, color 0.1s; }
+.like-form button.like-btn:hover { border-color: #e0567a; color: #e0567a; }
+.like-btn.liked { border-color: #e0567a; color: #e0567a; }
+.like-btn .like-heart { font-size: 1.1rem; }
+.like-btn.like-static { cursor: default; color: var(--text-dim); }
+a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: pointer; }
+.detail-views { color: var(--text-dim); font-size: 0.9rem; }
+/* Compact like count badge on cards (explore/feed/profile). */
+.like-count { color: #e0567a; font-size: 0.85rem; font-weight: 600; }
 .detail-stats-row { display: flex; gap: 20px; flex-wrap: wrap; margin: 14px 0 0; padding: 14px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .detail-stat { display: flex; flex-direction: column; gap: 2px; }
 .detail-stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 600; }

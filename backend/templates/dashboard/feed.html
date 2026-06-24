@@ -26,6 +26,7 @@
             {% if p.designer %}<p class="designer">by {{ p.designer }}</p>{% endif %}
             <div class="card-meta">
                 {% if p.rating %}<span class="rating">{% for _ in range(p.rating) %}★{% endfor %}{% for _ in range(5 - p.rating) %}☆{% endfor %}</span>{% endif %}
+                {% if p.like_count %}<span class="like-count" title="{{ p.like_count }} like{{ 's' if p.like_count != 1 else '' }}">♥ {{ p.like_count }}</span>{% endif %}
             </div>
         </div>
     </article>
