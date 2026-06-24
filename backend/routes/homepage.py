@@ -17,7 +17,7 @@ from sqlalchemy import or_
 
 from sqlalchemy import nullslast
 
-from models import Print, User, get_db, slugify, PRINT_CATEGORIES
+from models import Print, User, get_db, print_url_id, PRINT_CATEGORIES
 
 router = APIRouter(tags=["homepage"])
 
@@ -232,8 +232,7 @@ def sitemap(
     for uname in usernames:
         lines.append(f"  <url><loc>{app_url}/@{uname}</loc></url>")
     for print_id, title, uname in print_rows:
-        slug = slugify(title)
-        url_id = f"{print_id}-{slug}" if slug else str(print_id)
+        url_id = print_url_id(print_id, title)
         lines.append(f"  <url><loc>{app_url}/@{uname}/prints/{url_id}</loc></url>")
     lines.append("</urlset>")
 
