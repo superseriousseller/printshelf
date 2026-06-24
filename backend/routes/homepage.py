@@ -116,9 +116,10 @@ EXPLORE_LIMIT = 24
 
 
 _EXPLORE_SORT = {
-    "newest": Print.created_at.desc(),
-    "oldest": Print.created_at.asc(),
-    "rating": nullslast(Print.rating.desc()),
+    "newest": (Print.created_at.desc(),),
+    "oldest": (Print.created_at.asc(),),
+    "rating": (nullslast(Print.rating.desc()),),
+    "popular": (Print.like_count.desc(), Print.created_at.desc()),
 }
 
 
@@ -151,7 +152,7 @@ def explore(
     if failed_filter:
         q = q.filter(Print.status == "failed")
     rows = (
-        q.order_by(_EXPLORE_SORT[sort])
+        q.order_by(*_EXPLORE_SORT[sort])
         .offset(offset)
         .limit(EXPLORE_LIMIT + 1)
         .all()
@@ -170,6 +171,7 @@ def explore(
             "status": p.status,
             "focal_x": p.focal_x,
             "focal_y": p.focal_y,
+            "like_count": p.like_count,
         }
         for p, uname, avatar_url in rows
     ]

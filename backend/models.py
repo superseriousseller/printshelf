@@ -249,6 +249,10 @@ class Print(Base):
     rating = Column(Integer, nullable=True)              # 1-5
     notes = Column(Text, nullable=True)
 
+    # Engagement counters (denormalized for cheap sort/display)
+    like_count = Column(Integer, default=0, nullable=False, server_default="0")
+    view_count = Column(Integer, default=0, nullable=False, server_default="0")
+
     queued = Column(Boolean, default=False, nullable=False, index=True)
     is_public = Column(Boolean, default=True, nullable=False, index=True)
 
@@ -307,6 +311,8 @@ class Print(Base):
             "focalX": self.focal_x,
             "focalY": self.focal_y,
             "category": self.category,
+            "likeCount": self.like_count,
+            "viewCount": self.view_count,
         }
 
 
@@ -356,6 +362,20 @@ class Follow(Base):
 
 
 Index("ix_follows_pair", Follow.follower_id, Follow.following_id, unique=True)
+
+
+# ============== Like ==============
+
+class Like(Base):
+    __tablename__ = "likes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    print_id = Column(Integer, ForeignKey("prints.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+Index("ix_likes_pair", Like.user_id, Like.print_id, unique=True)
 
 
 # ============== Affiliate Click ==============

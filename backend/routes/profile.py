@@ -9,7 +9,7 @@ from collections import Counter
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from limits import enforce_print_limit
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from affiliate import apply_affiliate
 from auth import get_current_user_web_optional
 from email_service import send_follow_notification
-from models import Filament, Follow, Print, PrintLink, Printer, User, get_db, PRINT_CATEGORY_LABELS
+from models import Filament, Follow, Like, Print, PrintLink, Printer, User, get_db, PRINT_CATEGORY_LABELS
 from sqlalchemy import func
 
 router = APIRouter(tags=["profile"])
@@ -234,6 +234,22 @@ def public_print_detail(
     if print_ref != p.url_id:
         return RedirectResponse(url=f"/@{user.username}/prints/{p.url_id}", status_code=301)
 
+    # Count the view — skip if the owner is viewing their own print.
+    is_owner = current_user is not None and current_user.id == user.id
+    if not is_owner:
+        db.query(Print).filter(Print.id == p.id).update(
+            {"view_count": Print.view_count + 1}
+        )
+        db.commit()
+        p.view_count = (p.view_count or 0) + 1
+
+    # Has the current (non-owner) viewer liked this print?
+    liked = False
+    if current_user is not None and not is_owner:
+        liked = db.query(Like).filter(
+            Like.user_id == current_user.id, Like.print_id == p.id
+        ).first() is not None
+
     filaments = []
     if p.filament_ids:
         filaments = db.query(Filament).filter(
@@ -330,6 +346,8 @@ def public_print_detail(
             "printer_label": printer_label,
             "users_by_id": users_by_id,
             "current_user": current_user,
+            "is_owner": is_owner,
+            "liked": liked,
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
         },
     )
@@ -460,3 +478,89 @@ def rate_print(
     p.rating = rating or None
     db.commit()
     return _done()
+
+
+def _toggle_like(
+    username: str,
+    print_id: int,
+    request: Request,
+    db: Session,
+    current_user: Optional[User],
+    *,
+    want_liked: bool,
+):
+    """Shared like/unlike handler. Mirrors /rate's auth + fetch/no-JS pattern.
+
+    Non-owners only (you can't like your own print). JS posts here via fetch
+    (X-Requested-With: fetch) and gets JSON {liked, count}; no-JS falls back to
+    a full redirect to the detail page. like_count is recomputed from the likes
+    table on every toggle so the denormalized counter can't drift.
+    """
+    detail_url = f"/@{username}/prints/{print_id}"
+    is_fetch = request.headers.get("x-requested-with") == "fetch"
+
+    def _json(p):
+        return JSONResponse({"liked": want_liked, "count": p.like_count})
+
+    def _fail(status: int):
+        if is_fetch:
+            return Response(status_code=status)
+        if status == 401:
+            return RedirectResponse(f"/login?next={detail_url}", status_code=303)
+        return RedirectResponse(detail_url, status_code=303)
+
+    if current_user is None:
+        return _fail(401)
+
+    user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
+    if user is None:
+        return _fail(404)
+
+    p = db.query(Print).filter(
+        Print.id == print_id,
+        Print.user_id == user.id,
+        Print.is_public == True,   # noqa: E712
+        Print.queued == False,     # noqa: E712
+    ).first()
+    # Can't like a missing print or your own print.
+    if p is None or p.user_id == current_user.id:
+        return _fail(403)
+
+    existing = db.query(Like).filter(
+        Like.user_id == current_user.id, Like.print_id == p.id
+    ).first()
+    if want_liked and existing is None:
+        db.add(Like(user_id=current_user.id, print_id=p.id))
+    elif not want_liked and existing is not None:
+        db.delete(existing)
+    db.flush()
+
+    # Recompute from source of truth — no drift even on double-clicks/races.
+    p.like_count = db.query(Like).filter(Like.print_id == p.id).count()
+    db.commit()
+
+    if is_fetch:
+        return _json(p)
+    return RedirectResponse(detail_url, status_code=303)
+
+
+@router.post("/@{username}/prints/{print_id}/like")
+def like_print(
+    username: str,
+    print_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    return _toggle_like(username, print_id, request, db, current_user, want_liked=True)
+
+
+@router.post("/@{username}/prints/{print_id}/unlike")
+def unlike_print(
+    username: str,
+    print_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    return _toggle_like(username, print_id, request, db, current_user, want_liked=False)

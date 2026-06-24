@@ -50,6 +50,26 @@
                 {% if print_.category %}<a href="/explore?category={{ print_.category }}" class="badge badge-category">{{ category_label or (print_.category | replace("-", " ") | title) }}</a>{% endif %}
             </div>
 
+            <div class="detail-engagement">
+                {% if current_user and not is_owner %}
+                <form class="like-form" method="post"
+                      action="/@{{ user.username }}/prints/{{ print_.id }}/{{ 'unlike' if liked else 'like' }}"
+                      data-liked="{{ '1' if liked else '0' }}"
+                      data-like-url="/@{{ user.username }}/prints/{{ print_.id }}/like"
+                      data-unlike-url="/@{{ user.username }}/prints/{{ print_.id }}/unlike">
+                    <button type="submit" class="like-btn{% if liked %} liked{% endif %}" aria-pressed="{{ 'true' if liked else 'false' }}" aria-label="Like this print">
+                        <span class="like-heart">{{ '♥' if liked else '♡' }}</span>
+                        <span class="like-count-val">{{ print_.like_count }}</span>
+                    </button>
+                </form>
+                {% elif is_owner %}
+                <span class="like-btn like-static" title="Likes on this print">♥ <span class="like-count-val">{{ print_.like_count }}</span></span>
+                {% else %}
+                <a href="/login?next=/@{{ user.username }}/prints/{{ print_.url_id }}" class="like-btn like-static" title="Log in to like this print">♡ <span class="like-count-val">{{ print_.like_count }}</span></a>
+                {% endif %}
+                <span class="detail-views" title="Views">👁 {{ print_.view_count }}</span>
+            </div>
+
             {% if print_.print_date or printer or print_.print_time_mins or print_.filament_used_g %}
             <div class="detail-stats-row">
                 {% if print_.print_date %}
@@ -272,6 +292,45 @@
         if (!btn) return;  // no-JS path or programmatic — let it through
         e.preventDefault();
         submit(Number(btn.value));
+    });
+})();
+</script>
+{% endif %}
+
+{% if current_user and not is_owner %}
+<script>
+(function(){
+    const form = document.querySelector('.like-form');
+    if (!form) return;
+    const btn = form.querySelector('.like-btn');
+    const heart = form.querySelector('.like-heart');
+    const countEl = form.querySelector('.like-count-val');
+    let busy = false;
+
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        if (busy) return;
+        busy = true;
+        const liked = form.dataset.liked === '1';
+        const url = liked ? form.dataset.unlikeUrl : form.dataset.likeUrl;
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'fetch' },
+            });
+            if (!res.ok) throw new Error('like failed');
+            const data = await res.json();
+            form.dataset.liked = data.liked ? '1' : '0';
+            form.action = data.liked ? form.dataset.unlikeUrl : form.dataset.likeUrl;
+            heart.textContent = data.liked ? '♥' : '♡';
+            countEl.textContent = data.count;
+            btn.classList.toggle('liked', data.liked);
+            btn.setAttribute('aria-pressed', data.liked ? 'true' : 'false');
+        } catch (err) {
+            // Leave the form's no-JS action intact so a retry full-posts.
+        } finally {
+            busy = false;
+        }
     });
 })();
 </script>
