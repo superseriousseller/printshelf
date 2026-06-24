@@ -5,6 +5,7 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **Feed cold-start fallback (session 28)** — PLAN: `feed` route in `web_dashboard.py` — when the personalized `feed_items` is empty (follows nobody, or followees posted nothing), fall back to a global discovery query (recent public+non-queued prints WITH an image, excluding the viewer's own, newest, limit 50) and set `is_discover=True`. `feed.html`: show a "not following anyone yet — here's the community" note + "find makers" CTA above the cards when `is_discover`; the `feed-empty` block now only shows if even the global feed is empty (truly fresh site). Add `or_` import + `.feed-discover-note` CSS. Read-only/additive — no schema, no change to the followed-feed path. QA: 85/85 + manual.
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 

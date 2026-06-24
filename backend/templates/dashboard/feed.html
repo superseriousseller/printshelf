@@ -3,8 +3,12 @@
 
 {% block dash %}
 <div class="dash-header">
-    <h2>Feed</h2>
+    <h2>{% if is_discover %}Discover{% else %}Feed{% endif %}</h2>
 </div>
+
+{% if is_discover and feed_items %}
+<p class="feed-discover-note">You're not following anyone yet — here's what the community is printing. <a href="/search">Find makers to follow →</a></p>
+{% endif %}
 
 {% if feed_items %}
 <section class="print-grid">

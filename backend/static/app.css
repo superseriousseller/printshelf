@@ -726,6 +726,8 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .feed-empty p { margin: 0 0 8px; }
 .feed-empty-icon { font-size: 3rem; opacity: 0.5; margin-bottom: 16px !important; }
 .feed-empty .btn-primary { margin-top: 16px; display: inline-block; }
+.feed-discover-note { margin: 0 0 20px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-dim); font-size: 0.9rem; }
+.feed-discover-note a { color: var(--accent, #e0567a); font-weight: 600; white-space: nowrap; }
 .feed-user { margin: 0 0 4px; font-size: 0.8rem; color: var(--text-dim); position: relative; z-index: 2; }
 .feed-user a { color: var(--accent); text-decoration: none; }
 .feed-user a:hover { text-decoration: underline; }
