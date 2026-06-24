@@ -5,6 +5,7 @@ the most recent public prints across all users. Empty at fresh-launch;
 fills out as people sign up and log prints.
 """
 import os
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
@@ -13,11 +14,9 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from auth import get_current_user_web_optional
-from sqlalchemy import or_
+from sqlalchemy import func, nullslast, or_
 
-from sqlalchemy import nullslast
-
-from models import Print, User, get_db, print_url_id, PRINT_CATEGORIES
+from models import Like, Print, User, get_db, print_url_id, PRINT_CATEGORIES
 
 router = APIRouter(tags=["homepage"])
 
@@ -113,6 +112,7 @@ def search(
 
 
 EXPLORE_LIMIT = 24
+TRENDING_WINDOW_DAYS = 7
 
 
 _EXPLORE_SORT = {
@@ -121,6 +121,8 @@ _EXPLORE_SORT = {
     "rating": (nullslast(Print.rating.desc()),),
     "popular": (Print.like_count.desc(), Print.created_at.desc()),
 }
+# "trending" is handled separately (needs a recent-likes join), not in this dict.
+_EXPLORE_SORTS = set(_EXPLORE_SORT) | {"trending"}
 
 
 @router.get("/explore", response_class=HTMLResponse)
@@ -134,7 +136,7 @@ def explore(
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     page = max(1, page)
-    sort = sort if sort in _EXPLORE_SORT else "newest"
+    sort = sort if sort in _EXPLORE_SORTS else "newest"
     offset = (page - 1) * EXPLORE_LIMIT
     q = (
         db.query(Print, User.username, User.avatar_url)
@@ -151,9 +153,28 @@ def explore(
         q = q.filter(Print.category == category_filter)
     if failed_filter:
         q = q.filter(Print.status == "failed")
+
+    if sort == "trending":
+        # Rank by engagement in the recent window, so a print with a few likes
+        # this week outranks one with many lifetime likes from a year ago.
+        # Portable across SQLite/Postgres: cutoff is a Python-computed bind param,
+        # no DB-specific date arithmetic. Prints with no recent likes get rc=0 and
+        # fall back to newest order — never an empty page.
+        cutoff = datetime.utcnow() - timedelta(days=TRENDING_WINDOW_DAYS)
+        recent = (
+            db.query(Like.print_id.label("pid"), func.count(Like.id).label("rc"))
+            .filter(Like.created_at >= cutoff)
+            .group_by(Like.print_id)
+            .subquery()
+        )
+        q = q.outerjoin(recent, Print.id == recent.c.pid).order_by(
+            func.coalesce(recent.c.rc, 0).desc(), Print.created_at.desc()
+        )
+    else:
+        q = q.order_by(*_EXPLORE_SORT[sort])
+
     rows = (
-        q.order_by(*_EXPLORE_SORT[sort])
-        .offset(offset)
+        q.offset(offset)
         .limit(EXPLORE_LIMIT + 1)
         .all()
     )

@@ -5,6 +5,7 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **Time-decayed "Trending" explore sort (session 28c)** — PLAN: completes the engagement loop (likes only aid discovery if *recent* likes can outrank old prints' lifetime likes). `homepage.py` explore: new `sort="trending"` = most likes in the last `TRENDING_WINDOW_DAYS=7`. Portable (no DB-specific date math): Python-computed `cutoff = utcnow()-7d` bind param; subquery `db.query(Like.print_id, count).filter(created_at>=cutoff).group_by(print_id)`, `outerjoin` to the explore query, `order_by coalesce(rc,0).desc(), created_at.desc()`. Degrades gracefully to newest when no recent likes (rc=0 for all → created_at tiebreak; never an empty page). Keep `popular` (all-time "Most liked") as a separate option; add "Trending" `<option>` after Newest. Default stays `newest` (no behavior change). Migration `e6f7a8b9c0d1`: index `ix_likes_created_at` (the subquery filters on it). Imports: `func`, `Like`, `datetime/timedelta`. QA: 85/85 + manual (recent likes rank first; no-recent-likes → newest order).
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 
