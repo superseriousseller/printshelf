@@ -15,7 +15,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import nullslast
+from sqlalchemy import nullslast, or_
 from sqlalchemy.orm import Session
 
 from auth import SESSION_COOKIE_NAME, get_current_user_web_optional
@@ -1396,9 +1396,32 @@ def feed(
             .all()
         )
         feed_items = [{"print": p, "user": u} for p, u in rows]
+
+    # Cold start: if the personalized feed is empty (following nobody, or the
+    # people followed haven't posted public prints), fall back to a global
+    # discovery feed so the page is never a dead end for an active site.
+    is_discover = False
+    if not feed_items:
+        is_discover = True
+        rows = (
+            db.query(Print, User)
+            .join(User, Print.user_id == User.id)
+            .filter(
+                Print.user_id != user.id,
+                Print.is_public == True,   # noqa: E712
+                Print.queued == False,     # noqa: E712
+                or_(Print.photo_url.isnot(None), Print.thumbnail_url.isnot(None)),
+            )
+            .order_by(Print.created_at.desc())
+            .limit(50)
+            .all()
+        )
+        feed_items = [{"print": p, "user": u} for p, u in rows]
+
     return templates.TemplateResponse(
         request, "dashboard/feed.html",
-        _ctx(user, db=db, section="feed", feed_items=feed_items),
+        _ctx(user, db=db, section="feed", feed_items=feed_items,
+             is_discover=is_discover, follows_nobody=not following_ids),
     )
 
 
