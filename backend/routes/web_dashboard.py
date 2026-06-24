@@ -1420,7 +1420,8 @@ def feed(
 
     return templates.TemplateResponse(
         request, "dashboard/feed.html",
-        _ctx(user, db=db, section="feed", feed_items=feed_items, is_discover=is_discover),
+        _ctx(user, db=db, section="feed", feed_items=feed_items,
+             is_discover=is_discover, follows_nobody=not following_ids),
     )
 
 
