@@ -36,6 +36,16 @@ def slugify(text_value: str, max_len: int = 60) -> str:
     return slug.strip("-")
 
 
+def print_url_id(print_id: int, title: str) -> str:
+    """Canonical print path segment `{id}-{slug}`, or bare `{id}` if slug empty.
+
+    Single source of truth for the URL format — used by Print.url_id and the
+    sitemap builder so the two can never drift apart.
+    """
+    slug = slugify(title)
+    return f"{print_id}-{slug}" if slug else str(print_id)
+
+
 # ============== Enums (stored as strings for migration flexibility) ==============
 
 class SubscriptionTier(str, enum.Enum):
@@ -268,7 +278,7 @@ class Print(Base):
     @property
     def url_id(self) -> str:
         """Canonical path segment `{id}-{slug}`, or bare `{id}` if slug empty."""
-        return f"{self.id}-{self.slug}" if self.slug else str(self.id)
+        return print_url_id(self.id, self.title)
 
     def to_dict(self) -> dict:
         return {
