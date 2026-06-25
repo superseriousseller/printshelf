@@ -5,6 +5,12 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **PWA / installable (session 28d)** — make printshelf.app installable to the home screen (retention for an at-the-printer logging app). PLAN:
+  1. Icons (PIL-generated, on-brand shelf motif = 3 white rounded bars on accent `#ff6a3d`): `static/icon-192.png`, `icon-512.png`, `icon-maskable-512.png` (extra safe-zone padding), `apple-touch-icon.png` (180, full-bleed). Committed as binaries.
+  2. `static/manifest.webmanifest`: name/short_name PrintShelf, `start_url:/dashboard`, `scope:/`, `display:standalone`, theme+bg `#0f1115` (matches dark UI), icons[] (any + maskable).
+  3. Service worker `GET /sw.js` route (root scope, no special header): network-first for navigations → `/offline` fallback; cache-first for `/static/*`; versioned cache `printshelf-v1`. `GET /offline` route + minimal `offline.html`. Both in `homepage.py`.
+  4. `base.html` head: `<link rel=manifest>`, `theme-color`, apple-mobile-web-app metas + `apple-touch-icon`; SW registration script (`load` listener, feature-gated).
+  No schema, no DB, additive. QA: Lighthouse/installability (manifest+icons+SW+offline) + 85/85.
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 

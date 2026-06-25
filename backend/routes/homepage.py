@@ -213,6 +213,70 @@ def explore(
     )
 
 
+# ============== PWA: service worker + offline page ==============
+
+# Bump CACHE version when the SW logic or precache list changes, so clients
+# fetch the new worker and drop the stale cache on activate.
+_SERVICE_WORKER_JS = """\
+const CACHE = 'printshelf-v1';
+const OFFLINE_URL = '/offline';
+const PRECACHE = ['/offline', '/static/app.css?v=13'];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  // Navigations: network-first, fall back to the cached offline page.
+  if (req.mode === 'navigate') {
+    e.respondWith(fetch(req).catch(() => caches.match(OFFLINE_URL)));
+    return;
+  }
+
+  // Same-origin static assets: cache-first, then populate the cache.
+  const url = new URL(req.url);
+  if (url.origin === self.location.origin && url.pathname.startsWith('/static/')) {
+    e.respondWith(
+      caches.match(req).then((cached) => cached || fetch(req).then((resp) => {
+        const copy = resp.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy));
+        return resp;
+      }))
+    );
+  }
+});
+"""
+
+
+@router.get("/sw.js")
+def service_worker():
+    # Served from root so its scope is the whole site (no Service-Worker-Allowed
+    # header needed). no-cache so worker updates propagate on next load.
+    return Response(
+        _SERVICE_WORKER_JS,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@router.get("/offline", response_class=HTMLResponse)
+def offline_page(request: Request):
+    return templates.TemplateResponse(request, "offline.html", {})
+
+
 @router.get("/terms", response_class=HTMLResponse)
 def terms_of_service(
     request: Request,
