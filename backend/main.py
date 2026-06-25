@@ -112,6 +112,9 @@ app.include_router(cron_routes.router)
 
 # Serve /static/* (CSS, future favicon etc.)
 from fastapi.staticfiles import StaticFiles  # noqa: E402
+import mimetypes  # noqa: E402
+# StaticFiles guesses content types via mimetypes; .webmanifest isn't a default.
+mimetypes.add_type("application/manifest+json", ".webmanifest")
 _BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 app.mount("/static", StaticFiles(directory=os.path.join(_BACKEND_DIR, "static")), name="static")
 
