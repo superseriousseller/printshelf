@@ -669,7 +669,7 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .explore-header-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .explore-header h1 { margin: 0 0 6px; font-size: 1.8rem; }
 .explore-sub { margin: 0; color: var(--text-dim); }
-.explore-sort-form { flex-shrink: 0; }
+.explore-sort-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .explore-user-row { display: flex; align-items: center; gap: 6px; }
 .explore-avatar { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
 .explore-avatar-fallback { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 0.65rem; flex-shrink: 0; }
