@@ -376,6 +376,7 @@ class Like(Base):
 
 
 Index("ix_likes_pair", Like.user_id, Like.print_id, unique=True)
+Index("ix_likes_created_at", Like.created_at)
 
 
 # ============== Affiliate Click ==============

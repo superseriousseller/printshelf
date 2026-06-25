@@ -30,6 +30,7 @@
                 {% if failed %}<input type="hidden" name="failed" value="1">{% endif %}
                 <select name="sort" class="filter-sort" onchange="this.form.submit()" aria-label="Sort by">
                     <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
+                    <option value="trending" {% if sort == "trending" %}selected{% endif %}>Trending</option>
                     <option value="oldest" {% if sort == "oldest" %}selected{% endif %}>Oldest</option>
                     <option value="rating" {% if sort == "rating" %}selected{% endif %}>Top rated</option>
                     <option value="popular" {% if sort == "popular" %}selected{% endif %}>Most liked</option>
