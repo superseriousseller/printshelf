@@ -5,6 +5,15 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **Search/Explore facets (session 28e)** — filter Explore by material / filament-brand / printer-brand over data already stored. PLAN:
+  - **Storage reality:** material+brand live on `Filament` (referenced by `Print.filament_ids` JSON array, no reverse index); printer brand on `Printer` (FK `Print.printer_id`).
+  - `homepage.py` explore: add `material`/`fbrand`/`printer` query params (validated against the available option lists — ignore unknown values).
+    - Option lists: distinct `Filament.material`, `Filament.brand`, `Printer.brand` (cheap distinct queries, always computed for the dropdowns).
+    - **Printer** facet = clean SQL `join(Printer).filter(Printer.brand==…)`.
+    - **Material/fbrand** facet (JSON array, not portably SQL-filterable) = compute matching `Filament.id` sets, then a **lightweight scan** of `(Print.id, Print.filament_ids)` for public+non-queued prints → `qualifying` print IDs → `q.filter(Print.id.in_(qualifying))`. Lets existing sort+pagination work unchanged. Scan only runs when a filament facet is active. (Known cap: `IN (...)` on huge lists hits SQLite's variable limit — fine on prod Postgres; document. A `print_filaments` assoc table is the scale fix.)
+  - Param threading: build `facet_qs` (sort+facets, for category pills) and `pager_qs` (all active, for pager) in the route via `urlencode` → pass to template (avoids brittle inline string-building).
+  - `explore.html`: 3 `<select>`s (All materials / All filament brands / All printers) in the sort form (auto-submit, carry hidden category/failed); "Clear filters" link when any facet active; category pills + pager use `facet_qs`/`pager_qs`. CSS: make `.explore-sort-form` flex-wrap.
+  - Additive/read-only, no schema. QA: 85/85 + manual (each facet filters correctly, compose with category/sort, pagination preserves facets, unknown value ignored).
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 

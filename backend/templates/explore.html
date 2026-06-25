@@ -13,11 +13,11 @@
 {% block content %}
 <div class="explore-page">
     <nav class="category-bar" aria-label="Browse by category">
-        <a class="filter-pill {% if not category and not failed %}active{% endif %}" href="/explore{% if sort != 'newest' %}?sort={{ sort }}{% endif %}">All</a>
+        <a class="filter-pill {% if not category and not failed %}active{% endif %}" href="/explore{% if facet_qs %}?{{ facet_qs }}{% endif %}">All</a>
         {% for slug, label in categories %}
-        <a class="filter-pill {% if category == slug %}active{% endif %}" href="/explore?category={{ slug }}{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">{{ label }}</a>
+        <a class="filter-pill {% if category == slug %}active{% endif %}" href="/explore?category={{ slug }}{% if facet_qs %}&{{ facet_qs }}{% endif %}">{{ label }}</a>
         {% endfor %}
-        <a class="filter-pill filter-pill-failed {% if failed %}active{% endif %}" href="/explore?failed=1{% if sort != 'newest' %}&sort={{ sort }}{% endif %}">Failed</a>
+        <a class="filter-pill filter-pill-failed {% if failed %}active{% endif %}" href="/explore?failed=1{% if facet_qs %}&{{ facet_qs }}{% endif %}">Failed</a>
     </nav>
     <header class="explore-header">
         <div class="explore-header-top">
@@ -28,6 +28,24 @@
             <form class="explore-sort-form" method="get" action="/explore">
                 {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
                 {% if failed %}<input type="hidden" name="failed" value="1">{% endif %}
+                {% if material_opts %}
+                <select name="material" class="filter-sort" onchange="this.form.submit()" aria-label="Filter by material">
+                    <option value="">All materials</option>
+                    {% for m in material_opts %}<option value="{{ m }}" {% if material == m %}selected{% endif %}>{{ m }}</option>{% endfor %}
+                </select>
+                {% endif %}
+                {% if fbrand_opts %}
+                <select name="fbrand" class="filter-sort" onchange="this.form.submit()" aria-label="Filter by filament brand">
+                    <option value="">All filament brands</option>
+                    {% for b in fbrand_opts %}<option value="{{ b }}" {% if fbrand == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+                </select>
+                {% endif %}
+                {% if printer_opts %}
+                <select name="printer" class="filter-sort" onchange="this.form.submit()" aria-label="Filter by printer">
+                    <option value="">All printers</option>
+                    {% for b in printer_opts %}<option value="{{ b }}" {% if printer == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+                </select>
+                {% endif %}
                 <select name="sort" class="filter-sort" onchange="this.form.submit()" aria-label="Sort by">
                     <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
                     <option value="trending" {% if sort == "trending" %}selected{% endif %}>Trending</option>
@@ -35,6 +53,7 @@
                     <option value="rating" {% if sort == "rating" %}selected{% endif %}>Top rated</option>
                     <option value="popular" {% if sort == "popular" %}selected{% endif %}>Most liked</option>
                 </select>
+                {% if has_facets %}<a class="clear-link" href="/explore{% if category %}?category={{ category }}{% elif failed %}?failed=1{% endif %}{% if sort != 'newest' %}{% if category or failed %}&{% else %}?{% endif %}sort={{ sort }}{% endif %}">Clear filters</a>{% endif %}
             </form>
         </div>
     </header>
@@ -69,12 +88,9 @@
     </section>
     {% if has_prev or has_next %}
     <nav class="explore-pager">
-        {% set pgbase = "/explore?sort=" + sort %}
-        {% if category %}{% set pgbase = pgbase + "&category=" + category %}{% endif %}
-        {% if failed %}{% set pgbase = pgbase + "&failed=1" %}{% endif %}
-        {% if has_prev %}<a href="{{ pgbase }}&page={{ page - 1 }}" class="btn-secondary">← Newer</a>{% endif %}
+        {% if has_prev %}<a href="/explore?{{ pager_qs }}{% if pager_qs %}&{% endif %}page={{ page - 1 }}" class="btn-secondary">← Newer</a>{% endif %}
         <span class="explore-page-num">Page {{ page }}</span>
-        {% if has_next %}<a href="{{ pgbase }}&page={{ page + 1 }}" class="btn-secondary">Older →</a>{% endif %}
+        {% if has_next %}<a href="/explore?{{ pager_qs }}{% if pager_qs %}&{% endif %}page={{ page + 1 }}" class="btn-secondary">Older →</a>{% endif %}
     </nav>
     {% endif %}
     {% else %}

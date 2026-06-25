@@ -7,6 +7,7 @@ fills out as people sign up and log prints.
 import os
 from datetime import datetime, timedelta
 from typing import Optional
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, Response
@@ -16,7 +17,7 @@ from sqlalchemy.orm import Session
 from auth import get_current_user_web_optional
 from sqlalchemy import func, nullslast, or_
 
-from models import Like, Print, User, get_db, print_url_id, PRINT_CATEGORIES
+from models import Filament, Like, Print, Printer, User, get_db, print_url_id, PRINT_CATEGORIES
 
 router = APIRouter(tags=["homepage"])
 
@@ -132,12 +133,26 @@ def explore(
     sort: str = "newest",
     category: Optional[str] = None,
     failed: Optional[str] = None,
+    material: Optional[str] = None,
+    fbrand: Optional[str] = None,
+    printer: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     page = max(1, page)
     sort = sort if sort in _EXPLORE_SORTS else "newest"
     offset = (page - 1) * EXPLORE_LIMIT
+
+    # Facet option lists (distinct values across the catalog — cheap, drive the
+    # dropdowns). Active facet values are validated against these so unknown/junk
+    # input is ignored rather than yielding a confusing empty page.
+    material_opts = [m for (m,) in db.query(Filament.material).filter(Filament.material.isnot(None)).distinct().order_by(Filament.material) if m]
+    fbrand_opts = [b for (b,) in db.query(Filament.brand).filter(Filament.brand.isnot(None)).distinct().order_by(Filament.brand) if b]
+    printer_opts = [b for (b,) in db.query(Printer.brand).filter(Printer.brand.isnot(None)).distinct().order_by(Printer.brand) if b]
+    material = material if material in material_opts else None
+    fbrand = fbrand if fbrand in fbrand_opts else None
+    printer = printer if printer in printer_opts else None
+
     q = (
         db.query(Print, User.username, User.avatar_url)
         .join(User, Print.user_id == User.id)
@@ -153,6 +168,37 @@ def explore(
         q = q.filter(Print.category == category_filter)
     if failed_filter:
         q = q.filter(Print.status == "failed")
+
+    # Material / filament-brand live on Filament, referenced by the Print.filament_ids
+    # JSON array (no reverse index, not portably SQL-filterable). Resolve matching
+    # filament IDs, then a lightweight scan of (id, filament_ids) over public prints
+    # yields the qualifying print IDs — sort + pagination then run unchanged.
+    if material or fbrand:
+        mat_fids = (
+            {fid for (fid,) in db.query(Filament.id).filter(Filament.material == material).all()}
+            if material else None
+        )
+        brand_fids = (
+            {fid for (fid,) in db.query(Filament.id).filter(Filament.brand == fbrand).all()}
+            if fbrand else None
+        )
+        scan = db.query(Print.id, Print.filament_ids).filter(
+            Print.is_public == True,   # noqa: E712
+            Print.queued == False,     # noqa: E712
+            or_(Print.photo_url.isnot(None), Print.thumbnail_url.isnot(None)),
+        ).all()
+        qualifying = []
+        for pid, fids in scan:
+            s = set(fids or [])
+            if mat_fids is not None and not (s & mat_fids):
+                continue
+            if brand_fids is not None and not (s & brand_fids):
+                continue
+            qualifying.append(pid)
+        q = q.filter(Print.id.in_(qualifying))
+
+    if printer:
+        q = q.join(Printer, Print.printer_id == Printer.id).filter(Printer.brand == printer)
 
     if sort == "trending":
         # Rank by engagement in the recent window, so a print with a few likes
@@ -196,6 +242,27 @@ def explore(
         }
         for p, uname, avatar_url in rows
     ]
+
+    # Pre-build query strings so the template doesn't hand-concatenate params.
+    # facet_qs = sort + facets (category pills append it, since they set category);
+    # pager_qs = everything active incl. category/failed (the pager appends &page=N).
+    def _qs(include_cat_failed: bool) -> str:
+        pairs = []
+        if sort != "newest":
+            pairs.append(("sort", sort))
+        if include_cat_failed:
+            if category_filter:
+                pairs.append(("category", category_filter))
+            if failed_filter:
+                pairs.append(("failed", "1"))
+        if material:
+            pairs.append(("material", material))
+        if fbrand:
+            pairs.append(("fbrand", fbrand))
+        if printer:
+            pairs.append(("printer", printer))
+        return urlencode(pairs)
+
     return templates.TemplateResponse(
         request,
         "explore.html",
@@ -209,6 +276,15 @@ def explore(
             "category": category_filter,
             "failed": failed_filter,
             "categories": PRINT_CATEGORIES,
+            "material": material,
+            "fbrand": fbrand,
+            "printer": printer,
+            "material_opts": material_opts,
+            "fbrand_opts": fbrand_opts,
+            "printer_opts": printer_opts,
+            "facet_qs": _qs(False),
+            "pager_qs": _qs(True),
+            "has_facets": bool(material or fbrand or printer),
         },
     )
 
