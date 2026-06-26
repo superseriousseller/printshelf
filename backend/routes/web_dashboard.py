@@ -62,7 +62,9 @@ def _require_user(user: Optional[User]) -> Optional[RedirectResponse]:
 def _ctx(user: User, db: Optional[Session] = None, **extra) -> dict:
     base = {"current_user": user, "user": user, **extra}
     if db is not None:
-        base["sidebar_prints"] = db.query(Print).filter(Print.user_id == user.id, Print.queued == False).count()  # noqa: E712
+        # Badge matches the "All" tab the Prints nav link lands on (queued + printed),
+        # not just the printed subset — otherwise the count undershoots the list shown.
+        base["sidebar_prints"] = db.query(Print).filter(Print.user_id == user.id).count()
         base["sidebar_queue"] = db.query(Print).filter(Print.user_id == user.id, Print.queued == True).count()  # noqa: E712
         base["sidebar_filaments"] = db.query(Filament).filter(Filament.user_id == user.id).count()
     return base
