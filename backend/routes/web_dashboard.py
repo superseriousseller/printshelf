@@ -4,16 +4,18 @@ All endpoints require an authenticated session cookie. No JS framework;
 forms POST → server redirects → page re-renders. Photo upload + URL import
 are wired in subsequent tasks.
 """
+import csv
+import io
 import json
 import os
-from datetime import date
+from datetime import date, datetime
 
 import httpx
 import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import nullslast, or_
 from sqlalchemy.orm import Session
@@ -1422,6 +1424,116 @@ def feed(
         request, "dashboard/feed.html",
         _ctx(user, db=db, section="feed", feed_items=feed_items,
              is_discover=is_discover, follows_nobody=not following_ids),
+    )
+
+
+# ============== Data export ==============
+
+def _export_filename(user: User, ext: str) -> str:
+    stamp = datetime.utcnow().strftime("%Y-%m-%d")
+    return f"printshelf-export-{user.username}-{stamp}.{ext}"
+
+
+@router.get("/account/export.json")
+def export_json(
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    """Full account data dump (owner only) — printers, filaments, prints."""
+    if (r := _require_user(user)) is not None:
+        return r
+
+    printers = db.query(Printer).filter(Printer.user_id == user.id).order_by(Printer.created_at).all()
+    filaments = db.query(Filament).filter(Filament.user_id == user.id).order_by(Filament.created_at).all()
+    prints = db.query(Print).filter(Print.user_id == user.id).order_by(Print.created_at).all()
+
+    # Print links keyed by print for inline embedding.
+    links_by_print: dict[int, list] = {}
+    for lk in db.query(PrintLink).filter(PrintLink.user_id == user.id).order_by(PrintLink.sort_order).all():
+        links_by_print.setdefault(lk.print_id, []).append({"label": lk.label, "url": lk.url})
+
+    def print_entry(p: Print) -> dict:
+        d = p.to_dict()
+        d["links"] = links_by_print.get(p.id, [])
+        return d
+
+    payload = {
+        "exportedAt": datetime.utcnow().isoformat() + "Z",
+        "account": {
+            "username": user.username,
+            "displayName": user.display_name,
+            "email": user.email,
+            "bio": user.bio,
+            "socials": user.socials or {},
+            "createdAt": user.created_at.isoformat() if user.created_at else None,
+        },
+        "printers": [pr.to_dict() for pr in printers],
+        "filaments": [f.to_dict() for f in filaments],
+        "prints": [print_entry(p) for p in prints],
+    }
+    body = json.dumps(payload, indent=2, ensure_ascii=False)
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{_export_filename(user, "json")}"'},
+    )
+
+
+@router.get("/account/export.csv")
+def export_csv(
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    """Prints flattened to CSV for spreadsheets (owner only)."""
+    if (r := _require_user(user)) is not None:
+        return r
+
+    prints = db.query(Print).filter(Print.user_id == user.id).order_by(Print.created_at).all()
+
+    # Resolve printer names + filament labels so the CSV is human-readable (no IDs).
+    printers = {pr.id: pr for pr in db.query(Printer).filter(Printer.user_id == user.id).all()}
+    filaments = {f.id: f for f in db.query(Filament).filter(Filament.user_id == user.id).all()}
+
+    def printer_name(pid):
+        pr = printers.get(pid)
+        if not pr:
+            return ""
+        return ((pr.brand or "") + " " + (pr.model or "")).strip() or pr.name
+
+    def material_list(fids):
+        out = []
+        for fid in fids or []:
+            f = filaments.get(fid)
+            if f:
+                out.append(f"{f.brand} {f.material}" + (f" {f.color_name}" if f.color_name else ""))
+        return "; ".join(out)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "title", "designer", "status", "rating", "category", "printer", "filaments",
+        "layer_height_mm", "infill_pct", "supports", "print_time_mins", "filament_used_g",
+        "print_date", "created_at", "is_public", "source_platform", "source_url", "video_url", "notes",
+    ])
+    for p in prints:
+        writer.writerow([
+            p.title, p.designer or "", p.status, p.rating or "", p.category or "",
+            printer_name(p.printer_id), material_list(p.filament_ids),
+            p.layer_height if p.layer_height is not None else "",
+            p.infill_pct if p.infill_pct is not None else "",
+            "" if p.supports is None else ("yes" if p.supports else "no"),
+            p.print_time_mins if p.print_time_mins is not None else "",
+            p.filament_used_g if p.filament_used_g is not None else "",
+            p.print_date.isoformat() if p.print_date else "",
+            p.created_at.isoformat() if p.created_at else "",
+            "yes" if p.is_public else "no",
+            p.source_platform or "", p.source_url or "", p.video_url or "", p.notes or "",
+        ])
+
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{_export_filename(user, "csv")}"'},
     )
 
 

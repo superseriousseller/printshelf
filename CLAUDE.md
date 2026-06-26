@@ -5,6 +5,12 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **User data export (session 28f)** — close the trust/GDPR/portability gap (account-delete had no export). PLAN:
+  - `web_dashboard.py` (prefix `/dashboard`, owner session-cookie via `_require_user`):
+    - `GET /account/export.json` — full dump: `{exportedAt, account, printers[], filaments[], prints[]}` (reuse model `to_dict()`; prints include their `PrintLink`s inline; account excludes secrets like api_key/password). `Response` + `Content-Disposition: attachment; filename=printshelf-export-{username}-{YYYY-MM-DD}.json`.
+    - `GET /account/export.csv` — prints flattened for spreadsheets (resolved printer name + joined materials, not IDs): title/designer/status/rating/category/printer/materials/settings/dates/public/source/notes. `csv`+`io.StringIO`, `text/csv` attachment.
+  - `account_form.html`: "Your data" section (Export JSON / Export prints CSV buttons) before Danger Zone. `delete_account.html`: "export your data first" note + link.
+  - Imports: `csv`, `io`, `Response`, `datetime`. Additive/read-only, no schema. QA: 85/85 + manual (owner-only → login redirect when logged out; JSON parses w/ correct counts; CSV row count == print count; filenames/content-types).
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 
