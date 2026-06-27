@@ -142,3 +142,53 @@ def apply_affiliate(url: str) -> str:
     pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True) if k != param]
     pairs.append((param, tag))
     return urlunparse(parsed._replace(query=urlencode(pairs)))
+
+
+# Brand → store-search URL template ({q} = URL-encoded query). Buy-link fallback
+# for filaments with no exact product URL. Substring-matched against the brand
+# (spaces stripped) so "Bambu Lab"/"BAMBULAB" → bambu, "Matter Hackers" → mh.
+# Search paths verified live (2026-06-27).
+_BRAND_SEARCH: list[tuple[str, str]] = [
+    ("bambu",         "https://us.store.bambulab.com/search?q={q}"),
+    ("polyterra",     "https://us.polymaker.com/search?q={q}"),
+    ("polylite",      "https://us.polymaker.com/search?q={q}"),
+    ("panchroma",     "https://us.polymaker.com/search?q={q}"),
+    ("polymaker",     "https://us.polymaker.com/search?q={q}"),
+    ("sunlu",         "https://store.sunlu.com/search?q={q}"),
+    ("anycubic",      "https://store.anycubic.com/search?q={q}"),
+    ("matterhackers", "https://www.matterhackers.com/store/c?q={q}"),
+    ("flashforge",    "https://www.flashforge.com/search?q={q}"),
+]
+
+
+def _search_query(*parts: str) -> str:
+    return quote_plus(" ".join(p.strip() for p in parts if p and p.strip()))
+
+
+def store_search_url(brand: str, material: str = "", color: str = "", finish: str = "") -> str | None:
+    """Affiliate-tagged 'Buy' link for a filament with no product URL.
+
+    Searches the brand's own store for the material/finish/color; brands with no
+    dedicated store fall back to an Amazon search (which carries ~every brand).
+    Returns None only when the brand is blank. The affiliate tag is applied via
+    apply_affiliate, so the link works bare today and monetizes once the ref is set.
+    """
+    brand = (brand or "").strip()
+    if not brand:
+        return None
+    key = brand.lower().replace(" ", "")
+    for needle, tmpl in _BRAND_SEARCH:
+        if needle in key:
+            return apply_affiliate(tmpl.format(q=_search_query(material, finish, color)))
+    # Catch-all: brand has no dedicated store → Amazon search (brand in the query).
+    return apply_affiliate("https://www.amazon.com/s?k=" + _search_query(brand, material, finish, color))
+
+
+def filament_buy_url(
+    brand: str = "", material: str = "", color: str = "", finish: str = "", source_url: str = "",
+) -> str | None:
+    """Best Buy URL for a filament: its product URL (affiliate-tagged) if present,
+    otherwise a store-search fallback by brand. None when neither is available."""
+    if source_url:
+        return apply_affiliate(source_url)
+    return store_search_url(brand, material, color, finish)

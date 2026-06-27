@@ -5,6 +5,7 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **Filament Buy-link store-search fallback (session 28g)** — CAUSE: the "Buy" link is gated on `filament.source_url`; filaments added manually/via extension (esp. Bambu) have none → no link (confirmed: all local Bambu filaments `source_url=None`). NOT a mobile bug (no CSS hides `.chip-buy`). FIX (Cam picked store-search fallback): `affiliate.py` `store_search_url(brand,material,color,finish)` maps brand→store search URL (verified live: Bambu/Polymaker/SUNLU/Anycubic `…/search?q=`, MatterHackers `…/store/c?q=`, FlashForge `…/search?q=`; **Amazon `/s?k=` catch-all** for unrecognized brands since brand is always set) → `apply_affiliate()` adds the ref. `filament_buy_url(...)` = product URL if `source_url` else search fallback. Wire into `print_detail` buy chip (profile.py) + `/dashboard/filaments/{id}/buy` redirector (track click via `detect_store(target)`) + `filaments_list.html` (show Buy when `source_url or brand`). Link works now w/o refs (bare URL), monetizes once `BAMBU_AFFILIATE_REF` etc. set; Amazon tag already set. QA: 85/85 + manual (Bambu filament → Buy → Bambu search; unknown brand → Amazon search).
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 
