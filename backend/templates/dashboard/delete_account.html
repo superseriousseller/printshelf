@@ -14,6 +14,7 @@
         printers, and photos. Your public shelf will disappear immediately.
         Followers and follows will be removed.
     </p>
+    <p style="color:var(--text-dim)">Want a copy first? <a href="/dashboard/account#your-data">Export your data</a> before deleting.</p>
     {% if error %}<p class="notice notice-warn">{{ error }}</p>{% endif %}
     <form method="post" action="/dashboard/account/delete">
         <label style="display:flex;flex-direction:column;gap:6px;font-size:0.9rem;color:var(--text-dim)">
