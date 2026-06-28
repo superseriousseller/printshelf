@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ collection.name }} — {{ user.display_name or user.username }} on PrintShelf{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="{{ collection.name }} — a print collection by {{ user.display_name or user.username }} on PrintShelf.{% if collection.description %} {{ collection.description }}{% endif %}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ collection.name }} — {{ user.display_name or user.username }}">
+    {% if prints and (prints[0].photo_url or prints[0].thumbnail_url) %}<meta property="og:image" content="{{ prints[0].photo_url or prints[0].thumbnail_url }}">{% endif %}
+    <meta property="og:url" content="{{ app_url }}/@{{ user.username }}/collections/{{ collection.url_id }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="{{ app_url }}/@{{ user.username }}/collections/{{ collection.url_id }}">
+{% endblock %}
+
+{% block content %}
+<div class="collection-page">
+    <header class="collection-public-header">
+        <p class="collection-eyebrow"><a href="/@{{ user.username }}">@{{ user.username }}</a> · Collection</p>
+        <h1>{{ collection.name }}</h1>
+        {% if collection.description %}<p class="collection-desc">{{ collection.description }}</p>{% endif %}
+        <p class="collection-count">{{ prints|length }} print{{ 's' if prints|length != 1 else '' }}</p>
+        {% if is_owner %}<a href="/dashboard/collections/{{ collection.id }}" class="btn-secondary">Manage</a>{% endif %}
+    </header>
+
+    {% if prints %}
+    <section class="print-grid">
+        {% for p in prints %}
+        <article class="print-card">
+            <a href="/@{{ user.username }}/prints/{{ p.url_id }}" class="card-link" aria-label="{{ p.title }}"></a>
+            <div class="thumb">
+                {% set img = p.photo_url or p.thumbnail_url %}
+                {% if img %}<img src="{{ img }}" alt="{{ p.title }}" loading="lazy" style="object-position:{{ p.focal_x or 50 }}% {{ p.focal_y or 50 }}%">
+                {% else %}<div class="thumb-fallback">🧊</div>{% endif %}
+                {% if p.status == "failed" %}<span class="badge badge-fail">Failed</span>
+                {% elif p.status == "partial" %}<span class="badge badge-partial">Partial</span>{% endif %}
+            </div>
+            <div class="card-body">
+                <h3>{{ p.title }}</h3>
+                {% if p.designer %}<p class="designer">by {{ p.designer }}</p>{% endif %}
+                <div class="card-meta">
+                    {% if p.rating %}<span class="rating">{% for _ in range(p.rating) %}★{% endfor %}</span>{% endif %}
+                    {% if p.like_count %}<span class="like-count" title="{{ p.like_count }} like{{ 's' if p.like_count != 1 else '' }}">♥ {{ p.like_count }}</span>{% endif %}
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </section>
+    {% else %}
+    <section class="empty">
+        <p>This collection doesn't have any public prints yet.</p>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = "collections" %}
+{% block title %}{{ collection.name }} — Collections — PrintShelf{% endblock %}
+
+{% block dash %}
+<div class="dash-header">
+    <h1>{{ collection.name }}</h1>
+    <a href="/@{{ user.username }}/collections/{{ collection.url_id }}" class="btn-secondary" target="_blank" rel="noopener">View public page ↗</a>
+</div>
+
+<p class="dash-breadcrumb"><a href="/dashboard/collections">← All collections</a></p>
+
+<form method="post" action="/dashboard/collections/{{ collection.id }}" class="dash-form collection-edit">
+    <label>Name
+        <input type="text" name="name" value="{{ collection.name }}" maxlength="100" required>
+    </label>
+    <label>Description
+        <input type="text" name="description" value="{{ collection.description or '' }}" maxlength="500" placeholder="Optional">
+    </label>
+    <div class="form-actions">
+        <button type="submit" class="btn-primary">Save</button>
+    </div>
+</form>
+
+<form method="post" action="/dashboard/collections/{{ collection.id }}/delete" class="inline-form delete-form" style="margin:8px 0 0">
+    <button type="button" class="btn-danger delete-btn" data-label="{{ collection.name }}">Delete collection</button>
+</form>
+
+<h2 class="dash-subhead">Prints in this collection</h2>
+{% if prints %}
+<section class="print-grid">
+    {% for p in prints %}
+    <article class="print-card">
+        <a href="/@{{ user.username }}/prints/{{ p.url_id }}" class="card-link" aria-label="{{ p.title }}"></a>
+        <div class="thumb">
+            {% set img = p.photo_url or p.thumbnail_url %}
+            {% if img %}<img src="{{ img }}" alt="{{ p.title }}" loading="lazy" style="object-position:{{ p.focal_x or 50 }}% {{ p.focal_y or 50 }}%">
+            {% else %}<div class="thumb-fallback">🧊</div>{% endif %}
+            {% if p.status == "failed" %}<span class="badge badge-fail">Failed</span>
+            {% elif p.status == "partial" %}<span class="badge badge-partial">Partial</span>{% endif %}
+        </div>
+        <div class="card-body">
+            <h3>{{ p.title }}</h3>
+            <div class="card-meta">
+                {% if p.rating %}<span class="rating">{% for _ in range(p.rating) %}★{% endfor %}</span>{% endif %}
+                <form method="post" action="/dashboard/collections/{{ collection.id }}/remove" class="inline-form">
+                    <input type="hidden" name="print_id" value="{{ p.id }}">
+                    <button type="submit" class="linklike danger">Remove</button>
+                </form>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<div class="empty-block">
+    <p>No prints here yet. Open any of your prints and use <strong>"Add to collections"</strong> to file it here.</p>
+    <a href="/dashboard/prints" class="btn-secondary">Go to my prints</a>
+</div>
+{% endif %}
+{% endblock %}
