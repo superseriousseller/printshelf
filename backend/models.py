@@ -14,7 +14,7 @@ from sqlalchemy import (
     DateTime, Date, Text, ForeignKey, Index, JSON, text,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, relationship, validates
 
 Base = declarative_base()
 
@@ -44,6 +44,45 @@ def print_url_id(print_id: int, title: str) -> str:
     """
     slug = slugify(title)
     return f"{print_id}-{slug}" if slug else str(print_id)
+
+
+# Canonical display names for brands users type many ways. Keyed by the brand
+# lowercased with all non-alphanumerics stripped. Only known brands are folded;
+# unknown brands are returned trimmed-but-verbatim (never mangled). Used by the
+# Filament/Printer `brand` validators (every write) + the one-time backfill, so
+# facet dropdowns and "Buy" matching see one spelling per brand.
+_BRAND_CANON = {
+    "bambu": "Bambu Lab",
+    "bambulab": "Bambu Lab",
+    "bambulabs": "Bambu Lab",
+    "polymaker": "Polymaker",
+    "polyterra": "PolyTerra",
+    "polylite": "PolyLite",
+    "panchroma": "Panchroma",
+    "sunlu": "SUNLU",
+    "anycubic": "Anycubic",
+    "flashforge": "FlashForge",
+    "matterhackers": "MatterHackers",
+    "hatchbox": "Hatchbox",
+    "overture": "Overture",
+    "esun": "eSun",
+    "elegoo": "Elegoo",
+    "creality": "Creality",
+    "prusament": "Prusament",
+    "inland": "Inland",
+    "protopasta": "Protopasta",
+}
+
+
+def canonical_brand(raw: "str | None") -> "str | None":
+    """Fold known brand spellings to one canonical display name; trim others."""
+    if not raw:
+        return raw
+    s = raw.strip()
+    if not s:
+        return s
+    key = re.sub(r"[^a-z0-9]", "", s.lower())
+    return _BRAND_CANON.get(key, s)
 
 
 # ============== Enums (stored as strings for migration flexibility) ==============
@@ -170,6 +209,10 @@ class Printer(Base):
     user = relationship("User", back_populates="printers")
     prints = relationship("Print", back_populates="printer")
 
+    @validates("brand")
+    def _canon_brand(self, key, value):
+        return canonical_brand(value)
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -205,6 +248,10 @@ class Filament(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="filaments")
+
+    @validates("brand")
+    def _canon_brand(self, key, value):
+        return canonical_brand(value)
 
     def to_dict(self) -> dict:
         return {
