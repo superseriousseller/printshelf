@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from affiliate import apply_affiliate, filament_buy_url
 from auth import get_current_user_web_optional
 from email_service import send_follow_notification
-from models import Filament, Follow, Like, Print, PrintLink, Printer, User, get_db, PRINT_CATEGORY_LABELS
+from models import Collection, CollectionPrint, Filament, Follow, Like, Print, PrintLink, Printer, User, get_db, PRINT_CATEGORY_LABELS
 from sqlalchemy import func
 
 router = APIRouter(tags=["profile"])
@@ -76,6 +76,34 @@ def _stats_for(db: Session, user: User) -> dict:
         "filament_used_g": filament_used_g,
         "print_time_mins": print_time_mins,
     }
+
+
+def _collection_cards(db: Session, owner_id: int, visible_only: bool) -> list:
+    """[{collection, count, cover}] for a user's non-empty collections.
+
+    visible_only=True (a visitor) counts/covers only public, non-queued prints and
+    drops collections with nothing visible; the owner sees all their collections.
+    """
+    cols = db.query(Collection).filter(Collection.user_id == owner_id).order_by(Collection.created_at.desc()).all()
+    cards = []
+    for c in cols:
+        pids = [r.print_id for r in db.query(CollectionPrint.print_id).filter(CollectionPrint.collection_id == c.id).all()]
+        cover, count = None, 0
+        if pids:
+            q = db.query(Print).filter(Print.id.in_(pids), Print.user_id == owner_id)
+            if visible_only:
+                q = q.filter(Print.is_public == True, Print.queued == False)  # noqa: E712
+            members = q.order_by(Print.created_at.desc()).all()
+            count = len(members)
+            for p in members:
+                img = p.photo_url or p.thumbnail_url
+                if img:
+                    cover = {"img": img, "fx": p.focal_x or 50, "fy": p.focal_y or 50}
+                    break
+        if count == 0:
+            continue
+        cards.append({"c": c, "count": count, "cover": cover})
+    return cards
 
 
 @router.get("/u/{username}")
@@ -166,6 +194,11 @@ def public_profile(
 
     printers = db.query(Printer).filter(Printer.user_id == user.id).order_by(Printer.created_at).all()
 
+    # Public collections with a cover + visible count (only show ones a visitor can
+    # actually see — i.e. with ≥1 public, non-queued print, unless the owner is viewing).
+    viewer_is_owner = current_user is not None and current_user.id == user.id
+    collections = _collection_cards(db, user.id, visible_only=not viewer_is_owner)
+
     follower_count = db.query(Follow).filter(Follow.following_id == user.id).count()
     following_count = db.query(Follow).filter(Follow.follower_id == user.id).count()
     is_following = (
@@ -193,6 +226,7 @@ def public_profile(
             "follower_count": follower_count,
             "following_count": following_count,
             "is_following": is_following,
+            "collections": collections,
             "profile_views": user.profile_views if (current_user and current_user.id == user.id) else None,
         },
     )
@@ -249,6 +283,15 @@ def public_print_detail(
         liked = db.query(Like).filter(
             Like.user_id == current_user.id, Like.print_id == p.id
         ).first() is not None
+
+    # Owner-only: the user's collections, flagged with which contain this print.
+    owner_collections = []
+    if is_owner:
+        in_ids = {r.collection_id for r in db.query(CollectionPrint.collection_id).filter(CollectionPrint.print_id == p.id).all()}
+        owner_collections = [
+            {"id": c.id, "name": c.name, "checked": c.id in in_ids}
+            for c in db.query(Collection).filter(Collection.user_id == user.id).order_by(Collection.created_at.desc()).all()
+        ]
 
     filaments = []
     if p.filament_ids:
@@ -351,6 +394,7 @@ def public_print_detail(
             "current_user": current_user,
             "is_owner": is_owner,
             "liked": liked,
+            "owner_collections": owner_collections,
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
         },
     )
@@ -567,3 +611,92 @@ def unlike_print(
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     return _toggle_like(username, print_id, request, db, current_user, want_liked=False)
+
+
+@router.post("/@{username}/prints/{print_id}/collections")
+def set_print_collections(
+    username: str,
+    print_id: int,
+    collection_ids: list[int] = Form(default=[]),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Owner-only: sync which of the owner's collections contain this print to the
+    checked set (session-cookie auth, like /rate). No-JS form submit → redirect back."""
+    detail_url = f"/@{username}/prints/{print_id}"
+    if current_user is None:
+        return RedirectResponse(f"/login?next={detail_url}", status_code=303)
+    p = db.query(Print).filter(Print.id == print_id, Print.user_id == current_user.id).first()
+    if p is None:
+        return RedirectResponse(detail_url, status_code=303)
+    # Constrain to the user's own collections so a crafted id can't touch others'.
+    own_ids = {c.id for c in db.query(Collection.id).filter(Collection.user_id == current_user.id).all()}
+    checked = set(collection_ids) & own_ids
+    existing = {
+        r.collection_id for r in db.query(CollectionPrint.collection_id).filter(CollectionPrint.print_id == p.id).all()
+    } & own_ids
+    for cid in checked - existing:
+        db.add(CollectionPrint(collection_id=cid, print_id=p.id))
+    to_remove = existing - checked
+    if to_remove:
+        db.query(CollectionPrint).filter(
+            CollectionPrint.print_id == p.id, CollectionPrint.collection_id.in_(to_remove)
+        ).delete(synchronize_session=False)
+    db.commit()
+    return RedirectResponse(detail_url, status_code=303)
+
+
+@router.get("/@{username}/collections/{collection_ref}", response_class=HTMLResponse)
+def public_collection(
+    request: Request,
+    username: str,
+    collection_ref: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    try:
+        collection_id = int(collection_ref.split("-", 1)[0])
+    except (ValueError, AttributeError):
+        return RedirectResponse(f"/@{username}", status_code=303)
+
+    user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
+    if user is None:
+        return templates.TemplateResponse(
+            request, "404_user.html",
+            {"username": username, "current_user": current_user},
+            status_code=404,
+        )
+    if user.username != username:
+        return RedirectResponse(url=f"/@{user.username}/collections/{collection_ref}", status_code=301)
+
+    c = db.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user.id).first()
+    if c is None:
+        return RedirectResponse(f"/@{username}", status_code=303)
+    if collection_ref != c.url_id:
+        return RedirectResponse(url=f"/@{user.username}/collections/{c.url_id}", status_code=301)
+
+    is_owner = current_user is not None and current_user.id == user.id
+    pids = [r.print_id for r in db.query(CollectionPrint.print_id).filter(CollectionPrint.collection_id == c.id).order_by(CollectionPrint.created_at.desc()).all()]
+    prints, fil_meta = [], {}
+    if pids:
+        q = db.query(Print).filter(Print.id.in_(pids), Print.user_id == user.id)
+        if not is_owner:
+            q = q.filter(Print.is_public == True, Print.queued == False)  # noqa: E712
+        prints = q.order_by(Print.created_at.desc()).all()
+        all_fil_ids = {fid for p in prints for fid in (p.filament_ids or [])}
+        if all_fil_ids:
+            fil_meta = {f.id: f for f in db.query(Filament).filter(Filament.id.in_(all_fil_ids), Filament.user_id == user.id).all()}
+
+    return templates.TemplateResponse(
+        request,
+        "collection_public.html",
+        {
+            "user": user,
+            "collection": c,
+            "prints": prints,
+            "fil_meta": fil_meta,
+            "is_owner": is_owner,
+            "current_user": current_user,
+            "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
+        },
+    )

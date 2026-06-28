@@ -21,9 +21,11 @@ from sqlalchemy import nullslast, or_
 from sqlalchemy.orm import Session
 
 from auth import SESSION_COOKIE_NAME, get_current_user_web_optional
-from limits import enforce_filament_limit, enforce_print_limit
+from limits import enforce_collection_limit, enforce_filament_limit, enforce_print_limit
 from models import (
     AffiliateClick,
+    Collection,
+    CollectionPrint,
     Filament,
     FilamentStatus,
     Follow,
@@ -67,6 +69,7 @@ def _ctx(user: User, db: Optional[Session] = None, **extra) -> dict:
         base["sidebar_prints"] = db.query(Print).filter(Print.user_id == user.id).count()
         base["sidebar_queue"] = db.query(Print).filter(Print.user_id == user.id, Print.queued == True).count()  # noqa: E712
         base["sidebar_filaments"] = db.query(Filament).filter(Filament.user_id == user.id).count()
+        base["sidebar_collections"] = db.query(Collection).filter(Collection.user_id == user.id).count()
     return base
 
 
@@ -1433,6 +1436,156 @@ def feed(
         _ctx(user, db=db, section="feed", feed_items=feed_items,
              is_discover=is_discover, follows_nobody=not following_ids),
     )
+
+
+# ============== Collections ==============
+
+def _collection_cards(db: Session, owner_id: int, include_empty: bool, visible_only: bool):
+    """Build [{collection, count, cover}] for a user's collections.
+
+    include_empty: keep collections with 0 prints (dashboard manage view).
+    visible_only: count/cover only public, non-queued prints (public profile view).
+    """
+    cols = db.query(Collection).filter(Collection.user_id == owner_id).order_by(Collection.created_at.desc()).all()
+    cards = []
+    for c in cols:
+        pids = [r.print_id for r in db.query(CollectionPrint.print_id).filter(CollectionPrint.collection_id == c.id).all()]
+        cover = None
+        count = 0
+        if pids:
+            q = db.query(Print).filter(Print.id.in_(pids), Print.user_id == owner_id)
+            if visible_only:
+                q = q.filter(Print.is_public == True, Print.queued == False)  # noqa: E712
+            members = q.order_by(Print.created_at.desc()).all()
+            count = len(members)
+            for p in members:
+                img = p.photo_url or p.thumbnail_url
+                if img:
+                    cover = {"img": img, "fx": p.focal_x or 50, "fy": p.focal_y or 50}
+                    break
+        if count == 0 and not include_empty:
+            continue
+        cards.append({"c": c, "count": count, "cover": cover})
+    return cards
+
+
+@router.get("/collections", response_class=HTMLResponse)
+def collections_list(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    cards = _collection_cards(db, user.id, include_empty=True, visible_only=False)
+    return templates.TemplateResponse(
+        request, "dashboard/collections_list.html",
+        _ctx(user, db=db, section="collections", collections=cards),
+    )
+
+
+@router.post("/collections")
+def create_collection(
+    name: str = Form(...),
+    description: str = Form(""),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    name = name.strip()
+    if not name:
+        return RedirectResponse("/dashboard/collections", status_code=303)
+    try:
+        enforce_collection_limit(db, user)
+    except HTTPException as e:
+        if e.status_code == 402:
+            return RedirectResponse("/dashboard/upgrade", status_code=303)
+        raise
+    c = Collection(user_id=user.id, name=name[:100], description=(description.strip()[:500] or None))
+    db.add(c)
+    db.commit()
+    return RedirectResponse(f"/dashboard/collections/{c.id}", status_code=303)
+
+
+@router.get("/collections/{collection_id}", response_class=HTMLResponse)
+def collection_detail(
+    request: Request,
+    collection_id: int,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    c = db.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user.id).first()
+    if c is None:
+        return RedirectResponse("/dashboard/collections", status_code=303)
+    pids = [r.print_id for r in db.query(CollectionPrint.print_id).filter(CollectionPrint.collection_id == c.id).order_by(CollectionPrint.created_at.desc()).all()]
+    prints, fil_meta = [], {}
+    if pids:
+        prints = db.query(Print).filter(Print.id.in_(pids), Print.user_id == user.id).order_by(Print.created_at.desc()).all()
+        all_fil_ids = {fid for p in prints for fid in (p.filament_ids or [])}
+        if all_fil_ids:
+            fil_meta = {f.id: f for f in db.query(Filament).filter(Filament.id.in_(all_fil_ids), Filament.user_id == user.id).all()}
+    return templates.TemplateResponse(
+        request, "dashboard/collection_detail.html",
+        _ctx(user, db=db, section="collections", collection=c, prints=prints, fil_meta=fil_meta),
+    )
+
+
+@router.post("/collections/{collection_id}")
+def update_collection(
+    collection_id: int,
+    name: str = Form(...),
+    description: str = Form(""),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    c = db.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user.id).first()
+    if c is None:
+        return RedirectResponse("/dashboard/collections", status_code=303)
+    name = name.strip()
+    if name:
+        c.name = name[:100]
+    c.description = description.strip()[:500] or None
+    db.commit()
+    return RedirectResponse(f"/dashboard/collections/{c.id}", status_code=303)
+
+
+@router.post("/collections/{collection_id}/delete")
+def delete_collection(
+    collection_id: int,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    c = db.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user.id).first()
+    if c is not None:
+        db.delete(c)
+        db.commit()
+    return RedirectResponse("/dashboard/collections", status_code=303)
+
+
+@router.post("/collections/{collection_id}/remove")
+def remove_from_collection(
+    collection_id: int,
+    print_id: int = Form(...),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    c = db.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user.id).first()
+    if c is None:
+        return RedirectResponse("/dashboard/collections", status_code=303)
+    db.query(CollectionPrint).filter(
+        CollectionPrint.collection_id == c.id, CollectionPrint.print_id == print_id
+    ).delete(synchronize_session=False)
+    db.commit()
+    return RedirectResponse(f"/dashboard/collections/{c.id}", status_code=303)
 
 
 # ============== Data export ==============

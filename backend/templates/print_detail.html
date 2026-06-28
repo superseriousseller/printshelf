@@ -115,6 +115,19 @@
                 </form>
                 <a href="/dashboard/prints/{{ print_.id }}/edit" class="btn-primary btn-full">Edit</a>
                 <a href="/dashboard/prints/new?reprint={{ print_.id }}" class="btn-secondary btn-full">Print again</a>
+                <details class="collection-picker">
+                    <summary>Add to collections</summary>
+                    {% if owner_collections %}
+                    <form method="post" action="/@{{ user.username }}/prints/{{ print_.id }}/collections">
+                        {% for oc in owner_collections %}
+                        <label class="collection-check"><input type="checkbox" name="collection_ids" value="{{ oc.id }}"{% if oc.checked %} checked{% endif %}> {{ oc.name }}</label>
+                        {% endfor %}
+                        <button type="submit" class="btn-secondary btn-full">Save</button>
+                    </form>
+                    {% else %}
+                    <p class="collection-picker-empty">No collections yet. <a href="/dashboard/collections">Create one →</a></p>
+                    {% endif %}
+                </details>
                 {% elif current_user %}
                 <form method="post" action="/@{{ user.username }}/prints/{{ print_.id }}/queue">
                     <button type="submit" class="btn-primary btn-full">+ Add to my queue</button>

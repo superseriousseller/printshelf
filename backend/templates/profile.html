@@ -66,6 +66,31 @@
     </div>
 </section>
 
+{% if collections %}
+<section class="profile-collections">
+    <h2 class="profile-section-head">Collections</h2>
+    <div class="print-grid">
+        {% for item in collections %}
+        {% set c = item.c %}
+        <article class="print-card">
+            <a href="/@{{ user.username }}/collections/{{ c.url_id }}" class="card-link" aria-label="{{ c.name }}"></a>
+            <div class="thumb">
+                {% if item.cover %}
+                <img src="{{ item.cover.img }}" alt="{{ c.name }}" loading="lazy" style="object-position:{{ item.cover.fx }}% {{ item.cover.fy }}%">
+                {% else %}
+                <div class="thumb-fallback">🗂️</div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <h3>{{ c.name }}</h3>
+                <div class="card-meta"><span>{{ item.count }} print{{ 's' if item.count != 1 else '' }}</span></div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
 <section class="filters">
     <form method="get" action="">
         <label>Material

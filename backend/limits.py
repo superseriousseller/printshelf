@@ -9,8 +9,10 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from models import (
+    FREE_TIER_COLLECTION_LIMIT,
     FREE_TIER_FILAMENT_LIMIT,
     FREE_TIER_PRINT_LIMIT,
+    Collection,
     Filament,
     Print,
     User,
@@ -53,3 +55,11 @@ def enforce_filament_limit(db: Session, user: User) -> None:
     current = db.query(Filament).filter(Filament.user_id == user.id).count()
     if current >= FREE_TIER_FILAMENT_LIMIT:
         _raise_upgrade_required("filaments", FREE_TIER_FILAMENT_LIMIT, current, user)
+
+
+def enforce_collection_limit(db: Session, user: User) -> None:
+    if _is_pro(user):
+        return
+    current = db.query(Collection).filter(Collection.user_id == user.id).count()
+    if current >= FREE_TIER_COLLECTION_LIMIT:
+        _raise_upgrade_required("collections", FREE_TIER_COLLECTION_LIMIT, current, user)

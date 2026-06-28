@@ -78,6 +78,7 @@ class SourcePlatform(str, enum.Enum):
 # Free-tier limits — checked on POST /api/prints and POST /api/filaments
 FREE_TIER_PRINT_LIMIT = 50
 FREE_TIER_FILAMENT_LIMIT = 10
+FREE_TIER_COLLECTION_LIMIT = 10
 
 
 # ============== User ==============
@@ -377,6 +378,40 @@ class Like(Base):
 
 Index("ix_likes_pair", Like.user_id, Like.print_id, unique=True)
 Index("ix_likes_created_at", Like.created_at)
+
+
+# ============== Collection ==============
+
+class Collection(Base):
+    __tablename__ = "collections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    @property
+    def slug(self) -> str:
+        """Decorative URL suffix derived from the name (see slugify)."""
+        return slugify(self.name)
+
+    @property
+    def url_id(self) -> str:
+        """Canonical path segment `{id}-{slug}`, or bare `{id}` if slug empty."""
+        return print_url_id(self.id, self.name)
+
+
+class CollectionPrint(Base):
+    __tablename__ = "collection_prints"
+
+    id = Column(Integer, primary_key=True, index=True)
+    collection_id = Column(Integer, ForeignKey("collections.id", ondelete="CASCADE"), nullable=False, index=True)
+    print_id = Column(Integer, ForeignKey("prints.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+Index("ix_collection_prints_pair", CollectionPrint.collection_id, CollectionPrint.print_id, unique=True)
 
 
 # ============== Affiliate Click ==============

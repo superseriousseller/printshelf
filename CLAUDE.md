@@ -5,6 +5,15 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **Collections (session 28h)** — user-named groups of prints (many-to-many). PLAN:
+  1. `models.py`: `Collection` (id, user_id, name≤100, description≤500 null, created_at; `.slug`/`.url_id` via existing `slugify`/`print_url_id`) + `CollectionPrint` join (collection_id, print_id, created_at; `Index ix_collection_prints_pair` unique). `FREE_TIER_COLLECTION_LIMIT = 10`.
+  2. Alembic `f7a8b9c0d1e2` (down `e6f7a8b9c0d1`): create both tables + indexes.
+  3. `limits.py`: `enforce_collection_limit` (mirror print/filament; 402 upgrade_required → web routes redirect to /dashboard/upgrade).
+  4. Dashboard routes (`/dashboard`, `_require_user`, ownership-scoped): GET `/collections` (list + create form), POST `/collections` (create, cap-enforced), GET `/collections/{id}` (manage: rename/description + member prints grid w/ remove), POST `/collections/{id}` (update), POST `/collections/{id}/delete`, POST `/collections/{id}/remove` (drop one print).
+  5. Print-detail owner "Add to collections" checkboxes → `POST /@{user}/prints/{print_id}/collections` (session-cookie owner, like `/rate`; syncs that print's membership to the checked set; no-JS form).
+  6. Public: GET `/@{user}/collections/{ref}` (canonicalize bare-id/stale-slug→301 like prints; show public+non-queued prints to visitors, all to owner) + Collections section on `profile.html` (cards: name/count/cover→collection page).
+  7. Nav: `sidebar_collections` count in `_ctx` + "Collections" `<li>` in `_layout.html`.
+  Templates: `dashboard/collections_list.html`, `dashboard/collection_detail.html`, `collection_public.html`, profile section, print_detail checkboxes. Reuse `.print-card` grid. Additive (new tables, no existing change). QA: 85/85 + manual (create/rename/delete, add from print, public page, cap, ownership).
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 
