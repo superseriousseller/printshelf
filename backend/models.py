@@ -121,6 +121,7 @@ class User(Base):
 
     # Chrome extension auth — regeneratable from settings
     api_key = Column(String(64), unique=True, nullable=False, index=True)
+    google_sub = Column(String(64), nullable=True, unique=True, index=True)  # Google account id (OAuth login)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_login = Column(DateTime, nullable=True)

@@ -5,6 +5,12 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **Google OAuth login (session 28i)** — "Sign in with Google". No new deps (manual flow via `httpx`+`jwt`, both present). PLAN:
+  1. `models.py`: `User.google_sub` (String(64), nullable, unique, indexed) — links/marks Google accounts. Migration `a8b9c0d1e2f3` (down `f7a8b9c0d1e2`).
+  2. Routes in `web_auth.py` (reuse `_set_session_cookie`/`_PROD`): `GET /auth/google/login` → CSRF `state` in short-lived signed cookie (+`next`), redirect to Google authorize (`scope=openid email profile`, `redirect_uri={APP_URL}/auth/google/callback`, `prompt=select_account`). `GET /auth/google/callback` → verify state, exchange code at `oauth2.googleapis.com/token`, fetch `openidconnect.googleapis.com/v1/userinfo`; find by `google_sub`→else email (link, set sub)→else create (unique username from name/email via `USERNAME_RE`, random unusable `password_hash`, `email_verified=True`, avatar from Google pic, `send_welcome`); set session cookie → redirect `next`.
+  3. Config-gated: `_google_configured()` (GOOGLE_CLIENT_ID+SECRET set). Button only renders when configured (`google_enabled` ctx on login/signup); login route 303s to /login if unconfigured. **Deploys safe before creds exist.**
+  4. `login.html`/`signup.html`: "Continue with Google" button + divider.
+  Env (Cam provisions): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; register redirect URIs `https://printshelf.app/auth/google/callback` + `https://staging.printshelf.app/auth/google/callback` in Google Console. Account-link by verified email is safe. QA: 85/85 + gating/redirect-URL/username-gen unit tests locally; real Google round-trip on staging after Cam sets creds.
 - Cam dogfooding printshelf.app at `/@PluggedIn3d`
 - Affiliate env vars pending: `BAMBU_AFFILIATE_REF`, `POLYMAKER_AFFILIATE_REF`, `MATTERHACKERS_AFFILIATE_REF` (simple `?ref=` params, no code change needed)
 

@@ -3,11 +3,14 @@
 Cookie-based session — JWT same as the API uses, but stored in an HttpOnly
 SameSite=Lax cookie so the browser carries it on every request without JS.
 """
+import logging
 import os
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
+from urllib.parse import urlencode
 
+import httpx
 from fastapi import APIRouter, Depends, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -24,8 +27,10 @@ from auth import (
     hash_password,
 )
 from email_service import send_password_reset, send_verification_email, send_welcome
-from models import EmailVerificationToken, Filament, PasswordResetToken, Print, Printer, User, get_db
+from models import EmailVerificationToken, Filament, PasswordResetToken, Print, Printer, User, generate_api_key, get_db, slugify
 import rate_limiter
+
+_log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["web-auth"])
 
@@ -180,6 +185,162 @@ def logout_submit():
     response = RedirectResponse("/", status_code=303)
     response.delete_cookie(SESSION_COOKIE_NAME, path="/")
     return response
+
+
+# ---- Google OAuth ----
+
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
+_OAUTH_STATE_COOKIE = "g_oauth_state"
+
+
+def _google_configured() -> bool:
+    return bool(os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET"))
+
+
+# Expose to login/signup templates without threading it through every context.
+templates.env.globals["google_login_enabled"] = _google_configured
+
+
+def _google_redirect_uri() -> str:
+    base = os.environ.get("APP_URL", "https://printshelf.app").rstrip("/")
+    return f"{base}/auth/google/callback"
+
+
+def _safe_next(value: str) -> str:
+    return value if value.startswith("/") and not value.startswith("//") else "/dashboard"
+
+
+def _unique_username(db: Session, base: str) -> str:
+    """A valid, unique username (USERNAME_RE: 3-30 [a-zA-Z0-9_-]) from a name/email."""
+    slug = (slugify(base) or "maker")[:30]
+    if len(slug) < 3:
+        slug = (slug + "maker")[:30]
+    candidate = slug
+    while db.query(User).filter(User.username.ilike(candidate)).first() is not None:
+        candidate = f"{slug[:25]}-{secrets.token_hex(2)}"
+    return candidate
+
+
+def _find_or_create_google_user(db: Session, sub: str, email: str, name: Optional[str], picture: Optional[str]) -> User:
+    # 1) Known Google account.
+    user = db.query(User).filter(User.google_sub == sub).first()
+    if user:
+        user.last_login = datetime.utcnow()
+        db.commit()
+        return user
+    # 2) Existing account with the same (Google-verified) email → link.
+    user = db.query(User).filter(User.email == email).first()
+    if user:
+        if not user.google_sub:
+            user.google_sub = sub
+        if not user.avatar_url and picture:
+            user.avatar_url = picture[:500]
+        user.last_login = datetime.utcnow()
+        db.commit()
+        return user
+    # 3) New account. Random unusable password (they log in via Google; can reset later).
+    user = User(
+        email=email,
+        password_hash=hash_password(secrets.token_urlsafe(32)),
+        username=_unique_username(db, name or email.split("@")[0]),
+        api_key=generate_api_key(),
+        tier="free",
+        unsubscribe_token=secrets.token_hex(16),
+        email_verified=True,
+        google_sub=sub,
+        avatar_url=(picture or None) and picture[:500],
+        last_login=datetime.utcnow(),
+    )
+    user.display_name = (name or user.username).strip()[:100]
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    try:
+        send_welcome(user.email, user.username)
+    except Exception:
+        _log.warning("send_welcome failed for google signup user_id=%s", user.id)
+    return user
+
+
+@router.get("/auth/google/login")
+def google_login(request: Request, next: str = "/dashboard"):
+    if not _google_configured():
+        return RedirectResponse("/login", status_code=303)
+    state = secrets.token_urlsafe(24)
+    params = {
+        "client_id": os.environ["GOOGLE_CLIENT_ID"],
+        "redirect_uri": _google_redirect_uri(),
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "online",
+        "prompt": "select_account",
+    }
+    resp = RedirectResponse(GOOGLE_AUTH_URL + "?" + urlencode(params), status_code=303)
+    # CSRF: stash state (+ desired post-login target) in a short-lived HttpOnly cookie.
+    resp.set_cookie(
+        _OAUTH_STATE_COOKIE, f"{state}|{_safe_next(next)}",
+        max_age=600, httponly=True, secure=_PROD, samesite="lax", path="/",
+    )
+    return resp
+
+
+@router.get("/auth/google/callback")
+def google_callback(
+    request: Request,
+    code: str = "",
+    state: str = "",
+    error: str = "",
+    db: Session = Depends(get_db),
+):
+    def _fail(reason: str):
+        _log.warning("google oauth callback failed: %s", reason)
+        r = RedirectResponse("/login?oauth_error=1", status_code=303)
+        r.delete_cookie(_OAUTH_STATE_COOKIE, path="/")
+        return r
+
+    if not _google_configured():
+        return RedirectResponse("/login", status_code=303)
+
+    cookie_state, _, next_target = request.cookies.get(_OAUTH_STATE_COOKIE, "").partition("|")
+    next_target = _safe_next(next_target or "/dashboard")
+    if error or not code or not state or not cookie_state or state != cookie_state:
+        return _fail("state/params")
+
+    try:
+        with httpx.Client(timeout=10) as client:
+            tok = client.post(GOOGLE_TOKEN_URL, data={
+                "client_id": os.environ["GOOGLE_CLIENT_ID"],
+                "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": _google_redirect_uri(),
+            })
+            if tok.status_code != 200:
+                return _fail(f"token {tok.status_code}")
+            access_token = tok.json().get("access_token")
+            if not access_token:
+                return _fail("no access_token")
+            ui = client.get(GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {access_token}"})
+            if ui.status_code != 200:
+                return _fail(f"userinfo {ui.status_code}")
+            info = ui.json()
+    except Exception as exc:
+        return _fail(f"exception {exc!r}")
+
+    sub = info.get("sub")
+    email = (info.get("email") or "").strip().lower()
+    if not sub or not email or not info.get("email_verified", False):
+        return _fail("missing sub/email/unverified")
+
+    user = _find_or_create_google_user(db, sub, email, info.get("name"), info.get("picture"))
+    resp = RedirectResponse(next_target, status_code=303)
+    _set_session_cookie(resp, user.id)
+    resp.delete_cookie(_OAUTH_STATE_COOKIE, path="/")
+    _log.info("google oauth login user_id=%s", user.id)
+    return resp
 
 
 # ---- Forgot password ----
