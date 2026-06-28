@@ -40,7 +40,7 @@ from models import (
 from email_service import send_feed_notification
 from import_service import ImportError_, extract as extract_url
 from filament_import_service import extract as extract_filament_url
-from affiliate import apply_affiliate, is_allowed_link_domain
+from affiliate import apply_affiliate, filament_buy_url, is_allowed_link_domain
 from models import ImportCache
 from storage import MAX_UPLOAD_BYTES, UploadError, delete_image, upload_image
 
@@ -548,21 +548,27 @@ def buy_filament(
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
-    """302 to the filament's source_url with an affiliate tag applied.
+    """302 to the filament's buy URL with an affiliate tag applied.
 
-    Tags are sourced from env vars per `affiliate.py`; if none is set for
-    the store, we redirect to the bare URL. We only honor source_urls
-    that belong to the requesting user — no one can use this endpoint to
-    bounce traffic through another user's source links.
+    Uses the filament's product URL when it has one; otherwise falls back to a
+    brand store-search (Amazon for unrecognized brands). Tags come from env vars
+    per `affiliate.py` — if none is set for the store we redirect to the bare URL.
+    Only the requesting user's own filaments are honored, so no one can bounce
+    traffic through another user's source links.
     """
     if (r := _require_user(user)) is not None:
         return r
     f = db.query(Filament).filter(Filament.id == filament_id, Filament.user_id == user.id).first()
-    if f is None or not f.source_url:
+    if f is None:
+        return RedirectResponse("/dashboard/filaments", status_code=303)
+    target = filament_buy_url(
+        brand=f.brand, material=f.material, color=f.color_name or "",
+        finish=f.finish or "", source_url=f.source_url or "",
+    )
+    if not target:
         return RedirectResponse("/dashboard/filaments", status_code=303)
     from filament_import_service import detect_store
-    store = detect_store(f.source_url)
-    target = apply_affiliate(f.source_url)
+    store = detect_store(target)
     db.add(AffiliateClick(user_id=user.id, filament_id=f.id, store=store or None))
     db.commit()
     _log.info("filament buy click filament_id=%s user=%s store=%s target=%s", f.id, user.id, store, target)
