@@ -204,3 +204,13 @@ def regenerate_api_key(db: Session, user: User) -> str:
     db.commit()
     db.refresh(user)
     return user.api_key
+
+
+def filament_preview_enabled() -> bool:
+    """Feature flag for 'Preview in Real Filament'. On when FILAMENT_PREVIEW_ENABLED
+    is truthy OR not in production — so staging shows it for QA, prod stays hidden
+    until the flag is set. Lives here (the shared low-level module) so every router's
+    Jinja env can register it as a global for the shared dashboard layout."""
+    if str(os.environ.get("FILAMENT_PREVIEW_ENABLED", "")).lower() in {"1", "true", "yes", "on"}:
+        return True
+    return os.environ.get("APP_ENV", "development") != "production"

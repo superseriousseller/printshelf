@@ -11,6 +11,7 @@
             <li><a href="/dashboard/printers" {% if section == "printers" %}class="active"{% endif %}>Printers</a></li>
             <li><a href="/dashboard/filaments" {% if section == "filaments" %}class="active"{% endif %}>Filaments {% if sidebar_filaments is defined %}<span class="nav-count">{{ sidebar_filaments }}</span>{% endif %}</a></li>
             <li><a href="/dashboard/collections" {% if section == "collections" %}class="active"{% endif %}>Collections {% if sidebar_collections is defined %}<span class="nav-count">{{ sidebar_collections }}</span>{% endif %}</a></li>
+            {% if filament_preview_enabled is defined and filament_preview_enabled() %}<li><a href="/dashboard/preview" {% if section == "preview" %}class="active"{% endif %}>🎨 Preview</a></li>{% endif %}
             <li class="sidebar-divider"></li>
             <li><a href="/dashboard/account" {% if section == "account" %}class="active"{% endif %}>Account</a></li>
             {% if current_user and current_user.tier != "pro" %}
