@@ -41,7 +41,7 @@
   const filaments = JSON.parse(document.getElementById('fp-config').textContent || '[]');
   const stage = document.getElementById('fp-stage');
   try {
-    const mod = await import('/static/viewer/filament-viewer.js');
+    const mod = await import('/static/viewer/filament-viewer.js?v=2');
     await mod.boot(stage, {
       filaments,
       ui: {

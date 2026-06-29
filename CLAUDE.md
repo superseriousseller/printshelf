@@ -98,6 +98,7 @@ chrome-extension/          # separate project — do not suggest changes here as
 ```
 
 ## Operational Gotchas
+- **Cache-bust static assets on EVERY change** — `app.css` is loaded as `?v=N` (base.html + the SW precache list + SW `CACHE` name); **bump N whenever CSS changes** or browsers replay their cached copy (this bit twice in session 29 — stale CSS collapsed a viewer, stale CSS hid new rules). Vendored JS modules likewise need a `?v=` on their `import()` (e.g. `filament-viewer.js?v=2`) — bump it when that JS changes, or a fresh-browser test passes while real users get the old module. Fresh Playwright contexts have no cache, so they hide this — always assume real browsers cache.
 - **Railway containers are ephemeral** — local uploads vanish on redeploy. R2 required for staging/prod.
 - **Makerworld blocks Railway IPs** — slug parser gives partial result; real imports are Chrome extension's job.
 - **Pydantic EmailStr** rejects `.test`/`.example`/`.localhost` — use `@printshelf.app` for test accounts.
