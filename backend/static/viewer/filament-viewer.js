@@ -72,7 +72,7 @@ const SAMPLES = [
   { id: 'swatch', label: 'Color swatch', realHeightMm: 50, upAxis: 'y', build: buildSwatch },
   { id: 'dome',   label: 'Sheen dome',   realHeightMm: 45, upAxis: 'y', build: buildDome },
   { id: 'vase',   label: 'Vase',         realHeightMm: 80, upAxis: 'y', build: buildVase },
-  { id: 'coin',   label: 'Relief coin',  realHeightMm: 30, upAxis: 'y', build: buildCoin },
+  { id: 'coin',   label: 'Relief coin',  realHeightMm: 10, upAxis: 'y', build: buildCoin },
   // 3DBenchy (CC0) — listed only if the STL is actually present (HEAD check at boot).
   { id: 'benchy', label: '3DBenchy', realHeightMm: 48, upAxis: 'z', stl: STATIC + '/viewer/samples/3dbenchy.stl' },
 ];
@@ -87,10 +87,14 @@ function normalizeGeometry(geo, upAxis) {
   const size = new THREE.Vector3(); bb.getSize(size);
   const center = new THREE.Vector3(); bb.getCenter(center);
   g.translate(-center.x, -center.y, -center.z);
-  const h = size.y || 1;
-  g.scale(NORM_H / h, NORM_H / h, NORM_H / h);
+  // Scale by the LARGEST dimension so flat shapes (coin) don't blow up the frame;
+  // stash the resulting Y extent for the layer-band math (bands run along Y).
+  const maxDim = Math.max(size.x, size.y, size.z) || 1;
+  const s = NORM_H / maxDim;
+  g.scale(s, s, s);
   g.computeVertexNormals();
   g.computeBoundingBox();
+  g.userData.normHeight = (g.boundingBox.max.y - g.boundingBox.min.y) || NORM_H;
   return g;
 }
 
@@ -223,8 +227,28 @@ export async function boot(container, config) {
     mesh.rotation.y = 0;
     scene.add(mesh);
     state.sampleId = id;
+    fitCamera();
     applyLayerHeight();
     setLoading(false);
+  }
+
+  // Frame any model to its bounding sphere so flat (coin) and tall (swatch) shapes
+  // all sit nicely in view — fixes the coin zooming in too close.
+  function fitCamera() {
+    if (!mesh) return;
+    mesh.geometry.computeBoundingSphere();
+    const r = mesh.geometry.boundingSphere.radius || 1;
+    const fov = camera.fov * Math.PI / 180;
+    const dist = (r / Math.sin(fov / 2)) * 1.3;
+    const dir = new THREE.Vector3(0, 0.22, 1).normalize();
+    camera.position.copy(dir.multiplyScalar(dist));
+    camera.near = Math.max(dist / 100, 0.01);
+    camera.far = dist * 12;
+    camera.updateProjectionMatrix();
+    controls.target.set(0, 0, 0);
+    controls.minDistance = dist * 0.45;
+    controls.maxDistance = dist * 3.5;
+    controls.update();
   }
 
   function refreshMaterial() {
@@ -236,7 +260,8 @@ export async function boot(container, config) {
   function applyLayerHeight() {
     const s = samples.find((x) => x.id === state.sampleId);
     const bands = Math.max(1, s.realHeightMm / state.layerHeightMm);
-    layerUniforms.uLayerHeight.value = NORM_H / bands;
+    const yExtent = (mesh && mesh.geometry.userData.normHeight) || NORM_H;
+    layerUniforms.uLayerHeight.value = yExtent / bands;
   }
 
   function applyLights() {

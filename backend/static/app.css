@@ -758,8 +758,8 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 
 /* Filament preview studio */
 .fp-studio { display: grid; grid-template-columns: minmax(0,1fr) 260px; gap: 16px; margin-top: 12px; }
-.fp-stage { position: relative; min-height: 460px; aspect-ratio: 1 / 1; background: radial-gradient(circle at 50% 35%, #20242e, #0f1115 70%); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.fp-stage canvas { display: block; width: 100% !important; height: 100% !important; }
+.fp-stage { position: relative; min-height: 460px; aspect-ratio: 1 / 1; background: radial-gradient(circle at 50% 35%, #20242e, #0f1115 70%); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; touch-action: none; }
+.fp-stage canvas { display: block; width: 100% !important; height: 100% !important; touch-action: none; }
 .fp-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-dim); font-size: 0.9rem; }
 .fp-spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: fp-spin 0.8s linear infinite; }
 @keyframes fp-spin { to { transform: rotate(360deg); } }
