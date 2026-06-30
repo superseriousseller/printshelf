@@ -1,0 +1,10 @@
+{
+  "_comment": "License provenance for every preview sample. PrintShelf is the license-clearance company — every sample MUST be CC0 or PrintShelf-original. Procedural samples are authored in filament-viewer.js (geometry generated in code) and are therefore PrintShelf-original. The 3DBenchy STL is CC0 (released 2025); drop the file at its path to enable it.",
+  "samples": [
+    { "id": "swatch", "name": "Color Swatch", "origin": "PrintShelf-original (procedural, generated in filament-viewer.js)", "license": "CC0-1.0", "sourceUrl": null },
+    { "id": "dome",   "name": "Sheen Dome",   "origin": "PrintShelf-original (procedural, generated in filament-viewer.js)", "license": "CC0-1.0", "sourceUrl": null },
+    { "id": "vase",   "name": "Vase / Lampshade", "origin": "PrintShelf-original (procedural lathe, generated in filament-viewer.js)", "license": "CC0-1.0", "sourceUrl": null },
+    { "id": "coin",   "name": "Relief Coin", "origin": "PrintShelf-original (procedural, generated in filament-viewer.js)", "license": "CC0-1.0", "sourceUrl": null },
+    { "id": "benchy", "name": "3DBenchy", "origin": "Created by NTI / Creative Tools; released into the public domain (CC0) in 2025", "license": "CC0-1.0", "sourceUrl": "https://www.3dbenchy.com/", "file": "/static/viewer/samples/3dbenchy.stl", "note": "Drop the CC0 STL at this path to enable. The viewer lists it only when the file is present (HEAD check), so absence degrades gracefully." }
+  ]
+}

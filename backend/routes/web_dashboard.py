@@ -20,7 +20,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import nullslast, or_
 from sqlalchemy.orm import Session
 
-from auth import SESSION_COOKIE_NAME, get_current_user_web_optional
+from auth import SESSION_COOKIE_NAME, filament_preview_enabled, get_current_user_web_optional
 from limits import enforce_collection_limit, enforce_filament_limit, enforce_print_limit
 from models import (
     AffiliateClick,
@@ -53,6 +53,10 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
+
+
+# Expose the feature flag to this router's templates (sidebar nav / studio).
+templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
 
 
 def _require_user(user: Optional[User]) -> Optional[RedirectResponse]:
@@ -1586,6 +1590,32 @@ def remove_from_collection(
     ).delete(synchronize_session=False)
     db.commit()
     return RedirectResponse(f"/dashboard/collections/{c.id}", status_code=303)
+
+
+# ============== Filament preview studio ==============
+
+@router.get("/preview", response_class=HTMLResponse)
+def filament_preview(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    if (r := _require_user(user)) is not None:
+        return r
+    if not filament_preview_enabled():
+        return RedirectResponse("/dashboard", status_code=303)
+    fils = db.query(Filament).filter(Filament.user_id == user.id).order_by(Filament.brand, Filament.material).all()
+    filaments = [
+        # Pass the RAW hex (empty when absent) so the viewer can derive a color from
+        # color_name instead of washing a null-hex "Matte Black" out to neutral grey.
+        {"brand": f.brand, "material": f.material, "finish": f.finish or "",
+         "color_hex": f.color_hex or "", "color_name": f.color_name or ""}
+        for f in fils
+    ]
+    return templates.TemplateResponse(
+        request, "dashboard/preview.html",
+        _ctx(user, db=db, section="preview", filaments=filaments),
+    )
 
 
 # ============== Data export ==============

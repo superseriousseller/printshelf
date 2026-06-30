@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "_comment": "Data-driven filament optical library. Keyed by MATERIAL or MATERIAL|finish (resolved in filament-viewer.js). baseColorHex comes from the filament's color_hex at render time. Seeded defaults; a future 'measured' pipeline can override per-filament via an optical_json column. Tune by eye.",
+  "finishAliases": {
+    "silk": "silk", "silky": "silk",
+    "matte": "matte", "matt": "matte",
+    "glow": "glow", "glow in the dark": "glow", "glow-in-the-dark": "glow", "gid": "glow",
+    "translucent": "translucent", "trans": "translucent",
+    "transparent": "transparent", "clear": "transparent",
+    "sparkle": "sparkle", "glitter": "sparkle"
+  },
+  "presets": {
+    "_default":      { "roughness": 0.5,  "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+
+    "PLA":           { "roughness": 0.5,  "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+    "PLA|matte":     { "roughness": 0.92, "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.5, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+    "PLA|silk":      { "roughness": 0.18, "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.7, "sheenColorHex": "#cfd8ff", "sheenRoughness": 0.25, "anisotropy": 0.7, "anisotropyRotation": 0.0, "clearcoat": 0.25, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+    "PLA|glow":      { "roughness": 0.55, "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 1.4, "emissiveFromBase": true, "sparkleIntensity": 0.0 },
+    "PLA|translucent": { "roughness": 0.3, "metalness": 0.0, "ior": 1.46, "transmission": 0.55, "thickness": 2.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+    "PLA|sparkle":   { "roughness": 0.35, "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.2, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.1, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.6 },
+
+    "PETG":          { "roughness": 0.28, "metalness": 0.0, "ior": 1.5,  "transmission": 0.45, "thickness": 2.5, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.15, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+    "PETG|matte":    { "roughness": 0.8,  "metalness": 0.0, "ior": 1.5,  "transmission": 0.1,  "thickness": 1.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.4, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+
+    "TPU":           { "roughness": 0.65, "metalness": 0.0, "ior": 1.46, "transmission": 0.0, "thickness": 0.0, "sheen": 0.25, "sheenColorHex": "#ffffff", "sheenRoughness": 0.6, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.1, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+    "ABS":           { "roughness": 0.6,  "metalness": 0.0, "ior": 1.46, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+    "ASA":           { "roughness": 0.6,  "metalness": 0.0, "ior": 1.46, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+
+    "transparent":   { "roughness": 0.05, "metalness": 0.0, "ior": 1.5,  "transmission": 0.95, "thickness": 3.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.2, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.3, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 }
+  }
+}

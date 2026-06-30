@@ -23,6 +23,7 @@ from auth import (
     authenticate_user,
     create_access_token,
     create_user,
+    filament_preview_enabled,
     get_current_user_web_optional,
     hash_password,
 )
@@ -201,6 +202,8 @@ def _google_configured() -> bool:
 
 # Expose to login/signup templates without threading it through every context.
 templates.env.globals["google_login_enabled"] = _google_configured
+# Shared dashboard layout calls this; register on this instance too (renders /dashboard).
+templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
 
 
 def _google_redirect_uri() -> str:

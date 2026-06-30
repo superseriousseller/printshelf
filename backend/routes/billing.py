@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from auth import get_current_user_web_optional
+from auth import filament_preview_enabled, get_current_user_web_optional
 from models import User, get_db
 
 router = APIRouter(tags=["billing"])
@@ -18,6 +18,8 @@ router = APIRouter(tags=["billing"])
 _log = logging.getLogger(__name__)
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
+# Shared dashboard layout calls this; register on this instance (renders upgrade pages).
+templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
 
 _APP_URL = os.environ.get("APP_URL", "https://printshelf.app")
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
