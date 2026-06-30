@@ -24,7 +24,25 @@
         </label>
         <label class="fp-check"><input id="fp-turntable" type="checkbox" checked> Turntable</label>
         <label class="fp-check"><input id="fp-lightsoff" type="checkbox"> Lights off (reveal glow)</label>
-        <p class="fp-hint">Drag to orbit · scroll to zoom. Material values are seeded presets per material + finish.</p>
+
+        <a id="fp-buy" class="btn-primary fp-buy" href="#" target="_blank" rel="noopener nofollow sponsored" style="display:none">Buy this filament →</a>
+        <button id="fp-share" type="button" class="btn-secondary">Share image</button>
+
+        <div class="fp-upload">
+            <label class="fp-field" style="margin:0">Preview your own model
+                <input id="fp-upload" type="file" accept=".stl">
+            </label>
+            <label class="fp-field" style="margin-top:8px">Model orientation (print up-axis)
+                <select id="fp-upaxis" class="filter-sort">
+                    <option value="z" selected>Z up (most STLs)</option>
+                    <option value="y">Y up</option>
+                    <option value="x">X up</option>
+                </select>
+            </label>
+            <p id="fp-uploaderr" class="fp-uploaderr" style="display:none"></p>
+        </div>
+
+        <p class="fp-hint">Drag to orbit · scroll to zoom · drop an STL onto the stage. Uploads render in your browser and are never saved. Material values are seeded presets per material + finish.</p>
     </div>
 </div>
 
@@ -41,7 +59,7 @@
   const filaments = JSON.parse(document.getElementById('fp-config').textContent || '[]');
   const stage = document.getElementById('fp-stage');
   try {
-    const mod = await import('/static/viewer/filament-viewer.js?v=3');
+    const mod = await import('/static/viewer/filament-viewer.js?v=4');
     await mod.boot(stage, {
       filaments,
       ui: {
@@ -52,6 +70,11 @@
         turntable: document.getElementById('fp-turntable'),
         lightsOff: document.getElementById('fp-lightsoff'),
         loading: document.getElementById('fp-loading'),
+        buy: document.getElementById('fp-buy'),
+        share: document.getElementById('fp-share'),
+        upload: document.getElementById('fp-upload'),
+        upAxis: document.getElementById('fp-upaxis'),
+        uploadErr: document.getElementById('fp-uploaderr'),
       },
     });
   } catch (err) {

@@ -768,6 +768,11 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .fp-field select, .fp-field input[type=range] { width: 100%; }
 .fp-check { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-body); }
 .fp-hint { font-size: 0.8rem; color: var(--text-dim); margin: 4px 0 0; line-height: 1.4; }
+.fp-buy { text-align: center; text-decoration: none; }
+.fp-upload { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
+.fp-upload input[type=file] { width: 100%; font-size: 0.8rem; color: var(--text-dim); }
+.fp-uploaderr { font-size: 0.8rem; color: var(--fail, #e0567a); margin: 8px 0 0; }
+.fp-stage.fp-dragover { outline: 2px dashed var(--accent); outline-offset: -8px; }
 @media (max-width: 700px) { .fp-studio { grid-template-columns: minmax(0,1fr); } }
 
 .feed-user { margin: 0 0 4px; font-size: 0.8rem; color: var(--text-dim); position: relative; z-index: 2; }

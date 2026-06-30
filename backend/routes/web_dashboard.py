@@ -1608,7 +1608,8 @@ def filament_preview(
     filaments = [
         # Pass the RAW hex (empty when absent) so the viewer can derive a color from
         # color_name instead of washing a null-hex "Matte Black" out to neutral grey.
-        {"brand": f.brand, "material": f.material, "finish": f.finish or "",
+        # id → the "Buy this filament" link hits the tracked /buy redirector.
+        {"id": f.id, "brand": f.brand, "material": f.material, "finish": f.finish or "",
          "color_hex": f.color_hex or "", "color_name": f.color_name or ""}
         for f in fils
     ]

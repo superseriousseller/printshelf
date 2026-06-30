@@ -221,6 +221,8 @@ export async function boot(container, config) {
     turntable: true,
     lightsOff: false,
     geomCache: {},
+    uploadRaw: null,     // raw BufferGeometry of an uploaded STL (ephemeral, never persisted)
+    uploadAxis: 'z',     // assumed print-up axis for uploads (slicer STLs are usually Z-up)
   };
 
   let mesh = null;
@@ -307,8 +309,95 @@ export async function boot(container, config) {
     ui.filament.addEventListener('change', () => {
       state.filament = config.filaments[Number(ui.filament.value)] || state.filament;
       refreshMaterial();
+      updateBuyLink();
     });
   }
+
+  // Affiliate "Buy this filament" — links to the tracked /buy redirector.
+  function updateBuyLink() {
+    if (!ui.buy) return;
+    const f = state.filament;
+    if (f && f.id) {
+      ui.buy.href = `/dashboard/filaments/${f.id}/buy`;
+      ui.buy.textContent = `Buy ${f.brand} ${f.material} →`;
+      ui.buy.style.display = '';
+    } else {
+      ui.buy.style.display = 'none';
+    }
+  }
+
+  // Share: composite the canvas + a caption/watermark into a downloadable PNG.
+  function shareImage() {
+    renderer.render(scene, camera);
+    const src = renderer.domElement;
+    const W = src.width, H = src.height, pad = Math.round(H * 0.09);
+    const out = document.createElement('canvas');
+    out.width = W; out.height = H + pad;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#0f1115'; ctx.fillRect(0, 0, W, H + pad);
+    ctx.drawImage(src, 0, 0);
+    const f = state.filament;
+    const label = f ? `${f.brand} ${f.material}${f.finish ? ' ' + f.finish : ''}${f.color_name ? ' · ' + f.color_name : ''}` : '';
+    ctx.font = `${Math.round(pad * 0.42)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#e8e9ed'; ctx.textAlign = 'left'; ctx.fillText(label, pad * 0.5, H + pad / 2);
+    ctx.fillStyle = '#ff6a3d'; ctx.textAlign = 'right'; ctx.fillText('printshelf.app', W - pad * 0.5, H + pad / 2);
+    const a = document.createElement('a');
+    a.download = 'printshelf-filament-preview.png';
+    a.href = out.toDataURL('image/png');
+    a.click();
+  }
+  if (ui.share) ui.share.addEventListener('click', shareImage);
+
+  // Ephemeral STL upload — parsed in a Worker, rendered, never persisted/uploaded.
+  const stlWorker = new Worker('/static/viewer/stl-worker.js');
+  let uploadResolve = null;
+  stlWorker.onmessage = (e) => { if (uploadResolve) { uploadResolve(e.data); uploadResolve = null; } };
+
+  function rebuildUpload() {
+    if (!state.uploadRaw) return;
+    const s = samples.find((x) => x.id === 'upload');
+    s.upAxis = state.uploadAxis;
+    state.geomCache['upload'] = normalizeGeometry(state.uploadRaw.clone(), state.uploadAxis);
+    if (ui.sample) ui.sample.value = 'upload';
+    loadSample('upload');
+  }
+
+  async function handleFile(file) {
+    if (!file) return;
+    if (ui.uploadErr) ui.uploadErr.style.display = 'none';
+    if (!/\.stl$/i.test(file.name)) {
+      if (ui.uploadErr) { ui.uploadErr.textContent = 'STL files only for now (3MF coming).'; ui.uploadErr.style.display = ''; }
+      return;
+    }
+    setLoading(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const res = await new Promise((resolve) => { uploadResolve = resolve; stlWorker.postMessage(buf, [buf]); });
+      if (!res.ok) throw new Error(res.error || 'parse failed');
+      const raw = new THREE.BufferGeometry();
+      raw.setAttribute('position', new THREE.BufferAttribute(res.positions, 3));
+      raw.computeVertexNormals();
+      state.uploadRaw = raw;
+      if (!samples.find((s) => s.id === 'upload')) {
+        samples.push({ id: 'upload', label: 'Your model', realHeightMm: 50, upAxis: state.uploadAxis });
+        if (ui.sample) ui.sample.innerHTML = samples.map((s) => `<option value="${s.id}">${s.label}</option>`).join('');
+      }
+      rebuildUpload();
+    } catch (err) {
+      setLoading(false);
+      console.error('STL upload failed', err);
+      if (ui.uploadErr) { ui.uploadErr.textContent = 'Could not read that STL.'; ui.uploadErr.style.display = ''; }
+    }
+  }
+  if (ui.upload) ui.upload.addEventListener('change', () => handleFile(ui.upload.files[0]));
+  if (ui.upAxis) ui.upAxis.addEventListener('change', () => { state.uploadAxis = ui.upAxis.value; rebuildUpload(); });
+  container.addEventListener('dragover', (e) => { e.preventDefault(); container.classList.add('fp-dragover'); });
+  container.addEventListener('dragleave', () => container.classList.remove('fp-dragover'));
+  container.addEventListener('drop', (e) => {
+    e.preventDefault(); container.classList.remove('fp-dragover');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
   if (ui.layer) {
     ui.layer.addEventListener('input', () => {
       state.layerHeightMm = Number(ui.layer.value);
@@ -325,6 +414,7 @@ export async function boot(container, config) {
   });
 
   applyLights();
+  updateBuyLink();
   await loadSample(state.sampleId);
 
   const clock = new THREE.Clock();
