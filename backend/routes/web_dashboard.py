@@ -1606,8 +1606,10 @@ def filament_preview(
         return RedirectResponse("/dashboard", status_code=303)
     fils = db.query(Filament).filter(Filament.user_id == user.id).order_by(Filament.brand, Filament.material).all()
     filaments = [
+        # Pass the RAW hex (empty when absent) so the viewer can derive a color from
+        # color_name instead of washing a null-hex "Matte Black" out to neutral grey.
         {"brand": f.brand, "material": f.material, "finish": f.finish or "",
-         "color_hex": f.color_hex or "#9aa0aa", "color_name": f.color_name or ""}
+         "color_hex": f.color_hex or "", "color_name": f.color_name or ""}
         for f in fils
     ]
     return templates.TemplateResponse(

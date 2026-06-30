@@ -108,9 +108,26 @@ function resolvePreset(presets, material, finish) {
   return p[`${M}|${fin}`] || p[M] || p['_default'];
 }
 
+// Named-color fallback for filaments with no stored color_hex — otherwise a
+// "Matte Black" with a null hex washes out to neutral grey (reads as white).
+const COLOR_WORDS = {
+  black: '#1a1a1a', white: '#f0f0f0', gray: '#9aa0aa', grey: '#9aa0aa', silver: '#c4c4c8',
+  red: '#c0392b', orange: '#e67e22', yellow: '#f1c40f', gold: '#d4af37', green: '#27ae60',
+  blue: '#2563eb', navy: '#1e3a8a', teal: '#14b8a6', cyan: '#22d3ee', purple: '#8e44ad',
+  violet: '#7c3aed', pink: '#ff6fae', magenta: '#d6249f', brown: '#7a5230', tan: '#d2b48c',
+  beige: '#e8e2d0', natural: '#e8e2d0', clear: '#dfeaf0', transparent: '#dfeaf0',
+};
+function resolveBaseColor(filament) {
+  const hex = (filament.color_hex || '').trim();
+  if (/^#?[0-9a-fA-F]{6}$/.test(hex)) return new THREE.Color(hex.startsWith('#') ? hex : '#' + hex);
+  const name = (filament.color_name || '').toLowerCase();
+  for (const word in COLOR_WORDS) if (name.includes(word)) return new THREE.Color(COLOR_WORDS[word]);
+  return new THREE.Color('#9aa0aa');
+}
+
 function buildMaterial(presets, filament, layerUniforms) {
   const preset = resolvePreset(presets, filament.material, filament.finish);
-  const base = new THREE.Color(filament.color_hex || '#9aa0aa');
+  const base = resolveBaseColor(filament);
   const mat = new THREE.MeshPhysicalMaterial({
     color: base,
     roughness: preset.roughness,
