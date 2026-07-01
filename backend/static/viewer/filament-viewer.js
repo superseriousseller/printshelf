@@ -332,21 +332,25 @@ export async function boot(container, config) {
     ui.filament.addEventListener('change', () => {
       state.filament = config.filaments[Number(ui.filament.value)] || state.filament;
       refreshMaterial();
-      updateBuyLink();
+      updateBuyLinks();
     });
   }
 
   // Affiliate "Buy this filament" — links to the tracked /buy redirector.
-  function updateBuyLink() {
-    if (!ui.buy) return;
-    const f = state.filament;
-    if (f && f.id) {
-      ui.buy.href = `/dashboard/filaments/${f.id}/buy`;
-      ui.buy.textContent = `Buy ${f.brand} ${f.material} →`;
-      ui.buy.style.display = '';
+  // In compare mode BOTH filaments are buyable (you're weighing the two).
+  function setBuy(el, f, show) {
+    if (!el) return;
+    if (show && f && f.id) {
+      el.href = `/dashboard/filaments/${f.id}/buy`;
+      el.textContent = `Buy ${f.brand} ${f.material} →`;
+      el.style.display = '';
     } else {
-      ui.buy.style.display = 'none';
+      el.style.display = 'none';
     }
+  }
+  function updateBuyLinks() {
+    setBuy(ui.buy, state.filament, true);
+    setBuy(ui.buyB, state.filamentB, state.compare);
   }
 
   // Share: composite the canvas + a caption/watermark into a downloadable PNG.
@@ -446,14 +450,14 @@ export async function boot(container, config) {
       || '<option>No filaments yet</option>';
     ui.filamentB.addEventListener('change', () => {
       state.filamentB = config.filaments[Number(ui.filamentB.value)] || state.filamentB;
-      rebuildMatB(); updateCompareLabels();
+      rebuildMatB(); updateCompareLabels(); updateBuyLinks();
     });
   }
   if (ui.compare) {
     ui.compare.addEventListener('change', () => {
       state.compare = ui.compare.checked;
       if (ui.compareRow) ui.compareRow.style.display = state.compare ? '' : 'none';
-      updateCompareLabels();
+      updateCompareLabels(); updateBuyLinks();
     });
   }
 
@@ -463,7 +467,7 @@ export async function boot(container, config) {
   });
 
   applyLights();
-  updateBuyLink();
+  updateBuyLinks();
   await loadSample(state.sampleId);
   rebuildMatB();
   updateCompareLabels();
