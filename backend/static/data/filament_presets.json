@@ -7,14 +7,23 @@
     "glow": "glow", "glow in the dark": "glow", "glow-in-the-dark": "glow", "gid": "glow",
     "translucent": "translucent", "trans": "translucent",
     "transparent": "transparent", "clear": "transparent",
-    "sparkle": "sparkle", "glitter": "sparkle"
+    "sparkle": "sparkle", "glitter": "sparkle",
+    "marble": "marble", "marbled": "marble",
+    "speckle": "speckle", "speckled": "speckle", "speck": "speckle",
+    "granite": "granite", "stone": "granite", "terrazzo": "granite"
+  },
+  "_specks_comment": "Additive view-INDEPENDENT color flecks (marble/speckle/granite) — a color pattern in the albedo, not a lighting glint like sparkle. intensity drives density; the fleck color is auto-derived to contrast the base unless colorHex is set.",
+  "specks": {
+    "marble":  { "intensity": 0.5 },
+    "speckle": { "intensity": 0.7 },
+    "granite": { "intensity": 0.8 }
   },
   "presets": {
     "_default":      { "roughness": 0.5,  "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
 
     "PLA":           { "roughness": 0.5,  "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
     "PLA|matte":     { "roughness": 0.92, "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.5, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
-    "PLA|silk":      { "roughness": 0.15, "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.85, "sheenColorHex": "#dfe6ff", "sheenRoughness": 0.2, "anisotropy": 0.9, "anisotropyRotation": 1.5708, "clearcoat": 0.3, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
+    "PLA|silk":      { "roughness": 0.16, "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 1.0, "sheenColorHex": "#e6ecff", "sheenRoughness": 0.22, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.15, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
     "PLA|glow":      { "roughness": 0.55, "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 1.4, "emissiveFromBase": true, "sparkleIntensity": 0.0 },
     "PLA|translucent": { "roughness": 0.3, "metalness": 0.0, "ior": 1.46, "transmission": 0.55, "thickness": 2.0, "sheen": 0.0, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.0, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.0 },
     "PLA|sparkle":   { "roughness": 0.35, "metalness": 0.0, "ior": 1.45, "transmission": 0.0, "thickness": 0.0, "sheen": 0.2, "sheenColorHex": "#ffffff", "sheenRoughness": 0.3, "anisotropy": 0.0, "anisotropyRotation": 0.0, "clearcoat": 0.1, "emissiveIntensity": 0.0, "emissiveFromBase": false, "sparkleIntensity": 0.6 },

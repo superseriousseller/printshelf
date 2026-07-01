@@ -99,10 +99,13 @@ function normalizeGeometry(geo, upAxis) {
 }
 
 // ---- Material builder (data-driven; layer-line shader injected) -------------
+function aliasedFinish(presets, finish) {
+  const f = (finish || '').toLowerCase().trim();
+  return (presets.finishAliases && presets.finishAliases[f]) || f;
+}
 function resolvePreset(presets, material, finish) {
   const M = (material || '').toUpperCase().trim();
-  const fRaw = (finish || '').toLowerCase().trim();
-  const fin = presets.finishAliases[fRaw] || fRaw;
+  const fin = aliasedFinish(presets, finish);
   const p = presets.presets;
   if (fin === 'transparent') return p['transparent'];
   return p[`${M}|${fin}`] || p[M] || p['_default'];
@@ -128,6 +131,16 @@ function resolveBaseColor(filament) {
 function buildMaterial(presets, filament, layerUniforms) {
   const preset = resolvePreset(presets, filament.material, filament.finish);
   const base = resolveBaseColor(filament);
+  // Marble/speckle/granite: view-independent color flecks in the albedo.
+  const speck = (presets.specks && presets.specks[aliasedFinish(presets, filament.finish)]) || null;
+  let speckColor = new THREE.Color('#1e1e1e');
+  if (speck) {
+    if (speck.colorHex) speckColor = new THREE.Color(speck.colorHex);
+    else {
+      const lum = base.r * 0.299 + base.g * 0.587 + base.b * 0.114;  // dark base → light flecks & vice-versa
+      speckColor = new THREE.Color(lum > 0.5 ? '#1c1c1c' : '#e8e8e8');
+    }
+  }
   const mat = new THREE.MeshPhysicalMaterial({
     color: base,
     roughness: preset.roughness,
@@ -153,11 +166,13 @@ function buildMaterial(presets, filament, layerUniforms) {
     shader.uniforms.uLayerHeight = layerUniforms.uLayerHeight;
     shader.uniforms.uBandStrength = layerUniforms.uBandStrength;
     shader.uniforms.uSparkle = { value: preset.sparkleIntensity || 0 };
+    shader.uniforms.uSpeckI = { value: speck ? speck.intensity : 0 };
+    shader.uniforms.uSpeckColor = { value: speckColor };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying float vLayerY;\nvarying vec3 vSpk;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLayerY = position.y;\nvSpk = position;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vLayerY;\nvarying vec3 vSpk;\nuniform float uLayerHeight;\nuniform float uBandStrength;\nuniform float uSparkle;')
+      .replace('#include <common>', '#include <common>\nvarying float vLayerY;\nvarying vec3 vSpk;\nuniform float uLayerHeight;\nuniform float uBandStrength;\nuniform float uSparkle;\nuniform float uSpeckI;\nuniform vec3 uSpeckColor;')
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
       {
         float _p = fract(vLayerY / max(uLayerHeight, 1e-4));
@@ -166,6 +181,18 @@ function buildMaterial(presets, filament, layerUniforms) {
         float _ridge  = smoothstep(0.28, 0.0, _g); // shinier ridge catches light
         diffuseColor.rgb *= (1.0 - 0.22 * uBandStrength * _groove);
         roughnessFactor *= mix(1.0, 0.5, _ridge * uBandStrength);
+      }
+      // Marble/speckle: view-INDEPENDENT color flecks baked into the albedo.
+      if (uSpeckI > 0.0) {
+        vec3 _sp = vSpk * 52.0;
+        vec3 _c = floor(_sp);
+        float _r  = fract(sin(dot(_c, vec3(41.3, 289.1, 97.7))) * 43758.5453);
+        float _r2 = fract(sin(dot(_c, vec3(11.9, 78.2, 151.3))) * 24634.6345);
+        float _chosen = step(1.0 - 0.42 * uSpeckI, _r);
+        vec3 _j = (vec3(_r, _r2, fract(_r * 7.0)) - 0.5) * 0.7;
+        float _fd = length(fract(_sp) - 0.5 - _j);
+        float _fleck = _chosen * smoothstep(0.26, 0.10, _fd);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uSpeckColor, _fleck);
       }`)
       // Sparkle: sparse object-space flake cells with a random micro-normal, so each
       // glints only at certain view/light angles → twinkles as the model rotates.
@@ -187,7 +214,7 @@ function buildMaterial(presets, filament, layerUniforms) {
 
 // ---- Boot ------------------------------------------------------------------
 export async function boot(container, config) {
-  const presets = await fetch(`${STATIC}/data/filament_presets.json`).then((r) => r.json());
+  const presets = await fetch(`${STATIC}/data/filament_presets.json?v=8`).then((r) => r.json());
 
   // Which samples are available (drop benchy if its STL isn't deployed).
   const samples = [];
