@@ -147,15 +147,17 @@ function buildMaterial(presets, filament, layerUniforms) {
     mat.emissiveIntensity = preset.emissiveIntensity;
     mat.userData.glow = true;
   }
-  // Inject the layer-line banding (shared uniforms so the slider updates live).
+  // Inject the layer-line banding (shared uniforms so the slider updates live)
+  // + per-material sparkle/flake glints for glitter filaments.
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uLayerHeight = layerUniforms.uLayerHeight;
     shader.uniforms.uBandStrength = layerUniforms.uBandStrength;
+    shader.uniforms.uSparkle = { value: preset.sparkleIntensity || 0 };
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying float vLayerY;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLayerY = position.y;');
+      .replace('#include <common>', '#include <common>\nvarying float vLayerY;\nvarying vec3 vSpk;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLayerY = position.y;\nvSpk = position;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vLayerY;\nuniform float uLayerHeight;\nuniform float uBandStrength;')
+      .replace('#include <common>', '#include <common>\nvarying float vLayerY;\nvarying vec3 vSpk;\nuniform float uLayerHeight;\nuniform float uBandStrength;\nuniform float uSparkle;')
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
       {
         float _p = fract(vLayerY / max(uLayerHeight, 1e-4));
@@ -164,9 +166,22 @@ function buildMaterial(presets, filament, layerUniforms) {
         float _ridge  = smoothstep(0.28, 0.0, _g); // shinier ridge catches light
         diffuseColor.rgb *= (1.0 - 0.22 * uBandStrength * _groove);
         roughnessFactor *= mix(1.0, 0.5, _ridge * uBandStrength);
+      }`)
+      // Sparkle: sparse object-space flake cells with a random micro-normal, so each
+      // glints only at certain view/light angles → twinkles as the model rotates.
+      .replace('#include <opaque_fragment>', `#include <opaque_fragment>
+      if (uSparkle > 0.0) {
+        vec3 _cell = floor(vSpk * 190.0);
+        float _h  = fract(sin(dot(_cell, vec3(127.1, 311.7, 74.7))) * 43758.5453);
+        float _h2 = fract(sin(dot(_cell, vec3(269.5, 183.3, 246.1))) * 43758.5453);
+        float _flake = step(0.985 - 0.012 * uSparkle, _h);
+        vec3 _fn = normalize(vNormal + (vec3(_h, _h2, fract(_h * 7.3)) - 0.5) * 1.6);
+        float _glint = pow(max(dot(_fn, normalize(vViewPosition)), 0.0), 45.0);
+        gl_FragColor.rgb += _flake * _glint * uSparkle * 2.6;
       }`);
   };
-  mat.customProgramCacheKey = () => 'layerlines';
+  // Cache key varies by sparkle so glitter vs non-glitter materials get their own program.
+  mat.customProgramCacheKey = () => 'fp-layerlines-' + (preset.sparkleIntensity > 0 ? 'spk' : 'plain');
   return mat;
 }
 
@@ -223,10 +238,18 @@ export async function boot(container, config) {
     geomCache: {},
     uploadRaw: null,     // raw BufferGeometry of an uploaded STL (ephemeral, never persisted)
     uploadAxis: 'z',     // assumed print-up axis for uploads (slicer STLs are usually Z-up)
+    compare: false,      // side-by-side: same model in two filaments
+    filamentB: config.filaments[1] || config.filaments[0] || { material: 'PLA', finish: '', color_hex: '#2563eb' },
+    matB: null,          // material for the right (compare) pane
   };
 
   let mesh = null;
   const stlLoader = new STLLoader();
+
+  function rebuildMatB() {
+    if (state.matB) state.matB.dispose();
+    state.matB = buildMaterial(presets, state.filamentB, layerUniforms);
+  }
 
   async function loadSample(id) {
     const s = samples.find((x) => x.id === id);
@@ -408,6 +431,32 @@ export async function boot(container, config) {
   if (ui.turntable) ui.turntable.addEventListener('change', () => { state.turntable = ui.turntable.checked; });
   if (ui.lightsOff) ui.lightsOff.addEventListener('change', () => { state.lightsOff = ui.lightsOff.checked; applyLights(); });
 
+  // Side-by-side compare: same model, two filaments.
+  function updateCompareLabels() {
+    const f = state.filament, g = state.filamentB;
+    if (ui.labelA) ui.labelA.textContent = f ? `${f.brand} ${f.material}${f.color_name ? ' · ' + f.color_name : ''}` : '';
+    if (ui.labelB) ui.labelB.textContent = g ? `${g.brand} ${g.material}${g.color_name ? ' · ' + g.color_name : ''}` : '';
+    const show = state.compare ? '' : 'none';
+    if (ui.labelA) ui.labelA.style.display = show;
+    if (ui.labelB) ui.labelB.style.display = show;
+  }
+  if (ui.filamentB) {
+    ui.filamentB.innerHTML = config.filaments.map((f, i) =>
+      `<option value="${i}"${config.filaments[i] === state.filamentB ? ' selected' : ''}>${f.brand} ${f.material}${f.finish ? ' ' + f.finish : ''}${f.color_name ? ' · ' + f.color_name : ''}</option>`).join('')
+      || '<option>No filaments yet</option>';
+    ui.filamentB.addEventListener('change', () => {
+      state.filamentB = config.filaments[Number(ui.filamentB.value)] || state.filamentB;
+      rebuildMatB(); updateCompareLabels();
+    });
+  }
+  if (ui.compare) {
+    ui.compare.addEventListener('change', () => {
+      state.compare = ui.compare.checked;
+      if (ui.compareRow) ui.compareRow.style.display = state.compare ? '' : 'none';
+      updateCompareLabels();
+    });
+  }
+
   window.addEventListener('resize', () => {
     const w = container.clientWidth, h = container.clientHeight;
     renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
@@ -416,6 +465,8 @@ export async function boot(container, config) {
   applyLights();
   updateBuyLink();
   await loadSample(state.sampleId);
+  rebuildMatB();
+  updateCompareLabels();
 
   const clock = new THREE.Clock();
   (function animate() {
@@ -423,6 +474,22 @@ export async function boot(container, config) {
     const dt = clock.getDelta();
     if (state.turntable && mesh) mesh.rotation.y += dt * 0.5;
     controls.update();
-    renderer.render(scene, camera);
+    if (state.compare && mesh && state.matB) {
+      const W = container.clientWidth, H = container.clientHeight, half = Math.floor(W / 2);
+      camera.aspect = half / H; camera.updateProjectionMatrix();
+      renderer.setScissorTest(true);
+      renderer.setViewport(0, 0, half, H); renderer.setScissor(0, 0, half, H);
+      renderer.render(scene, camera);                 // left = filament A (mesh.material)
+      const a = mesh.material; mesh.material = state.matB;
+      renderer.setViewport(half, 0, W - half, H); renderer.setScissor(half, 0, W - half, H);
+      renderer.render(scene, camera);                 // right = filament B
+      mesh.material = a;
+      renderer.setScissorTest(false);
+    } else {
+      const W = container.clientWidth, H = container.clientHeight;
+      renderer.setViewport(0, 0, W, H);
+      if (Math.abs(camera.aspect - W / H) > 0.001) { camera.aspect = W / H; camera.updateProjectionMatrix(); }
+      renderer.render(scene, camera);
+    }
   })();
 }
