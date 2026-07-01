@@ -32,6 +32,7 @@
         </label>
 
         <a id="fp-buy" class="btn-primary fp-buy" href="#" target="_blank" rel="noopener nofollow sponsored" style="display:none">Buy this filament →</a>
+        <a id="fp-buy-b" class="btn-primary fp-buy" href="#" target="_blank" rel="noopener nofollow sponsored" style="display:none">Buy compare filament →</a>
         <button id="fp-share" type="button" class="btn-secondary">Share image</button>
 
         <div class="fp-upload">
@@ -65,7 +66,7 @@
   const filaments = JSON.parse(document.getElementById('fp-config').textContent || '[]');
   const stage = document.getElementById('fp-stage');
   try {
-    const mod = await import('/static/viewer/filament-viewer.js?v=5');
+    const mod = await import('/static/viewer/filament-viewer.js?v=6');
     await mod.boot(stage, {
       filaments,
       ui: {
@@ -77,6 +78,7 @@
         lightsOff: document.getElementById('fp-lightsoff'),
         loading: document.getElementById('fp-loading'),
         buy: document.getElementById('fp-buy'),
+        buyB: document.getElementById('fp-buy-b'),
         share: document.getElementById('fp-share'),
         upload: document.getElementById('fp-upload'),
         upAxis: document.getElementById('fp-upaxis'),
