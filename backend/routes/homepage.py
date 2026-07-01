@@ -294,9 +294,9 @@ def explore(
 # Bump CACHE version when the SW logic or precache list changes, so clients
 # fetch the new worker and drop the stale cache on activate.
 _SERVICE_WORKER_JS = """\
-const CACHE = 'printshelf-v4';
+const CACHE = 'printshelf-v5';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/offline', '/static/app.css?v=16'];
+const PRECACHE = ['/offline', '/static/app.css?v=17'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
