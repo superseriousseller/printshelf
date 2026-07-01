@@ -11,6 +11,8 @@
 <div class="fp-studio">
     <div class="fp-stage" id="fp-stage">
         <div class="fp-loading" id="fp-loading"><span class="fp-spinner"></span> Loading…</div>
+        <div class="fp-cmp-label fp-cmp-a" id="fp-label-a" style="display:none"></div>
+        <div class="fp-cmp-label fp-cmp-b" id="fp-label-b" style="display:none"></div>
     </div>
     <div class="fp-controls">
         <label class="fp-field">Model
@@ -24,6 +26,10 @@
         </label>
         <label class="fp-check"><input id="fp-turntable" type="checkbox" checked> Turntable</label>
         <label class="fp-check"><input id="fp-lightsoff" type="checkbox"> Lights off (reveal glow)</label>
+        <label class="fp-check"><input id="fp-compare" type="checkbox"> Compare two filaments</label>
+        <label class="fp-field" id="fp-compare-row" style="display:none">Compare against
+            <select id="fp-filament-b" class="filter-sort"></select>
+        </label>
 
         <a id="fp-buy" class="btn-primary fp-buy" href="#" target="_blank" rel="noopener nofollow sponsored" style="display:none">Buy this filament →</a>
         <button id="fp-share" type="button" class="btn-secondary">Share image</button>
@@ -59,7 +65,7 @@
   const filaments = JSON.parse(document.getElementById('fp-config').textContent || '[]');
   const stage = document.getElementById('fp-stage');
   try {
-    const mod = await import('/static/viewer/filament-viewer.js?v=4');
+    const mod = await import('/static/viewer/filament-viewer.js?v=5');
     await mod.boot(stage, {
       filaments,
       ui: {
@@ -75,6 +81,11 @@
         upload: document.getElementById('fp-upload'),
         upAxis: document.getElementById('fp-upaxis'),
         uploadErr: document.getElementById('fp-uploaderr'),
+        compare: document.getElementById('fp-compare'),
+        compareRow: document.getElementById('fp-compare-row'),
+        filamentB: document.getElementById('fp-filament-b'),
+        labelA: document.getElementById('fp-label-a'),
+        labelB: document.getElementById('fp-label-b'),
       },
     });
   } catch (err) {

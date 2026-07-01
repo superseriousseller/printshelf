@@ -773,6 +773,9 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .fp-upload input[type=file] { width: 100%; font-size: 0.8rem; color: var(--text-dim); }
 .fp-uploaderr { font-size: 0.8rem; color: var(--fail, #e0567a); margin: 8px 0 0; }
 .fp-stage.fp-dragover { outline: 2px dashed var(--accent); outline-offset: -8px; }
+.fp-cmp-label { position: absolute; bottom: 10px; max-width: 44%; padding: 4px 10px; background: rgba(15,17,21,0.72); color: var(--text); font-size: 0.78rem; font-weight: 600; border-radius: var(--radius); pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-cmp-a { left: 10px; }
+.fp-cmp-b { right: 10px; }
 @media (max-width: 700px) { .fp-studio { grid-template-columns: minmax(0,1fr); } }
 
 .feed-user { margin: 0 0 4px; font-size: 0.8rem; color: var(--text-dim); position: relative; z-index: 2; }
