@@ -194,17 +194,19 @@ function buildMaterial(presets, filament, layerUniforms) {
         float _fleck = _chosen * smoothstep(0.26, 0.10, _fd);
         diffuseColor.rgb = mix(diffuseColor.rgb, uSpeckColor, _fleck);
       }`)
-      // Sparkle: sparse object-space flake cells with a random micro-normal, so each
-      // glints only at certain view/light angles → twinkles as the model rotates.
+      // Sparkle: sparse object-space flake cells. Each flake has a faint always-on
+      // shimmer (so flakes read on EVERY face, not just camera-facing ones) plus a
+      // view-dependent glint on top that twinkles as the model/lights move.
       .replace('#include <opaque_fragment>', `#include <opaque_fragment>
       if (uSparkle > 0.0) {
         vec3 _cell = floor(vSpk * 190.0);
         float _h  = fract(sin(dot(_cell, vec3(127.1, 311.7, 74.7))) * 43758.5453);
         float _h2 = fract(sin(dot(_cell, vec3(269.5, 183.3, 246.1))) * 43758.5453);
         float _flake = step(0.985 - 0.012 * uSparkle, _h);
+        gl_FragColor.rgb += _flake * uSparkle * (0.25 + 0.35 * _h);   // base shimmer, all faces
         vec3 _fn = normalize(vNormal + (vec3(_h, _h2, fract(_h * 7.3)) - 0.5) * 1.6);
-        float _glint = pow(max(dot(_fn, normalize(vViewPosition)), 0.0), 45.0);
-        gl_FragColor.rgb += _flake * _glint * uSparkle * 2.6;
+        float _glint = pow(max(dot(_fn, normalize(vViewPosition)), 0.0), 28.0);
+        gl_FragColor.rgb += _flake * _glint * uSparkle * 2.6;                 // twinkle on top
       }`);
   };
   // Cache key varies by sparkle so glitter vs non-glitter materials get their own program.
