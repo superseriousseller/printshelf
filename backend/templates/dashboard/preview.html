@@ -57,18 +57,21 @@
 <p class="notice notice-warn" style="margin-top:16px">You have no filaments yet — <a href="/dashboard/filaments/new">add one</a> to preview it. A default color is shown meanwhile.</p>
 {% endif %}
 
-<script type="application/json" id="fp-config">{{ filaments|tojson }}</script>
+<script type="application/json" id="fp-config">{{ {"filaments": filaments, "catalog": catalog}|tojson }}</script>
 
 <script type="importmap">
 { "imports": { "three": "/static/viewer/three.module.js" } }
 </script>
 <script type="module">
-  const filaments = JSON.parse(document.getElementById('fp-config').textContent || '[]');
+  const cfg = JSON.parse(document.getElementById('fp-config').textContent || '{}');
+  const filaments = cfg.filaments || [];
+  const catalog = cfg.catalog || [];
   const stage = document.getElementById('fp-stage');
   try {
-    const mod = await import('/static/viewer/filament-viewer.js?v=6');
+    const mod = await import('/static/viewer/filament-viewer.js?v=7');
     await mod.boot(stage, {
       filaments,
+      catalog,
       ui: {
         sample: document.getElementById('fp-sample'),
         filament: document.getElementById('fp-filament'),
