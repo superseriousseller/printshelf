@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Filament Preview — see any 3D print in real filament | PrintShelf{% endblock %}
+{% block meta %}
+    <meta name="description" content="See how a 3D model looks printed in real filament — true color, finish (silk, matte, translucent, glow, sparkle, marble) and layer lines. Renders in your browser. Free, no signup.">
+    <meta property="og:title" content="Filament Preview — PrintShelf">
+    <meta property="og:description" content="Preview any 3D print in a real filament's color and finish, right in your browser.">
+    <meta property="og:url" content="{{ app_url }}/preview">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="{{ app_url }}/preview">
+{% endblock %}
+
+{% block content %}
+<div class="preview-public">
+    <header class="preview-public-header">
+        <h1>Filament Preview</h1>
+        <p>See how a print looks in a real filament — true color, finish, and layer lines. Pick a filament below or drop in your own STL. Everything renders in your browser; nothing is uploaded.
+        {% if not current_user %}<a href="/signup">Sign up</a> to preview your own logged filaments and save your shelf.{% endif %}</p>
+    </header>
+
+    {% include "_preview_studio.html" %}
+</div>
+{% endblock %}

@@ -777,6 +777,10 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .fp-cmp-a { left: 10px; }
 .fp-cmp-b { right: 10px; }
 @media (max-width: 1000px) { .fp-studio { grid-template-columns: minmax(0,1fr); } }
+.preview-public { max-width: 1100px; margin: 0 auto; padding: 24px 20px 48px; }
+.preview-public-header { margin: 0 0 20px; }
+.preview-public-header h1 { margin: 0 0 8px; font-size: 1.8rem; }
+.preview-public-header p { color: var(--text-dim); max-width: 65ch; line-height: 1.5; }
 
 .feed-user { margin: 0 0 4px; font-size: 0.8rem; color: var(--text-dim); position: relative; z-index: 2; }
 .feed-user a { color: var(--accent); text-decoration: none; }

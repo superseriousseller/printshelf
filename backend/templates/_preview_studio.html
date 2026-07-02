@@ -1,0 +1,88 @@
+{# Shared filament-preview studio — included by dashboard/preview.html (owned +
+   catalog) and preview_public.html (catalog only, no login). Context vars:
+   `filaments` (list, may be empty) and `catalog` (list). #}
+<div class="fp-studio">
+    <div class="fp-stage" id="fp-stage">
+        <div class="fp-loading" id="fp-loading"><span class="fp-spinner"></span> Loading…</div>
+        <div class="fp-cmp-label fp-cmp-a" id="fp-label-a" style="display:none"></div>
+        <div class="fp-cmp-label fp-cmp-b" id="fp-label-b" style="display:none"></div>
+    </div>
+    <div class="fp-controls">
+        <label class="fp-field">Model
+            <select id="fp-sample" class="filter-sort"></select>
+        </label>
+        <label class="fp-field">Filament
+            <select id="fp-filament" class="filter-sort"></select>
+        </label>
+        <label class="fp-field">Layer height <span id="fp-layer-label">0.20 mm</span>
+            <input id="fp-layer" type="range" min="0.08" max="0.32" step="0.04" value="0.20">
+        </label>
+        <label class="fp-check"><input id="fp-turntable" type="checkbox" checked> Turntable</label>
+        <label class="fp-check"><input id="fp-lightsoff" type="checkbox"> Lights off (reveal glow)</label>
+        <label class="fp-check"><input id="fp-compare" type="checkbox"> Compare two filaments</label>
+        <label class="fp-field" id="fp-compare-row" style="display:none">Compare against
+            <select id="fp-filament-b" class="filter-sort"></select>
+        </label>
+
+        <a id="fp-buy" class="btn-primary fp-buy" href="#" target="_blank" rel="noopener nofollow sponsored" style="display:none">Buy this filament →</a>
+        <a id="fp-buy-b" class="btn-primary fp-buy" href="#" target="_blank" rel="noopener nofollow sponsored" style="display:none">Buy compare filament →</a>
+        <button id="fp-share" type="button" class="btn-secondary">Share image</button>
+
+        <div class="fp-upload">
+            <label class="fp-field" style="margin:0">Preview your own model
+                <input id="fp-upload" type="file" accept=".stl">
+            </label>
+            <label class="fp-field" style="margin-top:8px">Model orientation (print up-axis)
+                <select id="fp-upaxis" class="filter-sort">
+                    <option value="z" selected>Z up (most STLs)</option>
+                    <option value="y">Y up</option>
+                    <option value="x">X up</option>
+                </select>
+            </label>
+            <p id="fp-uploaderr" class="fp-uploaderr" style="display:none"></p>
+        </div>
+
+        <p class="fp-hint">Drag to orbit · scroll to zoom · drop an STL onto the stage. Uploads render in your browser and are never saved.</p>
+        <p class="fp-hint"><em>Approximate preview</em> — colors &amp; finishes are seeded estimates to give the feel of a material, not exact measured values.</p>
+    </div>
+</div>
+
+<script type="application/json" id="fp-config">{{ {"filaments": filaments, "catalog": catalog}|tojson }}</script>
+
+<script type="importmap">
+{ "imports": { "three": "/static/viewer/three.module.js" } }
+</script>
+<script type="module">
+  const cfg = JSON.parse(document.getElementById('fp-config').textContent || '{}');
+  const stage = document.getElementById('fp-stage');
+  try {
+    const mod = await import('/static/viewer/filament-viewer.js?v=10');
+    await mod.boot(stage, {
+      filaments: cfg.filaments || [],
+      catalog: cfg.catalog || [],
+      ui: {
+        sample: document.getElementById('fp-sample'),
+        filament: document.getElementById('fp-filament'),
+        layer: document.getElementById('fp-layer'),
+        layerLabel: document.getElementById('fp-layer-label'),
+        turntable: document.getElementById('fp-turntable'),
+        lightsOff: document.getElementById('fp-lightsoff'),
+        loading: document.getElementById('fp-loading'),
+        buy: document.getElementById('fp-buy'),
+        buyB: document.getElementById('fp-buy-b'),
+        share: document.getElementById('fp-share'),
+        upload: document.getElementById('fp-upload'),
+        upAxis: document.getElementById('fp-upaxis'),
+        uploadErr: document.getElementById('fp-uploaderr'),
+        compare: document.getElementById('fp-compare'),
+        compareRow: document.getElementById('fp-compare-row'),
+        filamentB: document.getElementById('fp-filament-b'),
+        labelA: document.getElementById('fp-label-a'),
+        labelB: document.getElementById('fp-label-b'),
+      },
+    });
+  } catch (err) {
+    console.error('filament viewer failed', err);
+    document.getElementById('fp-loading').textContent = 'Preview needs a WebGL-capable browser.';
+  }
+</script>
