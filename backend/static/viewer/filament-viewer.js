@@ -99,10 +99,13 @@ function normalizeGeometry(geo, upAxis) {
 }
 
 // ---- Material builder (data-driven; layer-line shader injected) -------------
+function aliasedFinish(presets, finish) {
+  const f = (finish || '').toLowerCase().trim();
+  return (presets.finishAliases && presets.finishAliases[f]) || f;
+}
 function resolvePreset(presets, material, finish) {
   const M = (material || '').toUpperCase().trim();
-  const fRaw = (finish || '').toLowerCase().trim();
-  const fin = presets.finishAliases[fRaw] || fRaw;
+  const fin = aliasedFinish(presets, finish);
   const p = presets.presets;
   if (fin === 'transparent') return p['transparent'];
   return p[`${M}|${fin}`] || p[M] || p['_default'];
@@ -128,6 +131,16 @@ function resolveBaseColor(filament) {
 function buildMaterial(presets, filament, layerUniforms) {
   const preset = resolvePreset(presets, filament.material, filament.finish);
   const base = resolveBaseColor(filament);
+  // Marble/speckle/granite: view-independent color flecks in the albedo.
+  const speck = (presets.specks && presets.specks[aliasedFinish(presets, filament.finish)]) || null;
+  let speckColor = new THREE.Color('#1e1e1e');
+  if (speck) {
+    if (speck.colorHex) speckColor = new THREE.Color(speck.colorHex);
+    else {
+      const lum = base.r * 0.299 + base.g * 0.587 + base.b * 0.114;  // dark base → light flecks & vice-versa
+      speckColor = new THREE.Color(lum > 0.5 ? '#1c1c1c' : '#e8e8e8');
+    }
+  }
   const mat = new THREE.MeshPhysicalMaterial({
     color: base,
     roughness: preset.roughness,
@@ -153,11 +166,13 @@ function buildMaterial(presets, filament, layerUniforms) {
     shader.uniforms.uLayerHeight = layerUniforms.uLayerHeight;
     shader.uniforms.uBandStrength = layerUniforms.uBandStrength;
     shader.uniforms.uSparkle = { value: preset.sparkleIntensity || 0 };
+    shader.uniforms.uSpeckI = { value: speck ? speck.intensity : 0 };
+    shader.uniforms.uSpeckColor = { value: speckColor };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying float vLayerY;\nvarying vec3 vSpk;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLayerY = position.y;\nvSpk = position;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vLayerY;\nvarying vec3 vSpk;\nuniform float uLayerHeight;\nuniform float uBandStrength;\nuniform float uSparkle;')
+      .replace('#include <common>', '#include <common>\nvarying float vLayerY;\nvarying vec3 vSpk;\nuniform float uLayerHeight;\nuniform float uBandStrength;\nuniform float uSparkle;\nuniform float uSpeckI;\nuniform vec3 uSpeckColor;')
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
       {
         float _p = fract(vLayerY / max(uLayerHeight, 1e-4));
@@ -166,18 +181,32 @@ function buildMaterial(presets, filament, layerUniforms) {
         float _ridge  = smoothstep(0.28, 0.0, _g); // shinier ridge catches light
         diffuseColor.rgb *= (1.0 - 0.22 * uBandStrength * _groove);
         roughnessFactor *= mix(1.0, 0.5, _ridge * uBandStrength);
+      }
+      // Marble/speckle: view-INDEPENDENT color flecks baked into the albedo.
+      if (uSpeckI > 0.0) {
+        vec3 _sp = vSpk * 52.0;
+        vec3 _c = floor(_sp);
+        float _r  = fract(sin(dot(_c, vec3(41.3, 289.1, 97.7))) * 43758.5453);
+        float _r2 = fract(sin(dot(_c, vec3(11.9, 78.2, 151.3))) * 24634.6345);
+        float _chosen = step(1.0 - 0.42 * uSpeckI, _r);
+        vec3 _j = (vec3(_r, _r2, fract(_r * 7.0)) - 0.5) * 0.7;
+        float _fd = length(fract(_sp) - 0.5 - _j);
+        float _fleck = _chosen * smoothstep(0.26, 0.10, _fd);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uSpeckColor, _fleck);
       }`)
-      // Sparkle: sparse object-space flake cells with a random micro-normal, so each
-      // glints only at certain view/light angles → twinkles as the model rotates.
+      // Sparkle: sparse object-space flake cells. Each flake has a faint always-on
+      // shimmer (so flakes read on EVERY face, not just camera-facing ones) plus a
+      // view-dependent glint on top that twinkles as the model/lights move.
       .replace('#include <opaque_fragment>', `#include <opaque_fragment>
       if (uSparkle > 0.0) {
         vec3 _cell = floor(vSpk * 190.0);
         float _h  = fract(sin(dot(_cell, vec3(127.1, 311.7, 74.7))) * 43758.5453);
         float _h2 = fract(sin(dot(_cell, vec3(269.5, 183.3, 246.1))) * 43758.5453);
         float _flake = step(0.985 - 0.012 * uSparkle, _h);
+        gl_FragColor.rgb += _flake * uSparkle * (0.25 + 0.35 * _h);   // base shimmer, all faces
         vec3 _fn = normalize(vNormal + (vec3(_h, _h2, fract(_h * 7.3)) - 0.5) * 1.6);
-        float _glint = pow(max(dot(_fn, normalize(vViewPosition)), 0.0), 45.0);
-        gl_FragColor.rgb += _flake * _glint * uSparkle * 2.6;
+        float _glint = pow(max(dot(_fn, normalize(vViewPosition)), 0.0), 28.0);
+        gl_FragColor.rgb += _flake * _glint * uSparkle * 2.6;                 // twinkle on top
       }`);
   };
   // Cache key varies by sparkle so glitter vs non-glitter materials get their own program.
@@ -187,7 +216,7 @@ function buildMaterial(presets, filament, layerUniforms) {
 
 // ---- Boot ------------------------------------------------------------------
 export async function boot(container, config) {
-  const presets = await fetch(`${STATIC}/data/filament_presets.json`).then((r) => r.json());
+  const presets = await fetch(`${STATIC}/data/filament_presets.json?v=8`).then((r) => r.json());
 
   // Which samples are available (drop benchy if its STL isn't deployed).
   const samples = [];
@@ -325,23 +354,37 @@ export async function boot(container, config) {
     ui.sample.value = state.sampleId;
     ui.sample.addEventListener('change', () => loadSample(ui.sample.value));
   }
+  // Picker options: "My filaments" (owned) + "Browse & buy" (community catalog).
+  const catalog = config.catalog || [];
+  function filLabel(f) { return `${f.brand} ${f.material}${f.finish ? ' ' + f.finish : ''}${f.color_name ? ' · ' + f.color_name : ''}`; }
+  function filamentOptionsHTML() {
+    let html = '';
+    if (config.filaments.length) html += '<optgroup label="My filaments">' + config.filaments.map((f, i) => `<option value="own:${i}">${filLabel(f)}</option>`).join('') + '</optgroup>';
+    if (catalog.length) html += '<optgroup label="Browse &amp; buy">' + catalog.map((f, i) => `<option value="cat:${i}">${filLabel(f)}</option>`).join('') + '</optgroup>';
+    return html || '<option>No filaments yet</option>';
+  }
+  function filFromValue(v) {
+    const [src, idx] = String(v).split(':');
+    return (src === 'cat' ? catalog : config.filaments)[Number(idx)] || null;
+  }
   if (ui.filament) {
-    ui.filament.innerHTML = config.filaments.map((f, i) =>
-      `<option value="${i}">${f.brand} ${f.material}${f.finish ? ' ' + f.finish : ''}${f.color_name ? ' · ' + f.color_name : ''}</option>`).join('')
-      || '<option>No filaments yet</option>';
+    ui.filament.innerHTML = filamentOptionsHTML();
     ui.filament.addEventListener('change', () => {
-      state.filament = config.filaments[Number(ui.filament.value)] || state.filament;
+      state.filament = filFromValue(ui.filament.value) || state.filament;
       refreshMaterial();
       updateBuyLinks();
     });
   }
 
-  // Affiliate "Buy this filament" — links to the tracked /buy redirector.
+  // Affiliate Buy — owned filaments hit the tracked /buy redirector; catalog
+  // (non-owned) filaments carry a buyUrl to the tracked store-search redirector.
   // In compare mode BOTH filaments are buyable (you're weighing the two).
+  function buyHref(f) { return f ? (f.buyUrl || (f.id ? `/dashboard/filaments/${f.id}/buy` : null)) : null; }
   function setBuy(el, f, show) {
     if (!el) return;
-    if (show && f && f.id) {
-      el.href = `/dashboard/filaments/${f.id}/buy`;
+    const href = buyHref(f);
+    if (show && href) {
+      el.href = href;
       el.textContent = `Buy ${f.brand} ${f.material} →`;
       el.style.display = '';
     } else {
@@ -445,11 +488,9 @@ export async function boot(container, config) {
     if (ui.labelB) ui.labelB.style.display = show;
   }
   if (ui.filamentB) {
-    ui.filamentB.innerHTML = config.filaments.map((f, i) =>
-      `<option value="${i}"${config.filaments[i] === state.filamentB ? ' selected' : ''}>${f.brand} ${f.material}${f.finish ? ' ' + f.finish : ''}${f.color_name ? ' · ' + f.color_name : ''}</option>`).join('')
-      || '<option>No filaments yet</option>';
+    ui.filamentB.innerHTML = filamentOptionsHTML();   // same list → compare owned vs a filament you'd buy
     ui.filamentB.addEventListener('change', () => {
-      state.filamentB = config.filaments[Number(ui.filamentB.value)] || state.filamentB;
+      state.filamentB = filFromValue(ui.filamentB.value) || state.filamentB;
       rebuildMatB(); updateCompareLabels(); updateBuyLinks();
     });
   }

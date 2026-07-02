@@ -6,6 +6,7 @@ are wired in subsequent tasks.
 """
 import csv
 import io
+from urllib.parse import urlencode
 import json
 import os
 from datetime import date, datetime
@@ -42,7 +43,7 @@ from models import (
 from email_service import send_feed_notification
 from import_service import ImportError_, extract as extract_url
 from filament_import_service import extract as extract_filament_url
-from affiliate import apply_affiliate, filament_buy_url, is_allowed_link_domain
+from affiliate import apply_affiliate, filament_buy_url, is_allowed_link_domain, store_search_url
 from models import ImportCache
 from storage import MAX_UPLOAD_BYTES, UploadError, delete_image, upload_image
 
@@ -1613,10 +1614,58 @@ def filament_preview(
          "color_hex": f.color_hex or "", "color_name": f.color_name or ""}
         for f in fils
     ]
+
+    # Buyable catalog = distinct filaments the whole community has logged (not just
+    # this user's) — so people can preview + buy filaments they don't own yet.
+    # Community-sourced (grows organically); prefer entries that carry a color.
+    owned_keys = {(f.brand.lower(), f.material.lower(), (f.finish or "").lower(), (f.color_name or "").lower()) for f in fils}
+    rows = (
+        db.query(Filament.brand, Filament.material, Filament.finish, Filament.color_name, Filament.color_hex)
+        .filter(or_(Filament.color_hex.isnot(None), Filament.color_name.isnot(None)))
+        .distinct().all()
+    )
+    seen, catalog = set(), []
+    for brand, material, finish, color_name, color_hex in rows:
+        key = (brand.lower(), material.lower(), (finish or "").lower(), (color_name or "").lower())
+        if key in seen or key in owned_keys:
+            continue
+        seen.add(key)
+        catalog.append({
+            "brand": brand, "material": material, "finish": finish or "",
+            "color_hex": color_hex or "", "color_name": color_name or "",
+            "buyUrl": "/dashboard/filaments/buy-search?" + urlencode(
+                {"brand": brand, "material": material, "color": color_name or "", "finish": finish or ""}),
+        })
+    catalog.sort(key=lambda c: (c["brand"].lower(), c["material"].lower(), c["color_name"].lower()))
+    catalog = catalog[:200]
+
     return templates.TemplateResponse(
         request, "dashboard/preview.html",
-        _ctx(user, db=db, section="preview", filaments=filaments),
+        _ctx(user, db=db, section="preview", filaments=filaments, catalog=catalog),
     )
+
+
+@router.get("/filaments/buy-search")
+def buy_filament_search(
+    brand: str = "",
+    material: str = "",
+    color: str = "",
+    finish: str = "",
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    """Tracked Buy for a catalog (non-owned) filament → brand store search."""
+    if (r := _require_user(user)) is not None:
+        return r
+    target = store_search_url(brand, material, color, finish)
+    if not target:
+        return RedirectResponse("/dashboard/filaments", status_code=303)
+    from filament_import_service import detect_store
+    store = detect_store(target)
+    db.add(AffiliateClick(user_id=user.id, filament_id=None, store=store or None))
+    db.commit()
+    _log.info("catalog buy click user=%s brand=%s store=%s", user.id, brand, store)
+    return RedirectResponse(target, status_code=302)
 
 
 # ============== Data export ==============
