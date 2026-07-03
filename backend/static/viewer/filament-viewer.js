@@ -260,7 +260,7 @@ export async function boot(container, config) {
 
   const state = {
     sampleId: samples[0].id,
-    filament: config.filaments[0] || { material: 'PLA', finish: '', color_hex: '#ff6a3d' },
+    filament: config.filaments[0] || (config.catalog || [])[0] || { material: 'PLA', finish: '', color_hex: '#ff6a3d' },
     layerHeightMm: 0.2,
     turntable: true,
     lightsOff: false,
@@ -268,7 +268,7 @@ export async function boot(container, config) {
     uploadRaw: null,     // raw BufferGeometry of an uploaded STL (ephemeral, never persisted)
     uploadAxis: 'z',     // assumed print-up axis for uploads (slicer STLs are usually Z-up)
     compare: false,      // side-by-side: same model in two filaments
-    filamentB: config.filaments[1] || config.filaments[0] || { material: 'PLA', finish: '', color_hex: '#2563eb' },
+    filamentB: config.filaments[1] || config.filaments[0] || (config.catalog || [])[1] || (config.catalog || [])[0] || { material: 'PLA', finish: '', color_hex: '#2563eb' },
     matB: null,          // material for the right (compare) pane
   };
 

@@ -43,7 +43,7 @@ from models import (
 from email_service import send_feed_notification
 from import_service import ImportError_, extract as extract_url
 from filament_import_service import extract as extract_filament_url
-from affiliate import apply_affiliate, filament_buy_url, is_allowed_link_domain, store_search_url
+from affiliate import apply_affiliate, build_preview_catalog, filament_buy_url, is_allowed_link_domain, store_search_url
 from models import ImportCache
 from storage import MAX_UPLOAD_BYTES, UploadError, delete_image, upload_image
 
@@ -1616,28 +1616,9 @@ def filament_preview(
     ]
 
     # Buyable catalog = distinct filaments the whole community has logged (not just
-    # this user's) — so people can preview + buy filaments they don't own yet.
-    # Community-sourced (grows organically); prefer entries that carry a color.
+    # this user's), excluding the ones this user already owns. Buy → tracked redirector.
     owned_keys = {(f.brand.lower(), f.material.lower(), (f.finish or "").lower(), (f.color_name or "").lower()) for f in fils}
-    rows = (
-        db.query(Filament.brand, Filament.material, Filament.finish, Filament.color_name, Filament.color_hex)
-        .filter(or_(Filament.color_hex.isnot(None), Filament.color_name.isnot(None)))
-        .distinct().all()
-    )
-    seen, catalog = set(), []
-    for brand, material, finish, color_name, color_hex in rows:
-        key = (brand.lower(), material.lower(), (finish or "").lower(), (color_name or "").lower())
-        if key in seen or key in owned_keys:
-            continue
-        seen.add(key)
-        catalog.append({
-            "brand": brand, "material": material, "finish": finish or "",
-            "color_hex": color_hex or "", "color_name": color_name or "",
-            "buyUrl": "/dashboard/filaments/buy-search?" + urlencode(
-                {"brand": brand, "material": material, "color": color_name or "", "finish": finish or ""}),
-        })
-    catalog.sort(key=lambda c: (c["brand"].lower(), c["material"].lower(), c["color_name"].lower()))
-    catalog = catalog[:200]
+    catalog = build_preview_catalog(db, exclude_keys=owned_keys, buy_base="/dashboard/filaments/buy-search")
 
     return templates.TemplateResponse(
         request, "dashboard/preview.html",

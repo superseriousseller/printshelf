@@ -192,3 +192,32 @@ def filament_buy_url(
     if source_url:
         return apply_affiliate(source_url)
     return store_search_url(brand, material, color, finish)
+
+
+def build_preview_catalog(db, exclude_keys=None, buy_base="/preview/buy", limit=200):
+    """Community-sourced buyable-filament catalog for the preview studio: the
+    distinct (brand, material, finish, color_name, color_hex) across ALL users'
+    filaments, deduped, excluding `exclude_keys` (e.g. the viewer's own), each
+    with a `buyUrl` pointing at a tracked store-search redirector. Shared by the
+    dashboard studio and the public /preview demo."""
+    from models import Filament
+    exclude_keys = exclude_keys or set()
+    rows = (
+        db.query(Filament.brand, Filament.material, Filament.finish, Filament.color_name, Filament.color_hex)
+        .filter((Filament.color_hex.isnot(None)) | (Filament.color_name.isnot(None)))
+        .distinct().all()
+    )
+    seen, catalog = set(), []
+    for brand, material, finish, color_name, color_hex in rows:
+        key = (brand.lower(), material.lower(), (finish or "").lower(), (color_name or "").lower())
+        if key in seen or key in exclude_keys:
+            continue
+        seen.add(key)
+        catalog.append({
+            "brand": brand, "material": material, "finish": finish or "",
+            "color_hex": color_hex or "", "color_name": color_name or "",
+            "buyUrl": buy_base + "?" + urlencode(
+                {"brand": brand, "material": material, "color": color_name or "", "finish": finish or ""}),
+        })
+    catalog.sort(key=lambda c: (c["brand"].lower(), c["material"].lower(), c["color_name"].lower()))
+    return catalog[:limit]

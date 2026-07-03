@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from affiliate import apply_affiliate, filament_buy_url
-from auth import get_current_user_web_optional
+from auth import filament_preview_enabled, get_current_user_web_optional
 from email_service import send_follow_notification
 from models import Collection, CollectionPrint, Filament, Follow, Like, Print, PrintLink, Printer, User, get_db, PRINT_CATEGORY_LABELS
 from sqlalchemy import func
@@ -24,6 +24,8 @@ router = APIRouter(tags=["profile"])
 
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
+# base.html topbar has a gated "Preview" link → this instance renders public profile pages.
+templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
 
 
 def _calc_print_cost(filament_used_g: float, filaments: list) -> float | None:

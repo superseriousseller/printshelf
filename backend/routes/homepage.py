@@ -10,19 +10,22 @@ from typing import Optional
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from auth import get_current_user_web_optional
+from affiliate import build_preview_catalog, store_search_url
+from auth import filament_preview_enabled, get_current_user_web_optional
 from sqlalchemy import func, nullslast, or_
 
-from models import Filament, Like, Print, Printer, User, get_db, print_url_id, PRINT_CATEGORIES
+from models import AffiliateClick, Filament, Like, Print, Printer, User, get_db, print_url_id, PRINT_CATEGORIES
 
 router = APIRouter(tags=["homepage"])
 
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
+# base.html topbar has a gated "Preview" link → this instance renders public pages.
+templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
 
 FEATURED_LIMIT = 6
 
@@ -289,14 +292,58 @@ def explore(
     )
 
 
+# ============== Public filament preview (no login) ==============
+
+@router.get("/preview", response_class=HTMLResponse)
+def public_preview(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """No-login filament preview studio — catalog filaments + upload-your-own,
+    all client-side. Top-of-funnel: non-users can try it before signing up."""
+    if not filament_preview_enabled():
+        return RedirectResponse("/", status_code=303)
+    catalog = build_preview_catalog(db, exclude_keys=set(), buy_base="/preview/buy")
+    return templates.TemplateResponse(
+        request, "preview_public.html",
+        {
+            "current_user": current_user,
+            "filaments": [],
+            "catalog": catalog,
+            "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
+        },
+    )
+
+
+@router.get("/preview/buy")
+def public_preview_buy(
+    brand: str = "",
+    material: str = "",
+    color: str = "",
+    finish: str = "",
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Tracked Buy for a catalog filament from the public demo (anonymous OK)."""
+    target = store_search_url(brand, material, color, finish)
+    if not target:
+        return RedirectResponse("/preview", status_code=303)
+    from filament_import_service import detect_store
+    store = detect_store(target)
+    db.add(AffiliateClick(user_id=(current_user.id if current_user else None), filament_id=None, store=store or None))
+    db.commit()
+    return RedirectResponse(target, status_code=302)
+
+
 # ============== PWA: service worker + offline page ==============
 
 # Bump CACHE version when the SW logic or precache list changes, so clients
 # fetch the new worker and drop the stale cache on activate.
 _SERVICE_WORKER_JS = """\
-const CACHE = 'printshelf-v5';
+const CACHE = 'printshelf-v6';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/offline', '/static/app.css?v=17'];
+const PRECACHE = ['/offline', '/static/app.css?v=18'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
