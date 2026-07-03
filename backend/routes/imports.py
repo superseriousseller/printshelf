@@ -27,12 +27,18 @@ class ImportRequest(BaseModel):
 
 
 def _is_stale(row: "ImportCache") -> bool:
-    """Self-heal cache entries scraped before _clean_title shipped.
+    """Self-heal cache entries that a newer scrape can improve.
 
-    A " | " in the cached title means it carries page-title cruft
-    ("… | Printables.com"); a fresh scrape will store the cleaned form.
+    - A " | " in the cached title means it carries page-title cruft
+      ("… | Printables.com"); a fresh scrape stores the cleaned form.
+    - A Makerworld row with no thumbnail predates the design-API fix
+      (HTML scraping never yielded a cover); re-extract to fetch it.
     """
-    return bool(row.title and " | " in row.title)
+    if row.title and " | " in row.title:
+        return True
+    if row.platform == "makerworld" and not row.thumbnail_url:
+        return True
+    return False
 
 
 def _wire_response(result: dict, cached: bool) -> dict:
