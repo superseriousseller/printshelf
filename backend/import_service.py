@@ -188,6 +188,82 @@ def _fetch_via_proxy(url: str) -> httpx.Response:
     return resp
 
 
+def _makerworld_model_id(url: str) -> Optional[str]:
+    """Pull the numeric model id from a Makerworld URL (/[locale/]models/<id>-<slug>)."""
+    m = re.search(r"/models/(\d+)", urlparse(url).path)
+    return m.group(1) if m else None
+
+
+def _fetch_json(url: str, use_proxy: bool):
+    """Fetch a JSON endpoint (optionally via the CF proxy). Returns (status, parsed_or_None)."""
+    if use_proxy:
+        r = _fetch_via_proxy(url)
+        status = getattr(r, "_proxied_status", r.status_code)
+    else:
+        with httpx.Client(timeout=REQUEST_TIMEOUT, follow_redirects=True,
+                          headers={**BROWSER_HEADERS, "Accept": "application/json"}) as c:
+            r = c.get(url)
+        status = r.status_code
+    if status >= 400:
+        return status, None
+    try:
+        return status, json.loads(r.text)
+    except Exception:
+        return status, None
+
+
+def _validate_thumbnail(url: str) -> Optional[str]:
+    """HEAD-check a thumbnail. Drop only on a definitive 4xx/5xx from the CDN
+    (e.g. Makerworld returns 503 for very recently uploaded model covers).
+    Fail *open* on network errors — the server's HEAD can be flaky where the
+    end-user's browser will still load the CDN image fine."""
+    try:
+        with httpx.Client(timeout=5.0) as hc:
+            head = hc.head(url, follow_redirects=True)
+        if head.status_code >= 400:
+            logger.info("makerworld cover CDN %s — skipping %s", head.status_code, url[:80])
+            return None
+    except Exception:
+        pass
+    return url
+
+
+def _extract_makerworld_api(url: str, use_proxy: bool) -> Optional[dict]:
+    """Makerworld hydrates its HTML client-side and 403s server-side scrapers, so
+    og: tags never arrive. Its public design API, however, returns the real title,
+    cover image and designer as JSON. Prefer it; callers fall back to the HTML/slug
+    path if this returns None."""
+    mid = _makerworld_model_id(url)
+    if not mid:
+        return None
+    api = f"https://makerworld.com/api/v1/design-service/design/{mid}"
+    try:
+        status, data = _fetch_json(api, use_proxy)
+    except httpx.RequestError as e:
+        logger.warning("makerworld api fetch failed for id=%s: %s", mid, e)
+        return None
+    logger.info("makerworld api fetch: id=%s status=%s ok=%s", mid, status, bool(data))
+    if not isinstance(data, dict):
+        return None
+    title = (data.get("title") or "").strip()
+    if not title:
+        return None
+    cover = (data.get("coverUrl") or "").strip() or None
+    if cover:
+        cover = _validate_thumbnail(cover)
+    creator = data.get("designCreator")
+    designer = None
+    if isinstance(creator, dict):
+        designer = (creator.get("name") or "").strip() or None
+    return {
+        "platform": "makerworld",
+        "title": _clean_title(title),
+        "designer": designer,
+        "thumbnail_url": cover,
+        "source_url": url,
+    }
+
+
 def extract(url: str) -> dict:
     """Fetch and parse a model URL.
 
@@ -199,6 +275,14 @@ def extract(url: str) -> dict:
 
     platform = detect_platform(url)
     use_proxy = platform == "makerworld" and bool(_CF_PROXY_URL and _CF_PROXY_SECRET)
+
+    # Makerworld: the HTML is JS-hydrated and 403s scrapers (even through the proxy),
+    # so prefer the public design API which returns title + cover + designer as JSON.
+    # Falls through to the legacy HTML/slug path if the API is unavailable.
+    if platform == "makerworld":
+        api_result = _extract_makerworld_api(url, use_proxy)
+        if api_result:
+            return api_result
 
     try:
         if use_proxy:
