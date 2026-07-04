@@ -17,6 +17,14 @@
 
 {% if cap_hit %}<p class="notice notice-warn">You've reached the free-tier print limit. Upgrade to Pro to add more — or clear some prints first.</p>{% endif %}
 
+{% if private_finished_count and queued_filter != "true" %}
+<div class="notice notice-warn">
+    🔒 {{ private_finished_count }} finished print{{ 's' if private_finished_count != 1 else '' }}
+    {{ 'are' if private_finished_count != 1 else 'is' }} private — only you can see
+    {{ 'them' if private_finished_count != 1 else 'it' }}.
+    Hit <strong>Post to profile</strong> on {{ 'each' if private_finished_count != 1 else 'it' }} to share your work.
+</div>
+{% endif %}
 <form method="get" action="/dashboard/prints" class="filter-bar">
     {% if queued_filter %}<input type="hidden" name="queued" value="{{ queued_filter }}">{% endif %}
     <input type="search" name="search" value="{{ search }}" placeholder="Search titles…" class="filter-search">
@@ -71,7 +79,16 @@
         <div class="actions">
             {% if p.queued %}
             <form method="post" action="/dashboard/prints/{{ p.id }}/printed" class="inline-form">
+                {% if not p.is_public %}
+                <button type="submit" name="publish" value="1" class="btn-primary">Mark printed &amp; post</button>
+                <button type="submit" class="linklike">Keep private</button>
+                {% else %}
                 <button type="submit" class="btn-secondary">Mark printed</button>
+                {% endif %}
+            </form>
+            {% elif not p.is_public %}
+            <form method="post" action="/dashboard/prints/{{ p.id }}/publish" class="inline-form">
+                <button type="submit" class="btn-primary">Post to profile</button>
             </form>
             {% endif %}
             <a href="/dashboard/prints/{{ p.id }}/photo">{% if p.photo_url %}📷{% else %}+ Photo{% endif %}</a>
