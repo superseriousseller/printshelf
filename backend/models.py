@@ -112,6 +112,7 @@ class SourcePlatform(str, enum.Enum):
     CULTS3D = "cults3d"
     THINGIVERSE = "thingiverse"
     MANUAL = "manual"
+    SLICER = "slicer"          # auto-imported via the slicer post-processing script
 
 
 # Free-tier limits — checked on POST /api/prints and POST /api/filaments

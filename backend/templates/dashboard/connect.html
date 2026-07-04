@@ -1,0 +1,51 @@
+{% extends "dashboard/_layout.html" %}
+{% set section = "connect" %}
+{% block title %}Connect your slicer — PrintShelf{% endblock %}
+
+{% block dash %}
+<header class="dash-header">
+    <h1>🔌 Connect your slicer</h1>
+</header>
+<p class="dash-breadcrumb">Auto-log every print. Add a one-line post-processing script in Bambu Studio, OrcaSlicer, or PrusaSlicer and each slice logs itself to your shelf — filament, colors, print time, layer height, infill, and printer, no typing.</p>
+
+<div class="connect-steps">
+    <section class="connect-step">
+        <h2><span class="connect-num">1</span> Download your script</h2>
+        <p>This copy has your API key already baked in — keep it private (anyone with it can post to your account).</p>
+        <a href="/dashboard/connect/printshelf_postprocess.py" class="btn-primary" download>⬇ Download printshelf_postprocess.py</a>
+        <p class="hint">Save it somewhere permanent (e.g. your Documents folder). If you re-generate your API key later, download it again.</p>
+    </section>
+
+    <section class="connect-step">
+        <h2><span class="connect-num">2</span> Add it in your slicer</h2>
+        <p>In <strong>Bambu Studio / OrcaSlicer / PrusaSlicer</strong>: open the <strong>Others</strong> tab of Print Settings (Prusa: <strong>Output options</strong>) → <strong>Post-processing scripts</strong>, and paste the line for your OS, editing the path to where you saved the file:</p>
+        <div class="connect-code">
+            <span class="connect-code-os">macOS / Linux</span>
+            <code>/usr/bin/python3 "/Users/you/Documents/printshelf_postprocess.py"</code>
+        </div>
+        <div class="connect-code">
+            <span class="connect-code-os">Windows</span>
+            <code>"C:\\Path\\To\\python.exe" "C:\\Users\\you\\Documents\\printshelf_postprocess.py"</code>
+        </div>
+        <p class="hint">Needs Python 3.8+ (no extra packages). On Windows, use the full path to <code>python.exe</code>.</p>
+    </section>
+
+    <section class="connect-step">
+        <h2><span class="connect-num">3</span> Slice something</h2>
+        <p>Hit <strong>Slice</strong> then <strong>Export</strong>. A new print appears on <a href="/dashboard/prints">your shelf</a> within a couple seconds — with the filament matched to your library (or created if it's new). The script never changes your G-code and never blocks slicing.</p>
+    </section>
+</div>
+
+<details class="connect-advanced">
+    <summary>Options &amp; details</summary>
+    <ul>
+        <li><strong>Public vs private:</strong> auto-logged prints are public by default. To keep them private or send them to your queue instead, open the script and set <code>IS_PUBLIC = False</code> or <code>QUEUED = True</code> near the top.</li>
+        <li><strong>When it fires:</strong> at <em>export</em> time (your intent to print), not on actual success — so re-slicing the same model logs it again. Delete duplicates from your shelf if needed.</li>
+        <li><strong>Your API key</strong> (for the <code>PRINTSHELF_API_KEY</code> env-var route, or to double-check the download):</li>
+    </ul>
+    <div class="connect-key">
+        <input type="text" value="{{ api_key }}" readonly onclick="this.select()" aria-label="Your API key">
+    </div>
+    <p class="hint">Manage or rotate this key on the <a href="/dashboard/account#api-key">Account</a> page.</p>
+</details>
+{% endblock %}

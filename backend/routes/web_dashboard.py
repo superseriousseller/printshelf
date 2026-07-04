@@ -153,6 +153,48 @@ def queue_redirect():
 
 # ============== Printers ==============
 
+_POSTPROCESS_SCRIPT = os.path.join(os.path.dirname(_BACKEND_DIR), "tools", "printshelf_postprocess.py")
+
+
+@router.get("/connect", response_class=HTMLResponse)
+def connect_slicer(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    """Setup page: download the personalized post-processing script + instructions."""
+    if (r := _require_user(user)) is not None:
+        return r
+    base = str(request.base_url).rstrip("/")
+    return templates.TemplateResponse(
+        request, "dashboard/connect.html",
+        _ctx(user, db=db, api_key=user.api_key, base_url=base),
+    )
+
+
+@router.get("/connect/printshelf_postprocess.py")
+def download_postprocess(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Serve the post-processing script with the user's API key + base URL baked in."""
+    if (r := _require_user(user)) is not None:
+        return r
+    try:
+        with open(_POSTPROCESS_SCRIPT) as fh:
+            script = fh.read()
+    except OSError:
+        _log.exception("post-process script missing at %s", _POSTPROCESS_SCRIPT)
+        raise HTTPException(status_code=500, detail="Script temporarily unavailable")
+    base = str(request.base_url).rstrip("/")
+    script = script.replace("__PRINTSHELF_API_KEY__", user.api_key).replace(
+        "__PRINTSHELF_BASE_URL__", base)
+    return Response(
+        content=script, media_type="text/x-python",
+        headers={"Content-Disposition": 'attachment; filename="printshelf_postprocess.py"'},
+    )
+
+
 @router.get("/printers", response_class=HTMLResponse)
 def list_printers(
     request: Request,
