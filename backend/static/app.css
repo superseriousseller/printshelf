@@ -875,3 +875,16 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .upgrade-features { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 6px; color: var(--text-dim); font-size: 0.9rem; }
 .upgrade-free-note { font-size: 0.82rem; color: var(--text-dim); }
 .dash-billing h3 { margin: 0 0 8px; font-size: 1rem; }
+
+
+/* Quick Log: collapsible "Add details" expander on the print form */
+.quick-hint { color: var(--text-dim); font-size: 0.85rem; margin: -4px 0 10px; }
+.print-more { border: 1px solid var(--border); border-radius: 8px; margin: 4px 0 10px; background: var(--bg-card); }
+.print-more > summary { cursor: pointer; padding: 12px 14px; font-size: 0.92rem; font-weight: 600; color: var(--text); list-style: none; display: flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; }
+.print-more > summary::-webkit-details-marker { display: none; }
+.print-more > summary::before { content: '▸'; color: var(--text-dim); font-size: 0.8rem; transition: transform 0.15s; }
+.print-more[open] > summary::before { transform: rotate(90deg); }
+.print-more[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.print-more > summary .hint { font-weight: 400; }
+.print-more > *:not(summary) { margin-left: 14px; margin-right: 14px; }
+.public-toggle { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px; }
