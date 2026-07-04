@@ -617,10 +617,16 @@ def list_prints(
     rows = q.order_by(sort_map.get(sort or "", Print.created_at.desc())).all()
     printer_names = {p.id: p.name for p in db.query(Printer).filter(Printer.user_id == user.id).all()}
     fil_meta = {f.id: f for f in db.query(Filament).filter(Filament.user_id == user.id).all()}
+    private_finished_count = db.query(Print).filter(
+        Print.user_id == user.id,
+        Print.queued == False,      # noqa: E712
+        Print.is_public == False,   # noqa: E712
+    ).count()
     return templates.TemplateResponse(
         request, "dashboard/prints_list.html",
         _ctx(user, db=db, prints=rows, queued_filter=queued_filter,
              printer_names=printer_names, fil_meta=fil_meta,
+             private_finished_count=private_finished_count,
              search=search_val, sort=sort or "newest", cap_hit=cap == "1"),
     )
 
@@ -1190,6 +1196,7 @@ async def photo_upload_submit(
 @router.post("/prints/{print_id}/printed")
 def mark_print_done(
     print_id: int,
+    publish: str = Form(""),
     user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -1201,8 +1208,30 @@ def mark_print_done(
         p.status = "printed"
         if p.print_date is None:
             p.print_date = date.today()
+        # Queue -> post conversion: "Mark printed & post" also makes it public so it
+        # lands in the feed/explore/profile (those query public + not-queued).
+        if publish:
+            p.is_public = True
+            _log.info("print %s marked printed + posted by user %s", print_id, user.id)
         db.commit()
-    return RedirectResponse("/dashboard/prints", status_code=303)
+    return RedirectResponse("/dashboard/prints?queued=false", status_code=303)
+
+
+@router.post("/prints/{print_id}/publish")
+def publish_print(
+    print_id: int,
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    """Owner one-click publish of a finished-but-private print to their profile."""
+    if (r := _require_user(user)) is not None:
+        return r
+    p = db.query(Print).filter(Print.id == print_id, Print.user_id == user.id).first()
+    if p is not None and not p.is_public:
+        p.is_public = True
+        db.commit()
+        _log.info("print %s published to profile by user %s", print_id, user.id)
+    return RedirectResponse("/dashboard/prints?queued=false", status_code=303)
 
 
 @router.post("/prints/{print_id}/delete")
