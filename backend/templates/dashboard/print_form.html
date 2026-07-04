@@ -58,6 +58,12 @@
             <p class="hint">Uploading a new one replaces this.</p>
         </div>
         {% endif %}
+        {% if values.thumbnail_url and not (print_ and print_.photo_url) %}
+        <div class="current-photo" id="imported-thumb-preview">
+            <img src="{{ values.thumbnail_url }}" alt="imported preview">
+            <p class="hint">Imported from the source — this image is used on your print unless you upload or paste your own below.</p>
+        </div>
+        {% endif %}
         <label class="photo-file-label">
             Upload from your computer
             <input type="file" name="photo_file" accept="image/png,image/jpeg,image/webp,image/gif">
