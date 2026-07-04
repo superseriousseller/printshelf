@@ -193,7 +193,7 @@ a:hover { text-decoration: underline; }
 .photo-picker { display: flex; flex-direction: column; gap: 12px; }
 .photo-picker .current-photo { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .photo-picker .current-photo img { max-width: 220px; max-height: 220px; border-radius: 8px; border: 1px solid var(--border); }
-.photo-file-label input[type="file"] { background: var(--bg-card); color: var(--text); padding: 8px 10px; }
+.photo-file-label input[type="file"] { background: var(--bg-card); color: var(--text); padding: 8px 10px; max-width: 100%; }
 .filament-search { width: 100%; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; font-family: inherit; margin-bottom: 0; }
 .filament-search:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 .filament-token-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 0; }
@@ -703,7 +703,7 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .search-user-handle { margin: 0; color: var(--text-dim); font-size: 0.82rem; }
 .search-user-bio { margin: 2px 0 0; color: var(--text-dim); font-size: 0.82rem; }
 .search-prints { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-@media (max-width: 600px) { .nav-search { max-width: 140px; } }
+@media (max-width: 600px) { .nav-search { max-width: 140px; margin: 0 8px; } }
 
 .related-section { max-width: 1000px; margin: 32px auto 0; padding: 0 24px; }
 .related-heading { font-size: 1rem; font-weight: 600; margin: 0 0 14px; color: var(--text-dim); }
@@ -875,3 +875,16 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .upgrade-features { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 6px; color: var(--text-dim); font-size: 0.9rem; }
 .upgrade-free-note { font-size: 0.82rem; color: var(--text-dim); }
 .dash-billing h3 { margin: 0 0 8px; font-size: 1rem; }
+
+
+/* Quick Log: collapsible "Add details" expander on the print form */
+.quick-hint { color: var(--text-dim); font-size: 0.85rem; margin: -4px 0 10px; }
+.print-more { border: 1px solid var(--border); border-radius: 8px; margin: 4px 0 10px; background: var(--bg-card); }
+.print-more > summary { cursor: pointer; padding: 12px 14px; font-size: 0.92rem; font-weight: 600; color: var(--text); list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-height: 44px; box-sizing: border-box; }
+.print-more > summary::-webkit-details-marker { display: none; }
+.print-more > summary::before { content: '▸'; color: var(--text-dim); font-size: 0.8rem; transition: transform 0.15s; }
+.print-more[open] > summary::before { transform: rotate(90deg); }
+.print-more[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.print-more > summary .hint { font-weight: 400; flex: 1 1 220px; min-width: 0; }
+.print-more > *:not(summary) { margin-left: 14px; margin-right: 14px; }
+.public-toggle { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px; min-height: 44px; }

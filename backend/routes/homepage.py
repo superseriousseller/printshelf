@@ -341,9 +341,9 @@ def public_preview_buy(
 # Bump CACHE version when the SW logic or precache list changes, so clients
 # fetch the new worker and drop the stale cache on activate.
 _SERVICE_WORKER_JS = """\
-const CACHE = 'printshelf-v6';
+const CACHE = 'printshelf-v8';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/offline', '/static/app.css?v=18'];
+const PRECACHE = ['/offline', '/static/app.css?v=20'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
