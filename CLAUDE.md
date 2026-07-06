@@ -108,6 +108,13 @@ backend/scripts/visual_audit.py  # Playwright all-screens desktop+mobile audit (
 chrome-extension/          # separate project — do not suggest changes here as backend changes
 ```
 
+## Instruments Collection
+A curated 3D-printable-instruments registry (PluggedIn3D) is being productionized as a PrintShelf collection. Spec of record lives in `docs/instruments/` (handoff doc, pre-handoff spec, v0.2 HTML prototype). Two non-negotiables from the spec:
+- **Prices never display without a checked-date** — staleness escalates (>90d "aging", >180d auto-hide).
+- **BOM parts are specs with 1..n fulfillment links, never bare URLs** — a dead link removes one fulfillment option, never breaks the entry.
+
+The trumpet valve-graft CAD thread (Route A) lives in a separate `brass-instraments` repo with its own session state — not built here; only its outputs (e.g. a finished build row) ever cross over into this repo.
+
 ## Operational Gotchas
 - **Cache-bust static assets on EVERY change** — `app.css` is loaded as `?v=N` (base.html + the SW precache list + SW `CACHE` name); **bump N whenever CSS changes** or browsers replay their cached copy (this bit twice in session 29 — stale CSS collapsed a viewer, stale CSS hid new rules). Vendored JS modules likewise need a `?v=` on their `import()` (e.g. `filament-viewer.js?v=2`) — bump it when that JS changes, or a fresh-browser test passes while real users get the old module. Fresh Playwright contexts have no cache, so they hide this — always assume real browsers cache.
 - **Railway containers are ephemeral** — local uploads vanish on redeploy. R2 required for staging/prod.
@@ -236,3 +243,32 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 
 **Backburner ideas (don't forget):**
 - **Slicer / printer auto-import** (Cam, 2026-06-30) — auto-capture print data (filament/settings/time/outcome) → POST to the JSON API so users never hand-type a print. Best v1 = a **slicer post-processing script** (Bambu Studio/OrcaSlicer parse gcode header comments → `/api/prints`); later a **Bambu LAN MQTT agent** for actual prints + AMS filament + success/fail (unofficial API → maintenance cost). Tricky part = filament→library "match-or-create". Full notes in memory `project_slicer_printer_integration_idea`.
+
+---
+
+## Relay Protocol
+
+You are operating in a human-review relay loop.
+
+### For every task:
+
+#### Step 1 — Plan
+1. Write your plan to REVIEW_NEEDED.md
+2. Run: `while [ ! -s CC_RESPONSE.md ]; do sleep 5; done`
+3. Read CC_RESPONSE.md, delete it, follow instructions
+
+#### Step 2 — Implement
+Do the work per the approved plan.
+
+#### Step 3 — Completion report
+1. Write completion report to REVIEW_NEEDED.md
+2. Run: `while [ ! -s CC_RESPONSE.md ]; do sleep 5; done`
+3. Read CC_RESPONSE.md, delete it
+4. If it contains a new task, start Step 1 for that task
+5. If it says DONE, stop
+
+### Rules:
+- Never skip the wait loop
+- Never proceed without CC_RESPONSE.md appearing
+- One plan or report at a time
+- Write `BLOCKED: [reason]` to REVIEW_NEEDED.md if you hit something that needs human intervention
