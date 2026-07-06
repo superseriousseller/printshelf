@@ -1,0 +1,60 @@
+{# Listed entry card. Three distinct render states, per design review:
+   - empty bom            -> affirmative claim ("Fully printed — no parts needed")
+   - bom item, no fulfillments -> "source needed" (not fabricated, not silent)
+   - null axis            -> "pending verification" (we know the axis exists, no number yet)
+   Do not collapse these into one "empty state" — they mean different things. #}
+<article class="instrument-card">
+    <div class="instrument-card-top">
+        <h3 class="instrument-name">{{ entry.name }}</h3>
+        {% if entry.designer %}<p class="instrument-designer">{{ entry.designer }}</p>{% endif %}
+    </div>
+
+    <div class="axis-row">
+        <div class="axis-meter">
+            <div class="axis-meter-bar">
+                {% for i in range(4) %}
+                <span class="axis-seg{% if entry.function_axis is not none and i <= entry.function_axis %} filled level-{{ entry.function_axis }}{% endif %}"></span>
+                {% endfor %}
+            </div>
+            <span class="axis-label">
+                {%- if entry.function_axis is none -%}
+                    Pending verification
+                {%- elif entry.function_axis == 0 -%}
+                    Decoration
+                {%- elif entry.function_axis == 1 -%}
+                    Plays, with caveats
+                {%- elif entry.function_axis == 2 -%}
+                    Playable
+                {%- else -%}
+                    Verified on video
+                {%- endif -%}
+            </span>
+        </div>
+        <span class="badge axis-pending">Sound fidelity: pending verification</span>
+        <span class="badge axis-pending">Effort: pending verification</span>
+        <span class="badge axis-pending">Cost: pending verification</span>
+    </div>
+
+    <div class="instrument-bom">
+        <h4>What it takes</h4>
+        {% if entry.bom %}
+        <ul class="instrument-bom-list">
+            {% for item in entry.bom %}
+            <li>
+                {{ item.spec }}
+                {% if not item.fulfillments %}<span class="badge bom-status-needed">source needed</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="instrument-bom-affirmative">Fully printed — no additional parts needed.</p>
+        {% endif %}
+    </div>
+
+    {% if entry.note %}<p class="instrument-note">{{ entry.note }}</p>{% endif %}
+
+    <div class="instrument-card-foot">
+        {% if entry.source_url %}<a class="chip-link" href="{{ entry.source_url }}" target="_blank" rel="noopener">Source</a>{% endif %}
+        {% if entry.demo_url %}<a class="chip-link" href="{{ entry.demo_url }}" target="_blank" rel="noopener">Demo</a>{% endif %}
+    </div>
+</article>

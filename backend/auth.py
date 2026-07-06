@@ -216,3 +216,14 @@ def filament_preview_enabled() -> bool:
     if str(os.environ.get("FILAMENT_PREVIEW_ENABLED", "")).lower() in {"1", "true", "yes", "on"}:
         return True
     return os.environ.get("APP_ENV") == "staging"
+
+
+def instruments_index_enabled() -> bool:
+    """Feature flag for the Printed Instruments Index. **Fails closed**: hidden
+    everywhere unless INSTRUMENTS_INDEX_ENABLED is truthy OR APP_ENV is exactly
+    'staging' — same reveal pattern as filament_preview_enabled(). This is a
+    4-slice build (schema+seed, this read route, audio/pricing, notify-me);
+    stays flag-hidden on prod until all slices land and Cam signs off."""
+    if str(os.environ.get("INSTRUMENTS_INDEX_ENABLED", "")).lower() in {"1", "true", "yes", "on"}:
+        return True
+    return os.environ.get("APP_ENV") == "staging"

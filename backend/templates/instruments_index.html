@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Printed Instruments Index — does it actually play? | PrintShelf{% endblock %}
+{% block meta %}
+    <meta name="description" content="A curated registry of 3D-printable musical instruments — honest about whether each one actually plays, what it costs, and what it takes to build.">
+    <meta property="og:title" content="Printed Instruments Index — PrintShelf">
+    <meta property="og:description" content="3D-printable instruments, rated honestly: does it play, what does it cost, what does it take.">
+    <meta property="og:url" content="{{ app_url }}/instruments">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="{{ app_url }}/instruments">
+{% endblock %}
+
+{% block content %}
+<div class="instruments-index">
+    <header class="instruments-index-header">
+        <h1>Printed Instruments Index</h1>
+        <p>The registry that tells you if it actually plays — 3D-printable instruments rated on whether they work, what they cost, and what they take to build. Where nothing playable exists yet, we say so.</p>
+    </header>
+
+    {% for family, entries in families %}
+    <section class="instrument-family">
+        <h2>{{ family }}</h2>
+        <div class="instrument-grid">
+            {% for entry in entries %}
+                {% include "_instrument_card.html" %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+
+    {% if frontier %}
+    <section class="instrument-family instrument-frontier-section">
+        <h2>The Frontier</h2>
+        <p class="instrument-frontier-note">No confidently-playable version exists yet for these — here's why, and what's closest.</p>
+        <div class="instrument-grid">
+            {% for entry in frontier %}
+                {% include "_instrument_frontier_card.html" %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

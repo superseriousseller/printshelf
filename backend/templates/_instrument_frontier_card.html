@@ -1,0 +1,13 @@
+{# Frontier entry card — deliberately distinct from a listed card: no axes row
+   (playability doesn't apply to something nobody's built), dashed border,
+   gap-specific fields. "Unsolved" must read as visually different from
+   "unrated," not as a blanker version of the same card. #}
+<article class="instrument-card instrument-frontier-card">
+    <div class="instrument-card-top">
+        <h3 class="instrument-name">{{ entry.name }}</h3>
+        {% if entry.gap_status %}<span class="badge gap-status-badge">{{ entry.gap_status }}</span>{% endif %}
+    </div>
+    {% if entry.gap_why %}<p class="gap-why">{{ entry.gap_why }}</p>{% endif %}
+    {% if entry.gap_closest %}<p class="gap-closest"><strong>Closest:</strong> {{ entry.gap_closest }}</p>{% endif %}
+    {% if entry.note %}<p class="instrument-note">{{ entry.note }}</p>{% endif %}
+</article>
