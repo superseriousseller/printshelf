@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """PrintShelf slicer post-processing script.
 
-Add this in your slicer under Print Settings -> Output options ->
-"Post-processing scripts" (Bambu Studio, OrcaSlicer, PrusaSlicer all support it):
+Add this in your slicer as a Post-processing Script:
+  - Bambu Studio / OrcaSlicer: enable the Advanced toggle, then
+    Print Settings -> Others -> Post-processing Scripts.
+  - PrusaSlicer: Expert mode -> Print Settings -> Output options.
 
-    /usr/bin/python3 /path/to/printshelf_postprocess.py
+Paste (edit the path to where you saved this file):
 
-After every slice, this reads the exported G-code's header comments (filament,
-colors, print time, layer height, infill, supports, printer) and logs the print
-to your PrintShelf account via the API. It never modifies the G-code and always
-exits 0, so it can't break your slicing/printing.
+    /usr/bin/python3 "/path/to/printshelf_postprocess.py"
+
+It runs during slicing (Bambu Studio shows a one-time "Security Warning" that a
+post-processing script will run -- expected; click Execute). It reads the sliced
+G-code header (filament, colors, print time, layer height, infill, supports,
+printer) and logs the print to your PrintShelf account via the API. It never
+modifies the G-code and always exits 0, so it can't break your slicing/printing.
 
 Stdlib only — no pip installs. Works with Python 3.8+.
 

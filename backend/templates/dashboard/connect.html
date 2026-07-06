@@ -18,7 +18,7 @@
 
     <section class="connect-step">
         <h2><span class="connect-num">2</span> Add it in your slicer</h2>
-        <p>In <strong>Bambu Studio / OrcaSlicer / PrusaSlicer</strong>: open the <strong>Others</strong> tab of Print Settings (Prusa: <strong>Output options</strong>) → <strong>Post-processing scripts</strong>, and paste the line for your OS, editing the path to where you saved the file:</p>
+        <p><strong>Bambu Studio / OrcaSlicer:</strong> turn on the <strong>Advanced</strong> toggle at the top of the Print Settings panel — Post-processing Scripts is hidden until you do — then open the <strong>Others</strong> tab → <strong>Post-processing Scripts</strong>. <strong>PrusaSlicer:</strong> switch to <strong>Expert</strong> mode → Print Settings → <strong>Output options</strong> → Post-processing scripts. Paste the line for your OS, editing the path to where you saved the file:</p>
         <div class="connect-code">
             <span class="connect-code-os">macOS / Linux</span>
             <code>/usr/bin/python3 "/Users/you/Documents/printshelf_postprocess.py"</code>
@@ -28,11 +28,12 @@
             <code>"C:\\Path\\To\\python.exe" "C:\\Users\\you\\Documents\\printshelf_postprocess.py"</code>
         </div>
         <p class="hint">Needs Python 3.8+ (no extra packages). On Windows, use the full path to <code>python.exe</code>.</p>
+        <p class="notice notice-warn"><strong>First slice:</strong> Bambu Studio shows a <em>“Security Warning”</em> that a post-processing script will run automatically. That's expected — this script only reads the sliced G-code and posts the details to PrintShelf. Click <strong>Execute</strong> to continue. Because it runs <em>during slicing</em>, any action that slices — <strong>Export</strong> or <strong>Print plate</strong> — triggers it.</p>
     </section>
 
     <section class="connect-step">
         <h2><span class="connect-num">3</span> Slice something</h2>
-        <p>Hit <strong>Slice</strong> then <strong>Export</strong>. A new print appears on <a href="/dashboard/prints">your shelf</a> within a couple seconds — with the filament matched to your library (or created if it's new). The script never changes your G-code and never blocks slicing.</p>
+        <p>Hit <strong>Slice</strong>, then <strong>Export</strong> or <strong>Print plate</strong>. A new print appears on <a href="/dashboard/prints">your shelf</a> within a couple seconds — with the filament matched to your library (or created if it's new). The script never changes your G-code and never blocks slicing.</p>
     </section>
 </div>
 
@@ -40,7 +41,7 @@
     <summary>Options &amp; details</summary>
     <ul>
         <li><strong>Public vs private:</strong> auto-logged prints are public by default. To keep them private or send them to your queue instead, open the script and set <code>IS_PUBLIC = False</code> or <code>QUEUED = True</code> near the top.</li>
-        <li><strong>When it fires:</strong> at <em>export</em> time (your intent to print), not on actual success — so re-slicing the same model logs it again. Delete duplicates from your shelf if needed.</li>
+        <li><strong>When it fires:</strong> at <em>slice</em> time (your intent to print), not on actual success — so re-slicing the same model logs it again. Delete duplicates from your shelf if needed.</li>
         <li><strong>Your API key</strong> (for the <code>PRINTSHELF_API_KEY</code> env-var route, or to double-check the download):</li>
     </ul>
     <div class="connect-key">
