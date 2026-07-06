@@ -9,11 +9,13 @@ import logging
 import os
 from datetime import datetime, timedelta
 
+import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from email_service import send_day2_nudge, send_day7_reminder
-from models import Print, User, get_db
+from models import Print, RegistryEntry, User, get_db
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/internal", tags=["cron"])
@@ -101,3 +103,71 @@ def run_drip(db: Session = Depends(get_db), _=Depends(_check_secret)):
     db.commit()
     logger.info("drip run complete: day2=%d day7=%d", sent_day2, sent_day7)
     return {"day2_sent": sent_day2, "day7_sent": sent_day7}
+
+
+def _check_url_availability(client: httpx.Client, url: str) -> str:
+    """'ok' | 'dead' | 'unknown'. Reserves 'dead' for definitive 404/410 so a
+    single flaky pass (timeout, connection error, 5xx) can't strip prices off
+    the index for a week — those cases fall back to 'unknown' instead, which
+    behaves like a never-checked fulfillment (still usable in cost math)."""
+    if not url:
+        return "unknown"
+    try:
+        resp = client.head(url)
+        if resp.status_code == 405:  # some hosts don't support HEAD
+            resp = client.get(url)
+    except httpx.RequestError:
+        return "unknown"
+    if resp.status_code in (404, 410):
+        return "dead"
+    if resp.status_code >= 500:
+        return "unknown"
+    return "ok"
+
+
+@router.post("/instruments/check-links")
+def check_instrument_links(db: Session = Depends(get_db), _=Depends(_check_secret)):
+    """Weekly dead-link sweep over every BOM fulfillment URL + retail reference
+    URL in the instruments registry. Railway cron: schedule "0 6 * * 1" (Monday
+    6am UTC) -> curl -sf -X POST .../internal/instruments/check-links
+    -H "X-Cron-Secret: $CRON_SECRET" """
+    entries = db.query(RegistryEntry).filter(RegistryEntry.vertical == "instruments").all()
+    now = datetime.utcnow()
+    checked = dead = 0
+
+    with httpx.Client(timeout=8.0, follow_redirects=True) as client:
+        for entry in entries:
+            bom = entry.bom or []
+            for item in bom:
+                for fulfillment in item.get("fulfillments", []):
+                    availability = _check_url_availability(client, fulfillment.get("url"))
+                    fulfillment["availability"] = availability
+                    fulfillment["checked_at"] = now.isoformat()
+                    checked += 1
+                    if availability == "dead":
+                        dead += 1
+            if bom:
+                flag_modified(entry, "bom")  # JSON column mutated in place
+
+            for field in ("retail_budget", "retail_premium"):
+                url = getattr(entry, f"{field}_url")
+                if not url:
+                    continue
+                availability = _check_url_availability(client, url)
+                setattr(entry, f"{field}_checked_at", now)
+                checked += 1
+                if availability == "dead":
+                    dead += 1
+                    setattr(entry, f"{field}_price", None)  # dead retail link -> no honest price to show
+
+    db.commit()
+    logger.info("instruments link check complete: checked=%d dead=%d", checked, dead)
+    return {"checked": checked, "dead": dead}
+
+
+@router.post("/instruments/refresh-amazon-prices")
+def refresh_amazon_prices_route(db: Session = Depends(get_db), _=Depends(_check_secret)):
+    """No-op until AMAZON_PA_API_* credentials are set — see amazon_pa_api.py.
+    Railway cron: same schedule as check-links is fine once enabled."""
+    from amazon_pa_api import refresh_amazon_prices
+    return refresh_amazon_prices(db)

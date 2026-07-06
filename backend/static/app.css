@@ -956,3 +956,11 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .gap-status-badge { background: rgba(180,124,224,0.12); color: #b47ce0; white-space: nowrap; }
 .gap-why { margin: 0; font-size: 0.85rem; color: var(--text-body); }
 .gap-closest { margin: 0; font-size: 0.82rem; color: var(--text-dim); }
+
+/* Pricing (Slice 3) */
+.axis-cost-real { background: var(--accent-soft); color: var(--accent); }
+.instrument-pricing h4 { margin: 0 0 4px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
+.instrument-pricing-line { margin: 0; font-size: 0.85rem; color: var(--text-body); }
+.instrument-retail { margin: 0; font-size: 0.78rem; color: var(--text-dim); }
+.instrument-retail a { color: var(--accent); }
+.price-aging { background: rgba(245,166,35,0.14); color: var(--warning); margin-left: 4px; }

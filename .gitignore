@@ -23,3 +23,11 @@ htmlcov/
 seed/*.yaml
 !seed/*.template.yaml
 seed/reddit_post.md
+
+# Instruments overlay has no secrets (just Cam's product data) — tracked on purpose
+!seed/instruments_overlay.yaml
+
+# Claude Code <-> Claude Web relay handoff (session-specific, not portable)
+REVIEW_NEEDED.md
+CC_RESPONSE.md
+relay/relay.log
