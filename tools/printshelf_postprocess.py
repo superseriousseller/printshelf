@@ -35,6 +35,10 @@ import urllib.request
 API_KEY = os.environ.get("PRINTSHELF_API_KEY", "__PRINTSHELF_API_KEY__")
 BASE_URL = os.environ.get("PRINTSHELF_BASE_URL", "__PRINTSHELF_BASE_URL__").rstrip("/")
 
+# Sentinel for "still the un-personalized template." Assembled from two pieces so
+# the download's replacement of the placeholder above never rewrites THIS line too.
+_UNCONFIGURED_KEY = "__PRINTSHELF" + "_API_KEY__"
+
 IS_PUBLIC = True       # show auto-logged prints on your public profile
 QUEUED = False         # True = add to your queue instead of logging as printed
 STATUS = "printed"     # printed | printing | failed | partial
@@ -182,7 +186,7 @@ def main():
     if len(sys.argv) < 2:
         log("no G-code path passed; nothing to do")
         return
-    if "__PRINTSHELF_API_KEY__" in API_KEY or not API_KEY:
+    if not API_KEY or API_KEY == _UNCONFIGURED_KEY:
         log("API key not configured — set PRINTSHELF_API_KEY or download the "
             "pre-filled script from PrintShelf -> Connect your slicer")
         return
