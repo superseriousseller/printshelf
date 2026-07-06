@@ -25,6 +25,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -38,6 +39,11 @@ BASE_URL = os.environ.get("PRINTSHELF_BASE_URL", "__PRINTSHELF_BASE_URL__").rstr
 # Sentinel for "still the un-personalized template." Assembled from two pieces so
 # the download's replacement of the placeholder above never rewrites THIS line too.
 _UNCONFIGURED_KEY = "__PRINTSHELF" + "_API_KEY__"
+
+# Diagnostic: when True, also write every SLIC3R_* env var + argv to a dump file
+# so we can see exactly what the slicer passes. Set False once you're set up.
+DEBUG = True
+DEBUG_PATH = os.path.join(os.path.expanduser("~"), "printshelf_debug.log")
 
 IS_PUBLIC = True       # show auto-logged prints on your public profile
 QUEUED = False         # True = add to your queue instead of logging as printed
@@ -101,6 +107,41 @@ def detect_finish(settings_id):
     return None
 
 
+def dump_debug(path):
+    """Write argv + SLIC3R_PP_OUTPUT_NAME + all SLIC3R_* env vars to DEBUG_PATH."""
+    try:
+        out = ["=== PrintShelf post-process debug ==="]
+        out.append("argv                  = %r" % (sys.argv,))
+        out.append("gcode basename        = %s" % os.path.basename(path or ""))
+        out.append("SLIC3R_PP_OUTPUT_NAME = %s" % os.environ.get("SLIC3R_PP_OUTPUT_NAME", "<unset>"))
+        out.append("SLIC3R_PP_HOST        = %s" % os.environ.get("SLIC3R_PP_HOST", "<unset>"))
+        out.append("--- all SLIC3R_* env vars (values truncated to 200 chars) ---")
+        for k in sorted(os.environ):
+            if k.upper().startswith("SLIC3R"):
+                v = os.environ[k].replace("\n", "\\n")
+                if len(v) > 200:
+                    v = v[:200] + " …(%d chars)" % len(os.environ[k])
+                out.append("%s = %s" % (k, v))
+        with open(DEBUG_PATH, "w") as fh:
+            fh.write("\n".join(out) + "\n")
+        log("debug env dumped to %s" % DEBUG_PATH)
+    except Exception as e:
+        log("debug dump failed: %s" % e)
+
+
+def derive_title(gcode_path):
+    """Prefer the slicer's intended output name (the real project/plate name)
+    over the temp working filename it hands us (e.g. '.23792.0')."""
+    name = os.environ.get("SLIC3R_PP_OUTPUT_NAME") or gcode_path or ""
+    name = os.path.basename(name)
+    name = re.sub(r"\.(gcode|gco|g|bgcode)(\.\w+)?$", "", name, flags=re.IGNORECASE)
+    name = re.sub(r"[ _-]*plate[ _-]*\d+$", "", name, flags=re.IGNORECASE)  # drop "_plate_1"
+    name = name.replace("_", " ").strip()
+    if not name or re.fullmatch(r"[\d.\s]+", name):  # reject junk like ".23792.0"
+        return None
+    return name
+
+
 def build_payload(path):
     text = read_comments(path)
 
@@ -153,8 +194,9 @@ def build_payload(path):
     if supports_raw is not None:
         supports = supports_raw.strip().lower() in {"1", "true", "yes", "on"}
 
-    title = re.sub(r"\.(gcode|gco|g|bgcode)(\.\w+)?$", "", os.path.basename(path), flags=re.IGNORECASE)
-    title = title.replace("_", " ").strip() or "Untitled print"
+    title = derive_title(path)
+    if not title:
+        title = (printer + " · " if printer else "Print · ") + time.strftime("%b %d, %I:%M%p")
 
     return {
         "title": title,
@@ -186,6 +228,8 @@ def main():
     if len(sys.argv) < 2:
         log("no G-code path passed; nothing to do")
         return
+    if DEBUG:
+        dump_debug(sys.argv[1])
     if not API_KEY or API_KEY == _UNCONFIGURED_KEY:
         log("API key not configured — set PRINTSHELF_API_KEY or download the "
             "pre-filled script from PrintShelf -> Connect your slicer")
