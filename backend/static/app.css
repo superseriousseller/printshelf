@@ -905,3 +905,54 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .connect-advanced ul { margin: 4px 0 12px; padding-left: 20px; }
 .connect-advanced li { margin: 8px 0; }
 .connect-key input { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.85rem; padding: 9px 12px; background: var(--bg-elev); color: var(--text); border: 1px solid var(--border); border-radius: 8px; }
+
+/* ============== Instruments Index ============== */
+.instruments-index { max-width: 1160px; margin: 0 auto; padding: 40px 20px 60px; }
+.instruments-index-header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 8px; }
+.instruments-index-header h1 { margin: 0 0 10px; }
+.instruments-index-header p { color: var(--text-dim); max-width: 64ch; margin: 0; }
+
+.instrument-family { margin-top: 36px; }
+.instrument-family h2 { font-size: 1.15rem; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.instrument-frontier-note { color: var(--text-dim); font-size: 0.85rem; margin: -6px 0 14px; }
+
+.instrument-grid { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.instrument-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; display: flex; flex-direction: column; gap: 12px;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.instrument-card:hover { transform: translateY(-3px); border-color: rgba(255,106,61,0.3); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.instrument-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.instrument-name { margin: 0; font-size: 1.05rem; }
+.instrument-designer { margin: 2px 0 0; font-size: 0.78rem; color: var(--text-dim); }
+
+/* Axis meter — the signature visual element, preserved as its own component
+   through the re-theme (not flattened to a text label). Re-skinned on
+   PrintShelf's palette: decoration=disabled grey, caveats=warning amber,
+   playable=success green, verified=accent orange. */
+.axis-row { display: flex; flex-direction: column; gap: 6px; }
+.axis-meter { display: flex; flex-direction: column; gap: 4px; }
+.axis-meter-bar { display: flex; gap: 3px; }
+.axis-seg { flex: 1; height: 6px; border-radius: 3px; background: var(--bg-hover); }
+.axis-seg.filled.level-0 { background: var(--text-disabled); }
+.axis-seg.filled.level-1 { background: var(--warning); }
+.axis-seg.filled.level-2 { background: var(--success); }
+.axis-seg.filled.level-3 { background: var(--accent); }
+.axis-label { font-size: 0.72rem; color: var(--text-dim); }
+.axis-pending { background: var(--bg-hover); color: var(--text-dim); align-self: flex-start; }
+
+.instrument-bom h4 { margin: 0 0 6px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
+.instrument-bom-list { margin: 0; padding-left: 18px; font-size: 0.85rem; color: var(--text-body); }
+.instrument-bom-list li { margin: 3px 0; }
+.instrument-bom-affirmative { margin: 0; font-size: 0.85rem; color: var(--success); }
+.bom-status-needed { margin-left: 6px; background: var(--bg-hover); color: var(--text-dim); font-size: 0.62rem; padding: 1px 7px; }
+
+.instrument-note { margin: 0; font-size: 0.82rem; color: var(--text-dim); border-left: 2px solid var(--border); padding-left: 10px; white-space: pre-line; }
+.instrument-card-foot { display: flex; gap: 10px; margin-top: auto; }
+
+/* Frontier — deliberately distinct: dashed border, no axis row */
+.instrument-frontier-card { border-style: dashed; }
+.gap-status-badge { background: rgba(180,124,224,0.12); color: #b47ce0; white-space: nowrap; }
+.gap-why { margin: 0; font-size: 0.85rem; color: var(--text-body); }
+.gap-closest { margin: 0; font-size: 0.82rem; color: var(--text-dim); }

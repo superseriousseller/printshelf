@@ -15,10 +15,10 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from affiliate import build_preview_catalog, store_search_url
-from auth import filament_preview_enabled, get_current_user_web_optional
+from auth import filament_preview_enabled, instruments_index_enabled, get_current_user_web_optional
 from sqlalchemy import func, nullslast, or_
 
-from models import AffiliateClick, Filament, Like, Print, Printer, User, get_db, print_url_id, PRINT_CATEGORIES
+from models import AffiliateClick, Filament, Like, Print, Printer, RegistryEntry, User, get_db, print_url_id, PRINT_CATEGORIES
 
 router = APIRouter(tags=["homepage"])
 
@@ -26,6 +26,23 @@ _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
 # base.html topbar has a gated "Preview" link → this instance renders public pages.
 templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
+templates.env.globals["instruments_index_enabled"] = instruments_index_enabled
+
+# Preferred display order for known instrument families — NOT a hardcoded
+# allowlist. _group_by_family() iterates whatever families actually exist in
+# the data and only uses this list to order the known ones; any family not
+# listed here still renders (sorted after), so a future family can't silently
+# vanish from the page the way the HTML prototype's hardcoded FAM_ORDER would.
+INSTRUMENT_FAMILY_ORDER = ["Woodwind", "Brass", "Percussion", "Strings"]
+
+
+def _group_by_family(entries):
+    groups = {}
+    for entry in entries:
+        groups.setdefault(entry.family or "Other", []).append(entry)
+    known = [f for f in INSTRUMENT_FAMILY_ORDER if f in groups]
+    extra = sorted(f for f in groups if f not in INSTRUMENT_FAMILY_ORDER)
+    return [(family, groups[family]) for family in known + extra]
 
 FEATURED_LIMIT = 6
 
@@ -336,14 +353,52 @@ def public_preview_buy(
     return RedirectResponse(target, status_code=302)
 
 
+# ============== Printed Instruments Index (public, flag-hidden) ==============
+
+@router.get("/instruments", response_class=HTMLResponse)
+def instruments_index(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Curated registry of 3D-printable instruments — no login required.
+    Flag-hidden on prod until all 4 slices land (see instruments_index_enabled).
+    Slice 2: static grouped list, no search/filter yet (Slice 2b)."""
+    if not instruments_index_enabled():
+        return RedirectResponse("/", status_code=303)
+
+    listed = (
+        db.query(RegistryEntry)
+        .filter(RegistryEntry.vertical == "instruments", RegistryEntry.status == "listed")
+        .order_by(RegistryEntry.name)
+        .all()
+    )
+    frontier = (
+        db.query(RegistryEntry)
+        .filter(RegistryEntry.vertical == "instruments", RegistryEntry.status == "frontier")
+        .order_by(RegistryEntry.name)
+        .all()
+    )
+
+    return templates.TemplateResponse(
+        request, "instruments_index.html",
+        {
+            "current_user": current_user,
+            "families": _group_by_family(listed),
+            "frontier": frontier,
+            "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
+        },
+    )
+
+
 # ============== PWA: service worker + offline page ==============
 
 # Bump CACHE version when the SW logic or precache list changes, so clients
 # fetch the new worker and drop the stale cache on activate.
 _SERVICE_WORKER_JS = """\
-const CACHE = 'printshelf-v9';
+const CACHE = 'printshelf-v10';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/offline', '/static/app.css?v=21'];
+const PRECACHE = ['/offline', '/static/app.css?v=22'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
