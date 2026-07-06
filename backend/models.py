@@ -463,6 +463,123 @@ class CollectionPrint(Base):
 Index("ix_collection_prints_pair", CollectionPrint.collection_id, CollectionPrint.print_id, unique=True)
 
 
+# ============== Registry Entry ==============
+# Vertical-agnostic "verified registry of things you didn't know you could
+# print" — instruments is the first vertical (flat `vertical` column, not a
+# join table: one vertical exists today). Fully curated (no public
+# submissions), so `bom`/`filament_usage`/`media` are JSON rather than
+# normalized tables — matches the Print.filament_ids precedent, no relational
+# query need at this scale.
+#
+# No number here is ever fabricated: axes/cost fields stay null until real
+# data arrives (slicer weights, effort-rubric backfill, checked prices).
+# Render layer must treat null as "pending verification," never default it
+# to something that looks like data.
+
+class RegistryEntry(Base):
+    __tablename__ = "registry_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    vertical = Column(String(30), nullable=False, default="instruments")
+    slug = Column(String(120), nullable=False)          # real key here (unlike Print.slug) — Cam-authored, not user content
+    name = Column(String(200), nullable=False)
+    designer = Column(String(200), nullable=True)
+    family = Column(String(50), nullable=True)           # Woodwind/Brass/Percussion/Strings/Practice aid
+    status = Column(String(20), nullable=False, default="listed")  # listed | frontier
+
+    # Four-axis honesty card. function_axis is the only one with real seed
+    # data (from the HTML's playability `level`); the rest stay null until
+    # Cam's slicer/rubric backfill.
+    function_axis = Column(Integer, nullable=True)        # 0-3 playability
+    fidelity_axis = Column(Integer, nullable=True)         # 0-5 tone fidelity
+    objective_score = Column(Float, nullable=True)         # librosa spectral score, Slice 3+
+    effort_print_load = Column(String(10), nullable=True)  # S/M/L/XL bucket
+    effort_assembly_skill = Column(Integer, nullable=True)  # 1-5 rubric
+    verified_by_owner = Column(Boolean, default=False, nullable=False, server_default="false")
+
+    license = Column(String(200), nullable=True)
+    source_url = Column(String(1000), nullable=True)
+    demo_url = Column(String(1000), nullable=True)
+    note = Column(Text, nullable=True)
+
+    # Frontier-only narrative fields (status == "frontier")
+    gap_why = Column(Text, nullable=True)
+    gap_status = Column(String(100), nullable=True)   # e.g. "Open · hard mode" — distinct from `status` above
+    gap_closest = Column(Text, nullable=True)          # plain text (HTML stripped at seed time)
+
+    # Retail comparison — fixed-shape pair, flat columns (not JSON)
+    retail_budget_price = Column(Float, nullable=True)
+    retail_budget_url = Column(String(1000), nullable=True)
+    retail_budget_checked_at = Column(DateTime, nullable=True)
+    retail_premium_price = Column(Float, nullable=True)
+    retail_premium_url = Column(String(1000), nullable=True)
+    retail_premium_checked_at = Column(DateTime, nullable=True)
+
+    # filament_usage: [{material, grams}]
+    # bom: [{spec, qty, tier, consumable, fulfillments:[{vendor,url,price,currency,checked_at,availability,affiliate}]}]
+    # media: [] — Slice 3 audio A/B bolts on here
+    filament_usage = Column(JSON, nullable=True, default=list)
+    bom = Column(JSON, nullable=True, default=list)
+    media = Column(JSON, nullable=True, default=list)
+
+    owner_build_print_id = Column(Integer, ForeignKey("prints.id", ondelete="SET NULL"), nullable=True, index=True)
+    owner_build_episode_url = Column(String(1000), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    owner_build_print = relationship("Print")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "vertical": self.vertical,
+            "slug": self.slug,
+            "name": self.name,
+            "designer": self.designer,
+            "family": self.family,
+            "status": self.status,
+            "axes": {
+                "function": self.function_axis,
+                "fidelity": self.fidelity_axis,
+                "objectiveScore": self.objective_score,
+                "effortPrintLoad": self.effort_print_load,
+                "effortAssemblySkill": self.effort_assembly_skill,
+            },
+            "verifiedByOwner": self.verified_by_owner,
+            "license": self.license,
+            "sourceUrl": self.source_url,
+            "demoUrl": self.demo_url,
+            "note": self.note,
+            "gapWhy": self.gap_why,
+            "gapStatus": self.gap_status,
+            "gapClosest": self.gap_closest,
+            "retail": {
+                "budget": {
+                    "price": self.retail_budget_price,
+                    "url": self.retail_budget_url,
+                    "checkedAt": self.retail_budget_checked_at.isoformat() if self.retail_budget_checked_at else None,
+                },
+                "premium": {
+                    "price": self.retail_premium_price,
+                    "url": self.retail_premium_url,
+                    "checkedAt": self.retail_premium_checked_at.isoformat() if self.retail_premium_checked_at else None,
+                },
+            },
+            "filamentUsage": self.filament_usage or [],
+            "bom": self.bom or [],
+            "media": self.media or [],
+            "ownerBuildPrintId": self.owner_build_print_id,
+            "ownerBuildEpisodeUrl": self.owner_build_episode_url,
+            "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+Index("ix_registry_entries_vertical_slug", RegistryEntry.vertical, RegistryEntry.slug, unique=True)
+Index("ix_registry_entries_vertical_status", RegistryEntry.vertical, RegistryEntry.status)
+
+
 # ============== Affiliate Click ==============
 
 class AffiliateClick(Base):
