@@ -102,6 +102,7 @@ class FilamentStatus(str, enum.Enum):
 class PrintStatus(str, enum.Enum):
     QUEUED = "queued"
     PRINTED = "printed"
+    PRINTING = "printing"
     FAILED = "failed"
     PARTIAL = "partial"
 

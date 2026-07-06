@@ -45,9 +45,9 @@ _UNCONFIGURED_KEY = "__PRINTSHELF" + "_API_KEY__"
 DEBUG = True
 DEBUG_PATH = os.path.join(os.path.expanduser("~"), "printshelf_debug.log")
 
-IS_PUBLIC = True       # show auto-logged prints on your public profile
+IS_PUBLIC = False      # False = private (review & publish later); True = straight to your public profile
 QUEUED = False         # True = add to your queue instead of logging as printed
-STATUS = "printed"     # printed | printing | failed | partial
+STATUS = "printed"     # printed | printing | failed | partial (what to log the print as)
 TIMEOUT = 10           # seconds for the API call
 
 LOG_PATH = os.path.join(os.path.expanduser("~"), "printshelf_postprocess.log")
@@ -122,6 +122,16 @@ def dump_debug(path):
                 if len(v) > 200:
                     v = v[:200] + " …(%d chars)" % len(os.environ[k])
                 out.append("%s = %s" % (k, v))
+        out.append("--- gcode header lines (usage / time / model) ---")
+        try:
+            with open(path, errors="ignore") as gh:
+                for ln in gh:
+                    if len(ln) < 200 and re.search(
+                            r"filament used|total filament|filament weight|printing time|model printing|^; model",
+                            ln, re.IGNORECASE):
+                        out.append(ln.rstrip())
+        except Exception:
+            pass
         with open(DEBUG_PATH, "w") as fh:
             fh.write("\n".join(out) + "\n")
         log("debug env dumped to %s" % DEBUG_PATH)
@@ -142,36 +152,68 @@ def derive_title(gcode_path):
     return name
 
 
+def _env(key):
+    return os.environ.get("SLIC3R_" + key)
+
+
+def _env_semi_list(key):
+    """Slicer config string-lists are ';'-separated and sometimes quoted."""
+    v = _env(key)
+    if not v:
+        return []
+    return [x.strip().strip('"').strip() for x in v.split(";") if x.strip()]
+
+
+def _used_grams_from_gcode(text):
+    """Per-filament grams from the gcode header ('; filament used [g] = a,b,c').
+    Returns a list of floats, or [] if not found. Used to keep only slots that printed."""
+    m = re.search(r"^;\s*filament used \[g\]\s*[:=]\s*([\d.,\s]+)$", text, re.IGNORECASE | re.MULTILINE)
+    if not m:
+        return []
+    return [float(x) for x in re.findall(r"[\d.]+", m.group(1))]
+
+
 def build_payload(path):
     text = read_comments(path)
 
-    types = split_list(grab(text, r"^;\s*filament_type\s*[:=]\s*(.+)$"))
-    colors = split_list(grab(text, r"^;\s*filament_colour\s*[:=]\s*(.+)$",
-                             r"^;\s*filament_color\s*[:=]\s*(.+)$",
-                             r"^;\s*extruder_colour\s*[:=]\s*(.+)$"))
-    settings_ids = split_list(grab(text, r"^;\s*filament_settings_id\s*[:=]\s*(.+)$"))
-    vendor = grab(text, r"^;\s*filament_vendor\s*[:=]\s*(.+)$")
+    # Filament identity comes from the clean SLIC3R_* env vars when present
+    # (Bambu passes them as ';'-separated per-slot lists); fall back to gcode comments.
+    types = _env_semi_list("FILAMENT_TYPE") or split_list(grab(text, r"^;\s*filament_type\s*[:=]\s*(.+)$"))
+    colors = _env_semi_list("FILAMENT_COLOUR") or split_list(grab(text, r"^;\s*filament_colour\s*[:=]\s*(.+)$",
+                             r"^;\s*filament_color\s*[:=]\s*(.+)$", r"^;\s*extruder_colour\s*[:=]\s*(.+)$"))
+    vendors = _env_semi_list("FILAMENT_VENDOR") or split_list(grab(text, r"^;\s*filament_vendor\s*[:=]\s*(.+)$"))
+    settings_ids = _env_semi_list("FILAMENT_SETTINGS_ID") or split_list(grab(text, r"^;\s*filament_settings_id\s*[:=]\s*(.+)$"))
+
+    # Keep only slots that actually printed (per-slot grams > 0), if the gcode tells us.
+    used = _used_grams_from_gcode(text)
 
     filaments = []
+    seen = set()
     for i, mat in enumerate(types):
-        sid = settings_ids[i] if i < len(settings_ids) else (settings_ids[0] if settings_ids else None)
-        brand = vendor
-        if not brand and sid:
-            brand = sid.split()[0]  # e.g. "Bambu PLA Basic ..." -> "Bambu"
+        if used and i < len(used) and used[i] <= 0:
+            continue  # this AMS slot wasn't used in this print
+        sid = settings_ids[i] if i < len(settings_ids) else None
+        vendor = vendors[i] if i < len(vendors) else None
+        if not vendor and sid:
+            vendor = sid.split()[0]  # e.g. "Bambu PLA Basic ..." -> "Bambu"
         hexv = colors[i] if i < len(colors) else None
         if hexv and not hexv.startswith("#"):
             hexv = None
+        key = (mat.lower(), (hexv or "").lower(), (vendor or "").lower())
+        if key in seen:
+            continue  # collapse identical spools
+        seen.add(key)
         filaments.append({
             "material": mat,
             "color_hex": hexv,
-            "brand": brand,
+            "brand": (vendor or None),
             "finish": detect_finish(sid),
         })
 
-    layer = grab(text, r"^;\s*layer_height\s*[:=]\s*([\d.]+)")
-    infill = grab(text, r"^;\s*sparse_infill_density\s*[:=]\s*([\d.]+)",
+    layer = _env("LAYER_HEIGHT") or grab(text, r"^;\s*layer_height\s*[:=]\s*([\d.]+)")
+    infill = _env("SPARSE_INFILL_DENSITY") or grab(text, r"^;\s*sparse_infill_density\s*[:=]\s*([\d.]+)",
                   r"^;\s*fill_density\s*[:=]\s*([\d.]+)")
-    supports_raw = grab(text, r"^;\s*enable_support\s*[:=]\s*(\S+)",
+    supports_raw = _env("ENABLE_SUPPORT") or grab(text, r"^;\s*enable_support\s*[:=]\s*(\S+)",
                         r"^;\s*support_material\s*[:=]\s*(\S+)")
     time_raw = grab(text,
                     r"estimated printing time.*?[:=]\s*([^;\n]+)",
@@ -181,7 +223,7 @@ def build_payload(path):
                     r"total filament used \[g\]\s*[:=]\s*([\d.,\s]+)",
                     r"filament used \[g\]\s*[:=]\s*([\d.,\s]+)",
                     r"total filament weight \[g\]\s*[:=]\s*([\d.,\s]+)")
-    printer = grab(text, r"^;\s*printer_model\s*[:=]\s*(.+)$",
+    printer = _env("PRINTER_MODEL") or grab(text, r"^;\s*printer_model\s*[:=]\s*(.+)$",
                    r"^;\s*printer_settings_id\s*[:=]\s*(.+)$")
 
     used_g = None
@@ -203,7 +245,7 @@ def build_payload(path):
         "printer": printer,
         "filaments": [f for f in filaments if f.get("material")],
         "layer_height": float(layer) if layer else None,
-        "infill_pct": int(round(float(infill))) if infill else None,
+        "infill_pct": int(round(float(str(infill).rstrip("%")))) if infill else None,
         "supports": supports,
         "print_time_mins": parse_time_to_mins(time_raw),
         "filament_used_g": used_g,
