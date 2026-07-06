@@ -592,6 +592,23 @@ class AffiliateClick(Base):
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
+# ============== Filament Prices (instruments pricing, Slice 3) ==============
+# The one maintained pricing input for the instruments registry: material ->
+# $/kg. Everything else (spool/build/play cost) is computed at render time,
+# never stored — see instruments_pricing.py.
+
+class FilamentPrice(Base):
+    __tablename__ = "filament_prices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    material = Column(String(50), nullable=False)
+    price_per_kg = Column(Float, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+Index("ix_filament_prices_material", FilamentPrice.material, unique=True)
+
+
 # ============== Community Filament (shared autocomplete DB) ==============
 
 class CommunityFilament(Base):

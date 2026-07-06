@@ -16,9 +16,10 @@ from sqlalchemy.orm import Session
 
 from affiliate import build_preview_catalog, store_search_url
 from auth import filament_preview_enabled, instruments_index_enabled, get_current_user_web_optional
+from instruments_pricing import compute_costs, staleness_state
 from sqlalchemy import func, nullslast, or_
 
-from models import AffiliateClick, Filament, Like, Print, Printer, RegistryEntry, User, get_db, print_url_id, PRINT_CATEGORIES
+from models import AffiliateClick, Filament, FilamentPrice, Like, Print, Printer, RegistryEntry, User, get_db, print_url_id, PRINT_CATEGORIES
 
 router = APIRouter(tags=["homepage"])
 
@@ -27,6 +28,23 @@ templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
 # base.html topbar has a gated "Preview" link → this instance renders public pages.
 templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
 templates.env.globals["instruments_index_enabled"] = instruments_index_enabled
+
+
+def _format_cost(value):
+    """Jinja filter: None -> None (template decides the fallback text);
+    a (low, high) tuple -> '$X' if they collapse to one number, else '$X–$Y';
+    a plain number -> '$X'."""
+    if value is None:
+        return None
+    if isinstance(value, (tuple, list)):
+        low, high = value
+        if round(low) == round(high):
+            return f"${low:,.0f}"
+        return f"${low:,.0f}–${high:,.0f}"
+    return f"${value:,.0f}"
+
+
+templates.env.filters["cost_display"] = _format_cost
 
 # Preferred display order for known instrument families — NOT a hardcoded
 # allowlist. _group_by_family() iterates whatever families actually exist in
@@ -363,7 +381,7 @@ def instruments_index(
 ):
     """Curated registry of 3D-printable instruments — no login required.
     Flag-hidden on prod until all 4 slices land (see instruments_index_enabled).
-    Slice 2: static grouped list, no search/filter yet (Slice 2b)."""
+    Slice 3: real cost computation + staleness, still no search/filter (2b)."""
     if not instruments_index_enabled():
         return RedirectResponse("/", status_code=303)
 
@@ -380,12 +398,23 @@ def instruments_index(
         .all()
     )
 
+    price_table = {p.material: p.price_per_kg for p in db.query(FilamentPrice).all()}
+    pricing = {}
+    for entry in listed:
+        costs = compute_costs(entry, price_table)
+        pricing[entry.id] = {
+            **costs,
+            "retail_budget_state": staleness_state(entry.retail_budget_checked_at),
+            "retail_premium_state": staleness_state(entry.retail_premium_checked_at),
+        }
+
     return templates.TemplateResponse(
         request, "instruments_index.html",
         {
             "current_user": current_user,
             "families": _group_by_family(listed),
             "frontier": frontier,
+            "pricing": pricing,
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
         },
     )
@@ -396,9 +425,9 @@ def instruments_index(
 # Bump CACHE version when the SW logic or precache list changes, so clients
 # fetch the new worker and drop the stale cache on activate.
 _SERVICE_WORKER_JS = """\
-const CACHE = 'printshelf-v10';
+const CACHE = 'printshelf-v11';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/offline', '/static/app.css?v=22'];
+const PRECACHE = ['/offline', '/static/app.css?v=23'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

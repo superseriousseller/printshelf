@@ -1,0 +1,30 @@
+# Instruments Index — real-data overlay, layered onto the HTML-derived seed
+# at seed time. Keyed by slug (the same slug shown in seed_instruments.py's
+# dry-run output, e.g. "printbone", "printable-recorder").
+#
+# This file is tracked in git on purpose (no secrets in it) — Cam's real
+# grams/prices/BOM data should be versioned, reviewable, and re-runnable,
+# not one-off SQL against a JSON column. Add/edit an entry below, then:
+#
+#   DATABASE_URL=... python backend/scripts/seed_instruments.py --dry-run
+#   DATABASE_URL=... python backend/scripts/seed_instruments.py
+#
+# Safe to re-run any time — this file is the source of truth for the fields
+# it sets, on every seed run (an HTML-only reseed never clobbers it, and
+# removing an entry here resets those fields back to null on the next run).
+#
+# Format:
+#
+# <slug>:
+#   filament_usage:
+#     - {material: PLA, grams: 340}
+#   bom_fulfillments:
+#     - match: "PVC or carbon-fiber slide tubes"   # substring match vs. the
+#                                                    # existing bom item's spec
+#       fulfillments:
+#         - {vendor: Amazon, url: "https://www.amazon.com/dp/XXXXXXXXXX", price: 12.99}
+#         - {vendor: "Some Other Store", url: "https://...", price: 15.00}
+#   retail_budget: {price: 45.00, url: "https://..."}
+#   retail_premium: {price: 89.00, url: "https://..."}
+#
+# No entries yet — nothing to seed until real numbers land.

@@ -32,7 +32,14 @@
         </div>
         <span class="badge axis-pending">Sound fidelity: pending verification</span>
         <span class="badge axis-pending">Effort: pending verification</span>
-        <span class="badge axis-pending">Cost: pending verification</span>
+        {% set cost = pricing[entry.id] %}
+        {% if cost.spool is none %}
+            <span class="badge axis-pending">Cost: pending verification</span>
+        {% elif cost.build is none %}
+            <span class="badge bom-status-needed">Cost: source needed</span>
+        {% else %}
+            <span class="badge axis-cost-real">Cost: {{ cost.build | cost_display }}</span>
+        {% endif %}
     </div>
 
     <div class="instrument-bom">
@@ -50,6 +57,32 @@
         <p class="instrument-bom-affirmative">Fully printed — no additional parts needed.</p>
         {% endif %}
     </div>
+
+    {% if cost.spool is not none %}
+    <div class="instrument-pricing">
+        <h4>Pricing</h4>
+        <p class="instrument-pricing-line">
+            Spool {{ cost.spool | cost_display }}
+            · Build {{ (cost.build | cost_display) if cost.build is not none else "source needed" }}
+            · Play-ready {{ (cost.play | cost_display) if cost.play is not none else "source needed" }}
+        </p>
+    </div>
+    {% endif %}
+
+    {% if (pricing[entry.id].retail_budget_state != "stale" and entry.retail_budget_price) or (pricing[entry.id].retail_premium_state != "stale" and entry.retail_premium_price) %}
+    <p class="instrument-retail">
+        vs retail:
+        {% if entry.retail_budget_price and pricing[entry.id].retail_budget_state != "stale" %}
+            {% if entry.retail_budget_url %}<a href="{{ entry.retail_budget_url }}" target="_blank" rel="noopener">${{ "%.0f"|format(entry.retail_budget_price) }} budget</a>{% else %}${{ "%.0f"|format(entry.retail_budget_price) }} budget{% endif %}
+            {% if pricing[entry.id].retail_budget_state == "aging" %}<span class="badge price-aging">aging price</span>{% endif %}
+        {% endif %}
+        {% if entry.retail_premium_price and pricing[entry.id].retail_premium_state != "stale" %}
+            ↔
+            {% if entry.retail_premium_url %}<a href="{{ entry.retail_premium_url }}" target="_blank" rel="noopener">${{ "%.0f"|format(entry.retail_premium_price) }} premium</a>{% else %}${{ "%.0f"|format(entry.retail_premium_price) }} premium{% endif %}
+            {% if pricing[entry.id].retail_premium_state == "aging" %}<span class="badge price-aging">aging price</span>{% endif %}
+        {% endif %}
+    </p>
+    {% endif %}
 
     {% if entry.note %}<p class="instrument-note">{{ entry.note }}</p>{% endif %}
 
