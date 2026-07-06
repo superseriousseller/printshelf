@@ -165,7 +165,7 @@ def connect_slicer(
     """Setup page: download the personalized post-processing script + instructions."""
     if (r := _require_user(user)) is not None:
         return r
-    base = str(request.base_url).rstrip("/")
+    base = os.environ.get("APP_URL", "https://printshelf.app").rstrip("/")
     return templates.TemplateResponse(
         request, "dashboard/connect.html",
         _ctx(user, db=db, api_key=user.api_key, base_url=base),
@@ -186,7 +186,7 @@ def download_postprocess(
     except OSError:
         _log.exception("post-process script missing at %s", _POSTPROCESS_SCRIPT)
         raise HTTPException(status_code=500, detail="Script temporarily unavailable")
-    base = str(request.base_url).rstrip("/")
+    base = os.environ.get("APP_URL", "https://printshelf.app").rstrip("/")
     script = script.replace("__PRINTSHELF_API_KEY__", user.api_key).replace(
         "__PRINTSHELF_BASE_URL__", base)
     return Response(
