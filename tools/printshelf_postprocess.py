@@ -132,6 +132,32 @@ def dump_debug(path):
                         out.append(ln.rstrip())
         except Exception:
             pass
+        # The gcode lives INSIDE the slicer's unpacked 3MF project dir. Its siblings
+        # (3D/3dmodel.model, Metadata/*.config, plate_*.png) usually hold the real
+        # model title, designer, MakerWorld design id, and a thumbnail render.
+        try:
+            proj = os.path.dirname(os.path.dirname(os.path.abspath(path)))
+            out.append("--- project dir listing: %s ---" % proj)
+            for root, _dirs, files in os.walk(proj):
+                for fn in sorted(files):
+                    fp = os.path.join(root, fn)
+                    try:
+                        sz = os.path.getsize(fp)
+                    except OSError:
+                        sz = -1
+                    out.append("  %s (%d bytes)" % (os.path.relpath(fp, proj), sz))
+            for rel in ("3D/3dmodel.model", "Metadata/model_settings.config",
+                        "Metadata/slice_info.config", "Metadata/project_settings.config"):
+                fp = os.path.join(proj, rel)
+                if os.path.exists(fp):
+                    try:
+                        txt = open(fp, errors="ignore").read()
+                        out.append("--- %s (first 2500 chars) ---" % rel)
+                        out.append(txt[:2500])
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         with open(DEBUG_PATH, "w") as fh:
             fh.write("\n".join(out) + "\n")
         log("debug env dumped to %s" % DEBUG_PATH)
