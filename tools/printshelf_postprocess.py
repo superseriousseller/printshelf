@@ -10,7 +10,7 @@ Paste (edit the path to where you saved this file):
 
     /usr/bin/python3 "/path/to/printshelf_postprocess.py"
 
-It runs during slicing (Bambu Studio shows a one-time "Security Warning" that a
+It runs during slicing (Bambu Studio shows a "Security Warning" that a
 post-processing script will run -- expected; click Execute). It reads the sliced
 G-code header (filament, colors, print time, layer height, infill, supports,
 printer) and logs the print to your PrintShelf account via the API. It never
