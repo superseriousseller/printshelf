@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from affiliate import is_allowed_link_domain
 from auth import get_current_user
-from limits import enforce_print_limit
+from limits import enforce_filament_limit, enforce_print_limit
 from models import (
     Filament,
     Print,
@@ -60,6 +60,11 @@ class PrintCreate(BaseModel):
     video_url: Optional[str] = Field(default=None, max_length=1000)
     links: List[PrintLinkItem] = Field(default_factory=list)
     category: Optional[str] = None
+    layer_height: Optional[float] = Field(default=None, ge=0, le=2)
+    infill_pct: Optional[int] = Field(default=None, ge=0, le=100)
+    supports: Optional[bool] = None
+    print_time_mins: Optional[int] = Field(default=None, ge=0)
+    filament_used_g: Optional[float] = Field(default=None, ge=0)
 
 
 class PrintUpdate(BaseModel):
@@ -173,6 +178,11 @@ def _create_print(db: Session, user: User, body: PrintCreate, *, force_queued: O
         print_date=body.print_date,
         video_url=body.video_url,
         category=body.category,
+        layer_height=body.layer_height,
+        infill_pct=body.infill_pct,
+        supports=body.supports,
+        print_time_mins=body.print_time_mins,
+        filament_used_g=body.filament_used_g,
     )
     db.add(p)
     db.commit()
@@ -225,6 +235,140 @@ def queue_print(
     """Convenience endpoint used by the Chrome extension: forces queued=true."""
     p = _create_print(db, user, body, force_queued=True)
     return p.to_dict()
+
+
+_PRINTER_BRANDS = [
+    "Bambu Lab", "Bambulab", "Bambu", "Prusa", "Creality", "Anycubic", "Elegoo",
+    "Voron", "Sovol", "FlashForge", "Ultimaker", "Raise3D", "Qidi", "Snapmaker",
+    "Artillery", "Kingroon", "Sidewinder",
+]
+
+
+def _split_printer_name(name: str):
+    """Best-effort split of a printer string into (brand, model). canonical_brand
+    (via the Printer.brand validator) normalizes the brand on write."""
+    low = name.lower()
+    for b in _PRINTER_BRANDS:
+        if low.startswith(b.lower()):
+            model = name[len(b):].strip(" -_") or None
+            return b, model
+    return None, name
+
+
+class IngestFilament(BaseModel):
+    material: str = Field(min_length=1, max_length=50)
+    color_name: Optional[str] = Field(default=None, max_length=100)
+    color_hex: Optional[str] = Field(default=None, max_length=7)
+    brand: Optional[str] = Field(default=None, max_length=100)
+    finish: Optional[str] = Field(default=None, max_length=100)
+
+
+class PrintIngest(BaseModel):
+    """Lenient slicer-friendly intake: descriptors instead of DB ids. The server
+    matches printer + filaments to the user's library, creating any that are new."""
+    title: str = Field(min_length=1, max_length=300)
+    printer: Optional[str] = Field(default=None, max_length=150)
+    filaments: List[IngestFilament] = Field(default_factory=list)
+    layer_height: Optional[float] = Field(default=None, ge=0, le=2)
+    infill_pct: Optional[int] = Field(default=None, ge=0, le=100)
+    supports: Optional[bool] = None
+    print_time_mins: Optional[int] = Field(default=None, ge=0)
+    filament_used_g: Optional[float] = Field(default=None, ge=0)
+    status: str = "printed"
+    queued: bool = False
+    is_public: bool = True
+    notes: Optional[str] = Field(default=None, max_length=5000)
+    source_url: Optional[str] = Field(default=None, max_length=1000)
+
+
+def _resolve_printer(db: Session, user: User, printer_str: Optional[str]):
+    name = (printer_str or "").strip()
+    if not name:
+        return None, None
+    for pr in db.query(Printer).filter(Printer.user_id == user.id).all():
+        combo = " ".join(x for x in [pr.brand, pr.model] if x).strip().lower()
+        candidates = {(pr.name or "").lower(), (pr.model or "").lower(), combo}
+        if name.lower() in candidates:
+            return pr.id, None
+    brand, model = _split_printer_name(name)
+    pr = Printer(user_id=user.id, name=name, brand=brand, model=model)
+    db.add(pr)
+    db.commit()
+    db.refresh(pr)
+    return pr.id, {"type": "printer", "id": pr.id, "name": pr.name}
+
+
+def _resolve_filament(db: Session, user: User, desc: "IngestFilament", warnings: list):
+    mat = desc.material.strip()
+    hexv = (desc.color_hex or "").strip() or None
+    cname = (desc.color_name or "").strip() or None
+    owned = db.query(Filament).filter(Filament.user_id == user.id).all()
+    same_mat = [f for f in owned if (f.material or "").lower() == mat.lower()]
+    for f in same_mat:
+        if hexv and f.color_hex and f.color_hex.lower() == hexv.lower():
+            return f.id, None
+        if cname and f.color_name and f.color_name.lower() == cname.lower():
+            return f.id, None
+    # No color signal -> match on material alone rather than spawn a duplicate spool.
+    if not hexv and not cname and same_mat:
+        return same_mat[0].id, None
+    try:
+        enforce_filament_limit(db, user)
+    except HTTPException:
+        warnings.append(
+            f"Filament '{mat} {cname or hexv or ''}'".strip()
+            + " not created — free-tier filament limit reached."
+        )
+        return None, None
+    f = Filament(
+        user_id=user.id, brand=(desc.brand or "Generic"), material=mat,
+        color_name=cname, color_hex=hexv, finish=(desc.finish or None), status="own",
+    )
+    db.add(f)
+    db.commit()
+    db.refresh(f)
+    return f.id, {"type": "filament", "id": f.id, "label": f"{f.brand} {f.material}"}
+
+
+@router.post("/ingest", status_code=201)
+def ingest_print(
+    body: PrintIngest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Slicer post-processing intake. Match-or-create printer + filaments from
+    descriptors, then log the print (source_platform='slicer')."""
+    warnings: list = []
+    created: list = []
+    printer_id, pcreated = _resolve_printer(db, user, body.printer)
+    if pcreated:
+        created.append(pcreated)
+    fil_ids: List[int] = []
+    for desc in body.filaments:
+        fid, fcreated = _resolve_filament(db, user, desc, warnings)
+        if fid is not None:
+            if fid not in fil_ids:
+                fil_ids.append(fid)
+            if fcreated:
+                created.append(fcreated)
+    pc_body = PrintCreate(
+        title=body.title,
+        source_platform="slicer",
+        source_url=body.source_url,
+        printer_id=printer_id,
+        filament_ids=fil_ids,
+        status=body.status,
+        notes=body.notes,
+        queued=body.queued,
+        is_public=body.is_public,
+        layer_height=body.layer_height,
+        infill_pct=body.infill_pct,
+        supports=body.supports,
+        print_time_mins=body.print_time_mins,
+        filament_used_g=body.filament_used_g,
+    )
+    p = _create_print(db, user, pc_body)
+    return {"print": p.to_dict(), "created": created, "warnings": warnings}
 
 
 @router.get("/{print_id}")

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Printable Instruments Index — the full-band registry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1319; --surface:#171C24; --surface-2:#1F2530; --line:#2A313D;
+    --ink:#E9E7E1; --muted:#8A929E; --faint:#5A626E;
+    --s-decoration:#6B7280; --s-caveats:#E0A34E; --s-playable:#7FB88F; --s-verified:#22D3EE;
+    --gap:#B47CE0; --accent:#22D3EE; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:'IBM Plex Sans',system-ui,sans-serif;line-height:1.5;
+    background-image:
+      radial-gradient(circle at 12% -5%, rgba(34,211,238,0.06), transparent 40%),
+      radial-gradient(circle at 90% 0%, rgba(224,163,78,0.05), transparent 45%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+
+  header{padding:52px 0 28px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+  h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(30px,5.4vw,52px);line-height:1.02;margin:0;letter-spacing:-0.02em}
+  h1 .thin{color:var(--muted);font-weight:500}
+  .lede{max-width:64ch;margin:16px 0 0;color:var(--muted);font-size:16px}
+
+  .legend{margin:30px 0 4px;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+  .legend-item{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+  .legend-swatch{width:14px;height:14px;border-radius:3px;margin-top:4px;flex:none}
+  .legend-item h4{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.04em;margin:0 0 2px;text-transform:uppercase}
+  .legend-item p{margin:0;font-size:13px;color:var(--faint);line-height:1.35}
+
+  .controls{position:sticky;top:0;z-index:5;background:rgba(15,19,25,0.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:16px 0;margin-bottom:14px}
+  .controls-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .search{flex:1 1 240px;min-width:0;position:relative}
+  .search input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px 12px 10px 34px;font-family:'IBM Plex Sans',sans-serif;font-size:14px}
+  .search svg{position:absolute;left:11px;top:11px;stroke:var(--faint)}
+  .search input::placeholder{color:var(--faint)}
+  select{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;cursor:pointer}
+  input:focus-visible,select:focus-visible,a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin:30px 0 16px}
+  .sec-head h2{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:22px;margin:0;letter-spacing:-0.01em}
+  .sec-head .rule{flex:1;height:1px;background:var(--line)}
+  .sec-head .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);letter-spacing:0.08em;text-transform:uppercase}
+
+  .fam-head{display:flex;align-items:center;gap:12px;margin:26px 0 14px}
+  .fam-head h3{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);margin:0}
+  .fam-head .n{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint)}
+  .fam-head .rule{flex:1;height:1px;background:var(--line);opacity:.6}
+
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;gap:13px;transition:border-color .18s ease,transform .18s ease}
+  .card:hover{border-color:var(--faint);transform:translateY(-2px)}
+  .card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .card h4.name{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:18px;margin:0;letter-spacing:-0.01em}
+  .card .by{font-size:12px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:3px}
+  .family-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:4px 9px;white-space:nowrap;flex:none}
+
+  .meter-block{display:flex;flex-direction:column;gap:6px}
+  .meter{display:flex;gap:4px}
+  .seg{flex:1;height:6px;border-radius:3px;background:var(--surface-2)}
+  .meter-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.04em;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .verified-pill{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.05em;color:var(--bg);background:var(--s-verified);border-radius:4px;padding:2px 6px;text-transform:uppercase;font-weight:600}
+
+  .specs{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+  .spec{display:flex;flex-direction:column;gap:1px}
+  .spec.full{grid-column:1 / -1}
+  .spec .k{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:0.05em}
+  .spec .v{font-size:13px;color:var(--ink)}
+  .note{font-size:13px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px;margin:0}
+
+  .build-slot{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px dashed var(--line);border-radius:8px;padding:8px 11px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint)}
+  .build-slot .plug{color:var(--accent)}
+  .build-slot.done{border-style:solid;border-color:var(--s-verified);color:var(--ink)}
+
+  .card-foot{display:flex;gap:10px;margin-top:auto;padding-top:2px;flex-wrap:wrap}
+  .link{font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:none;color:var(--accent);border:1px solid var(--line);border-radius:7px;padding:7px 11px;display:inline-flex;align-items:center;gap:6px;transition:background .15s}
+  .link:hover{background:var(--surface-2)}
+  .link.demo{color:var(--s-verified)}
+  .link.plain{color:var(--faint);opacity:.6}
+
+  /* frontier / gaps */
+  .frontier .card{background:linear-gradient(180deg,rgba(180,124,224,0.06),transparent 60%),var(--surface);border-style:dashed;border-color:#3a3350}
+  .gap-status{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--gap)}
+  .gap-closest{font-size:13px;color:var(--muted)}
+  .gap-closest b{color:var(--ink);font-weight:500}
+
+  footer{border-top:1px solid var(--line);margin-top:48px;padding:26px 0 60px}
+  footer p{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint);margin:0 0 6px}
+  .empty{text-align:center;padding:40px 0;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
+
+  @media (max-width:520px){.specs{grid-template-columns:1fr}.count{width:100%;margin:4px 0 0;text-align:right}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="eyebrow">A PluggedIn3D resource · v0.2 · full band</p>
+    <h1>Printable Instruments Index<br><span class="thin">the one that tells you if it actually plays</span></h1>
+    <p class="lede">One honest registry of 3D-printable instruments, section by section — with the real bill of non-printed parts, the filament that worked, and proof it makes music. Starting with the full concert band and working outward. Where nothing playable exists yet, we say so, and put it on the frontier.</p>
+
+    <div class="legend" aria-label="Playability scale">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--s-decoration)"></span><div><h4 style="color:var(--s-decoration)">Decoration</h4><p>Looks like the instrument. Makes no usable sound.</p></div></div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--s-caveats)"></span><div><h4 style="color:var(--s-caveats)">Plays, with caveats</h4><p>Produces notes but needs heavy work or is limited.</p></div></div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--s-playable)"></span><div><h4 style="color:var(--s-playable)">Playable</h4><p>Genuinely plays. Documented, community-confirmed.</p></div></div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--s-verified)"></span><div><h4 style="color:var(--s-verified)">Verified on video</h4><p>Built and played on camera. Where the series comes in.</p></div></div>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="wrap controls-row">
+    <label class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="search" placeholder="Search name, designer, instrument…" aria-label="Search instruments">
+    </label>
+    <select id="family" aria-label="Filter by section">
+      <option value="">All sections</option>
+      <option>Woodwind</option><option>Brass</option><option>Percussion</option><option>Strings</option>
+    </select>
+    <select id="status" aria-label="Filter by playability">
+      <option value="">Any playability</option>
+      <option value="3">Verified on video</option>
+      <option value="2">Playable</option>
+      <option value="1">Plays, with caveats</option>
+      <option value="0">Decoration</option>
+    </select>
+    <span class="count" id="count"></span>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="sec-head"><h2>The registry</h2><span class="rule"></span><span class="tag">Buildable designs</span></div>
+  <div id="sections"></div>
+  <div class="empty" id="empty" hidden>No entries match. Clear a filter — or if it's truly missing, it belongs on the frontier below.</div>
+
+  <div class="sec-head frontier-anchor" style="margin-top:44px"><h2>The frontier</h2><span class="rule"></span><span class="tag">Known gaps · best episodes</span></div>
+  <p class="lede" style="margin:0 0 18px">No confidently-playable printable version exists yet. The gaps cluster where physics fights the printer: airtight valves, double reeds, and sheer size. Each one is a "nobody's done this" build.</p>
+  <div class="grid frontier" id="frontier"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Printable Instruments Index — v0.2 · rate honestly · verify on camera · fill the frontier.</p>
+    <p>Every listing carries its true non-printed parts. A printed trombone still needs a slide; a snare still needs heads and hardware; a marimba's tuning shifts with the filament.</p>
+  </div>
+</footer>
+
+<script>
+// level: 0 decoration · 1 caveats · 2 playable · 3 verified-on-video
+// yourBuild: null, or {filament, date} once you print & verify (PrintShelf slot)
+const REGISTRY = [
+  // ---------- WOODWIND ----------
+  {name:"Printable Recorder", by:"Prusa Research", fam:"Woodwind", level:2, verified:false,
+   bed:"Small", filament:"PLA or PETG — any", license:"Free", nonPrinted:"None",
+   note:"The reliable easy win. No hardware, fast print — the education backbone.",
+   source:"https://blog.prusa3d.com/3d-print-a-recorder-an-ocarina-or-a-kazoo-3d-pritned-musical-instruments_49390/", demo:"", yourBuild:null},
+  {name:"Printable Ocarina", by:"Prusa / community", fam:"Woodwind", level:2, verified:false,
+   bed:"Small", filament:"PLA or PETG", license:"Free", nonPrinted:"None",
+   note:"Vessel flute, forgiving tuning, crowd-pleaser. One-piece prints exist.",
+   source:"https://blog.prusa3d.com/3d-print-a-recorder-an-ocarina-or-a-kazoo-3d-pritned-musical-instruments_49390/", demo:"", yourBuild:null},
+  {name:"Printable Kazoo", by:"PistonPin", fam:"Woodwind", level:2, verified:false,
+   bed:"Small", filament:"PLA or PETG", license:"Free", nonPrinted:"Thin membrane (wax paper or plastic film)",
+   note:"A mirliton — works shockingly well. Membrane material changes the buzz; fun A/B content.",
+   source:"https://www.printables.com/", demo:"", yourBuild:null},
+  {name:"Collapsible Flute", by:"Tele Tunes", fam:"Woodwind", level:2, verified:false,
+   bed:"Modular sections", filament:"PLA — Bambu profile included", license:"Paid · commercial license available", nonPrinted:"None (fully printed)",
+   note:"Dedicated flute shop; telescopic & drone designs, strong reviews, Bambu profiles. Commercial license makes it PluggedIn3D-collab friendly.",
+   source:"https://3dprintableflutes.com/", demo:"", yourBuild:null},
+  {name:"Membrane Clarinet", by:"DrJones", fam:"Woodwind", level:1, verified:false,
+   bed:"Splits for Mini", filament:"PLA, 0.2mm, paint-on supports", license:"Free · CC", nonPrinted:"Thin plastic sheet membrane, rubber band",
+   note:"A membrane-reed 'foonki', not a Boehm clarinet — but genuinely sounds, with screw-thread tuning. No reeds or drilling needed.",
+   source:"https://www.printables.com/model/495171-membrane-clarinet", demo:"", yourBuild:null},
+  {name:"Piccolo Clarinet in A", by:"JDWoodwinds", fam:"Woodwind", level:2, verified:false,
+   bed:"250mm Z min", filament:"PLA · 5+ walls · 30% infill", license:"Paid STL · personal use only", nonPrinted:"Brass register tube, springs (0.4mm), pads, mouthpiece refacing",
+   note:"Billed as the first print-at-home clarinet. Fully chromatic, 9 keys. Advanced — assumes clarinet-repair skill and lots of fitting.",
+   source:"https://jdwoodwind.com/shop/p/piccolo-clarinet-stl", demo:"", yourBuild:null},
+  {name:"Bass Clarinet in G", by:"JDWoodwinds", fam:"Woodwind", level:1, verified:false,
+   bed:"250×200×200mm", filament:"PLA", license:"Paid STL · personal use only", nonPrinted:"Springs, cork, pads, 2mm rod, contact cement",
+   note:"Experts only, DIY kit, simplified Boehm, low E. Plays — but only after break-in and serious tuning work.",
+   source:"https://jdwoodwind.com/shop/p/stl-files-bass-clarinet-in-g", demo:"", yourBuild:null},
+  {name:"Bb Clarinet (WIP)", by:"Epiccraftful", fam:"Woodwind", level:0, verified:false,
+   bed:"Community WIP", filament:"PLA", license:"Free", nonPrinted:"Key rods (paper clips), springs — unfinished",
+   note:"Honest work-in-progress: full-size, aims for playable, but hole positions and keys aren't verified. A remix/finish candidate for a build.",
+   source:"https://www.thingiverse.com/thing:3737183", demo:"", yourBuild:null},
+
+  // ---------- BRASS ----------
+  {name:"PrintBone", by:"PieterB", fam:"Brass", level:2, verified:false,
+   bed:"Bell 15–30h print", filament:"PLA (superglue joints) or ABS (acetone)", license:"Free · OpenSCAD/CC", nonPrinted:"PVC or carbon-fiber slide tubes, slide cream, mouthpiece (printed or Bach)",
+   note:"The brass success story. Designer: plays easily, sounds well, partials in tune. Large tenor is ready to print; fully parametric. Carbon-fiber slide beats the PVC one.",
+   source:"https://www.printables.com/model/80020-the-printbone-a-fully-printable-playable-trombone", demo:"", yourBuild:null},
+  {name:"Original 3D Printed Trombone", by:"Piercet", fam:"Brass", level:1, verified:false,
+   bed:"Standard", filament:"ABS", license:"Free", nonPrinted:"PEX + CPVC + PVC tubing, heat-set insert, M3 hardware, mouthpiece",
+   note:"The historical first (2014 Lulzbot contest). Plays, but fussier than PrintBone and leans on hardware-store tubing. Kept for lineage.",
+   source:"https://www.printables.com/model/33526-the-original-3d-printed-trombone", demo:"", yourBuild:null},
+  {name:"Full Size Working Trumpet", by:"Cults designer", fam:"Brass", level:1, verified:false,
+   bed:"Large — check Z", filament:"ABS / PETG", license:"Free", nonPrinted:"3 valve springs, ~5mm rubber felts, mouthpiece",
+   note:"Selmer-based, realistic valve routing, play-attempt videos. Claims playable but unconfirmed by an outside build — the flagship verify target.",
+   source:"https://cults3d.com/en/3d-model/game/full-size-working-trumpet", demo:"https://www.youtube.com/watch?v=WkAavq1R1P0", yourBuild:null},
+  {name:"Overly-Complicated Trumpet", by:"GCV3D", fam:"Brass", level:1, verified:false,
+   bed:"Multi-part", filament:"PLA / PETG", license:"Free (Printables)", nonPrinted:"None — valves are printed slides",
+   note:"The novel one. Each valve is a slide, dodging the airtight-piston problem that kills simpler designs. Plays, unconventional.",
+   source:"https://www.printables.com/model/492588-overly-complicated-trumpet-fully-3d-printed-projec", demo:"", yourBuild:null},
+  {name:"17-Piece Printable Trumpet", by:"Dan Olson", fam:"Brass", level:0, verified:false,
+   bed:"Up to 23cm parts", filament:"ABS (acetone-weldable)", license:"Free", nonPrinted:"3 valve springs; heavy sanding/reaming",
+   note:"The cautionary tale — the designer himself rates it as playing badly and asks for help improving it. (Its mouthpiece, oddly, works great in a real horn.)",
+   source:"https://www.thingiverse.com/thing:662115", demo:"https://www.youtube.com/watch?v=B1j_d2mSGng", yourBuild:null},
+  {name:"Brass Mouthpieces (all)", by:"Various", fam:"Brass", level:2, verified:false,
+   bed:"Small", filament:"PLA / PETG / resin", license:"Free & paid", nonPrinted:"None",
+   note:"Playable trumpet/horn/trombone/tuba mouthpieces exist and work — even in a metal horn. The dependable printed part of any brass build.",
+   source:"https://cults3d.com/en/3d-model/art/tuba-mouthpiece-playable", demo:"", yourBuild:null},
+
+  // ---------- PERCUSSION ----------
+  {name:"Mini Marimba (13 bars)", by:"Equals Engineering", fam:"Percussion", level:2, verified:false,
+   bed:"Desktop", filament:"Prusament PLA — changing filament/color detunes it", license:"Free", nonPrinted:"Fishing line, 2 floats, small spring, superglue; resonator pipes",
+   note:"Actually tuned — C-major G4–E6, with a Python tuning script. Let bars cool 24h before playing. Sustain is short vs wood: the pitched-percussion success case.",
+   source:"https://www.printables.com/model/257938-mini-marimba-13-bars", demo:"", yourBuild:null},
+  {name:"Tapophone (Finger Mallet)", by:"L10design", fam:"Percussion", level:2, verified:false,
+   bed:"Desktop", filament:"PLA — needs a flawless 1-layer membrane", license:"Standard Digital License · no redistribution", nonPrinted:"None",
+   note:"Membrane-tap idiophone, in tune, kid-friendly. Great classroom piece — first-layer print quality is make-or-break.",
+   source:"https://makerworld.com/en/models/1149037-tapophone-finger-marimba-xylophone-glockenspiel", demo:"", yourBuild:null},
+  {name:"Snare Drum Shell", by:"The-Manimal", fam:"Percussion", level:2, verified:false,
+   bed:"5.5×14\" shell", filament:"PLA / PETG / ABS", license:"Free", nonPrinted:"Batter + reso heads, hoops, lugs, tension rods, snare wires + strainer",
+   note:"Shell prints; you add real drum hardware. Hybrid but genuinely plays. (Panic!'s drummer tours on an SLS-printed shell — proof pro-grade works.)",
+   source:"https://cults3d.com/en/3d-model/art/snare-drum-shell", demo:"", yourBuild:null},
+  {name:"Auxiliary percussion", by:"Various", fam:"Percussion", level:2, verified:false,
+   bed:"Small", filament:"PLA / PETG", license:"Free (many)", nonPrinted:"Shaker fill (beads/rice); tambourine jingles",
+   note:"Claves, woodblock, guiro, shakers, tambourine frames — idiophones are the easiest wins in the whole band. Mostly single-piece, instantly playable.",
+   source:"https://www.printables.com/tag/drum", demo:"", yourBuild:null},
+
+  // ---------- STRINGS (the next ring outward) ----------
+  {name:"O'Cello", by:"Conor O'Kane", fam:"Strings", level:2, verified:false,
+   bed:"20 cm (fits Bambu)", filament:"PLA or ABS (carbon-fill for the high-tension part)", license:"CC BY-NC", nonPrinted:"12mm steel rod, alu tube, L-bar, 4 cello strings, bass tuners, M5 hardware",
+   note:"Mature, documented, demo video exists. Steel rod runs through all 6 parts. The proven base to scale a kid's cello from.",
+   source:"https://www.thingiverse.com/thing:1703629", demo:"https://www.youtube.com/watch?v=lSVwg5sikZ4", yourBuild:null},
+  {name:"F-F-Fiddle", by:"OpenFab PDX", fam:"Strings", level:2, verified:false,
+   bed:"~15 cm parts", filament:"PLA / PETG", license:"CC", nonPrinted:"Steel rod, violin strings, tuning pegs, bridge",
+   note:"The open-source printed violin that started the whole lineage. Many successful makes.",
+   source:"https://openfabpdx.com/fireball-fiddle/", demo:"", yourBuild:null},
+  {name:"Hovalin", by:"Kaitlyn & Matt Hova", fam:"Strings", level:2, verified:false,
+   bed:"Confirm per part", filament:"PLA+ recommended", license:"CC BY-NC-SA", nonPrinted:"Strings, pegs, bridge, tailpiece, sound-post hardware",
+   note:"Well-known open-source printable violin. Confirm current part specs on their site before quoting bed sizes on camera.",
+   source:"https://www.hovalabs.com/hovalin", demo:"", yourBuild:null}
+];
+
+// The frontier — no confidently-playable printable version yet.
+const FRONTIER = [
+  {name:"Saxophone (home FDM)", why:"Dozens of interacting keys and airtight pads over a conical bore.", status:"Open · proven on SLS only",
+   closest:"Olaf Diegel's <b>alto sax</b> — printed, playable, but SLS nylon on an industrial machine, not a home-FDM download.",
+   note:"The prize: a home-printable alto. Even body-only + salvaged keys (JDWoodwinds' clarinet approach) would be a landmark."},
+  {name:"Oboe / English horn", why:"Double reed + precise conical bore. Tiny bore errors kill intonation.", status:"Open · ancestor exists",
+   closest:"A printed <b>musette / shawm</b> (the Renaissance oboe ancestor) that plays on a real oboe reed.",
+   note:"Bridge the gap: print the shawm first, show why the modern oboe's conic bore + keys are the wall."},
+  {name:"Bassoon", why:"Double reed plus a long folded conical bore — build volume and bore accuracy at once.", status:"Open · hard mode",
+   closest:"Nothing playable. Contrabass recorders show folded-bore printing is at least feasible.",
+   note:"Sectioned print + real bocal + reed. A genuine 'first ever' if it plays."},
+  {name:"French horn", why:"~12 ft of tightly coiled conical tubing + rotary valves, all needing to stay airtight.", status:"Open · mouthpiece only",
+   closest:"Playable printed <b>French horn mouthpieces</b> ($5). No full instrument.",
+   note:"Hardest brass. A single-Bb, valveless 'hunting horn' variant is the realistic first step."},
+  {name:"Euphonium / baritone", why:"Valved conical low brass — same airtight-valve problem as trumpet, bigger.", status:"Open · mouthpiece only",
+   closest:"Mouthpieces only. The PrintBone slide trick doesn't transfer — these are valved.",
+   note:"If the trumpet valves get solved on camera, this is the scale-up follow-on."},
+  {name:"Tuba / sousaphone", why:"Enormous (build-volume problem) plus valves.", status:"Open · sectioned build",
+   closest:"Decorative models and mouthpieces. No playable build.",
+   note:"Print in sections + real valve springs. Even a playable-ish one would be huge content."},
+  {name:"Timpani", why:"Large tunable kettle, real drumhead, and pedal tuning mechanism.", status:"Open · hybrid at best",
+   closest:"Printed rims/lugs and small hand-drum shells; no full pedal timpani.",
+   note:"Realistic target: a small hand-tuned kettle drum, not the pedal beast."},
+  {name:"Verified playable trumpet", why:"Candidates exist but none confirmed by an outside build.", status:"Flagged · flagship verify",
+   closest:"The <b>Full Size Working Trumpet</b> (Selmer-based, in the registry).",
+   note:"Build it with real springs + felts, play it on camera. Instantly the most valuable entry in the index."},
+  {name:"Kid-size cello", why:"String tension doesn't scale linearly — shorten the length, re-check the rod gauge.", status:"Queued · fastest win",
+   closest:"The <b>O'Cello</b> — a proven, playable full-size base to shrink.",
+   note:"The original request. Scale-and-reinforce, not from scratch. First 'Verified' entry candidate."}
+];
+
+const STATUS=[
+  {label:"Decoration",color:"var(--s-decoration)"},
+  {label:"Plays, with caveats",color:"var(--s-caveats)"},
+  {label:"Playable",color:"var(--s-playable)"},
+  {label:"Verified on video",color:"var(--s-verified)"}
+];
+const FAM_ORDER=["Woodwind","Brass","Percussion","Strings"];
+
+function meter(level){let s='';for(let i=0;i<4;i++){s+=`<span class="seg" style="${i<=level?`background:${STATUS[level].color}`:''}"></span>`;}return s;}
+
+function buildSlot(d){
+  if(d.yourBuild){return `<div class="build-slot done"><span class="plug">⏻</span> Your build: printed in ${d.yourBuild.filament} · ${d.yourBuild.date}</div>`;}
+  return `<div class="build-slot"><span class="plug">⏻</span> Your build: not yet — suggested filament ${d.filament.split('·')[0].split('—')[0].trim()}</div>`;
+}
+
+function card(d){
+  const st=STATUS[d.level];
+  const demo=d.demo?`<a class="link demo" href="${d.demo}" target="_blank" rel="noopener">▶ Demo</a>`:`<span class="link plain">No demo yet</span>`;
+  return `
+  <article class="card">
+    <div class="card-top">
+      <div><h4 class="name">${d.name}</h4><div class="by">by ${d.by}</div></div>
+      <span class="family-tag">${d.fam}</span>
+    </div>
+    <div class="meter-block">
+      <div class="meter">${meter(d.level)}</div>
+      <div class="meter-label"><span class="dot" style="background:${st.color}"></span><span style="color:${st.color}">${st.label}</span>${d.verified?'<span class="verified-pill">PluggedIn3D ✓</span>':''}</div>
+    </div>
+    <div class="specs">
+      <div class="spec"><span class="k">Print bed</span><span class="v">${d.bed}</span></div>
+      <div class="spec"><span class="k">Filament</span><span class="v">${d.filament}</span></div>
+      <div class="spec"><span class="k">License</span><span class="v">${d.license}</span></div>
+      <div class="spec"><span class="k">Non-printed parts</span><span class="v">${d.nonPrinted}</span></div>
+    </div>
+    <p class="note">${d.note}</p>
+    ${buildSlot(d)}
+    <div class="card-foot">
+      <a class="link" href="${d.source}" target="_blank" rel="noopener">Source ↗</a>${demo}
+    </div>
+  </article>`;
+}
+
+function frontierCard(d){
+  return `
+  <article class="card">
+    <div class="card-top"><div><h4 class="name">${d.name}</h4></div></div>
+    <div class="gap-status">${d.status}</div>
+    <p class="gap-closest"><b>Closest today:</b> ${d.closest}</p>
+    <div class="specs"><div class="spec full"><span class="k">Why it's hard</span><span class="v" style="color:var(--muted)">${d.why}</span></div></div>
+    <p class="note">${d.note}</p>
+  </article>`;
+}
+
+const sectionsEl=document.getElementById('sections');
+const empty=document.getElementById('empty');
+const countEl=document.getElementById('count');
+const q=document.getElementById('q'),famSel=document.getElementById('family'),statSel=document.getElementById('status');
+
+function render(){
+  const term=q.value.trim().toLowerCase(),fam=famSel.value,stat=statSel.value;
+  const rows=REGISTRY.filter(d=>{
+    if(fam&&d.fam!==fam)return false;
+    if(stat!==''&&String(d.level)!==stat)return false;
+    if(term){const hay=(d.name+' '+d.by+' '+d.fam+' '+d.note).toLowerCase();if(!hay.includes(term))return false;}
+    return true;
+  });
+  let html='';
+  FAM_ORDER.forEach(f=>{
+    const group=rows.filter(d=>d.fam===f);
+    if(!group.length)return;
+    html+=`<div class="fam-head"><h3>${f}</h3><span class="n">${group.length}</span><span class="rule"></span></div>`;
+    html+=`<div class="grid">${group.map(card).join('')}</div>`;
+  });
+  sectionsEl.innerHTML=html;
+  empty.hidden=rows.length>0;
+  countEl.textContent=`${rows.length} / ${REGISTRY.length} listed`;
+}
+
+document.getElementById('frontier').innerHTML=FRONTIER.map(frontierCard).join('');
+[q,famSel,statSel].forEach(el=>el.addEventListener('input',render));
+render();
+</script>
+</body>
+</html>

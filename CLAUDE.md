@@ -5,6 +5,7 @@
 ## Project Status
 
 ### 🔄 In Progress
+- **Slicer post-processing auto-import (session 32) — PLAN.** Goal: users never hand-type a print — a slicer post-processing script POSTs each sliced print to their account via API key. (1) models.py: add `SourcePlatform.SLICER="slicer"` (additive enum). (2) prints.py API: add optional slicer fields to `PrintCreate` (layer_height/infill_pct/supports/print_time_mins/filament_used_g) set in `_create_print`; add `POST /api/prints/ingest` (lenient `PrintIngest`: title, printer[str], filaments[{material,color_name?,color_hex?,brand?,finish?}], slicer settings, status/queued/is_public) that match-or-creates printer (name/model ilike, else create) + filaments (match material+color_hex/color_name, else create with brand default "Generic"; respect free-tier cap -> skip+warn on 402) -> resolve ids -> `_create_print(source_platform="slicer")`. Returns {print, created, warnings}. Bearer API-key auth. (3) tools/printshelf_postprocess.py: stdlib-only (urllib) script; reads gcode path from argv, parses header comments (Bambu/Orca/Prusa: filament_type, filament used [g], est time, layer_height, sparse_infill/fill_density, support, filament_colour, filament_vendor/settings_id, printer_model); title = gcode filename stem; POSTs to /api/prints/ingest; wraps all in try/except -> always exit 0 (never break the slicer) + logs to sidecar file; leaves gcode unchanged. Config block (API_KEY, BASE_URL, PUBLIC, STATUS, QUEUED). (4) web_dashboard: `GET /dashboard/connect` setup page + `GET /dashboard/connect/printshelf_postprocess.py` serving the script with the user key+base URL injected (attachment); sidebar link. Catch: fires at slice time (intent, not confirmed success); re-slicing logs again (documented). QA: ingest match-or-create, script parses sample Bambu + Orca gcode, personalized download has key, print appears with settings+filaments+printer. Memory project-slicer-printer-integration-idea.
 
 - **Preview public demo + discoverability — DONE, LIVE on prod (session 30b, 8b99e51).** Public **`GET /preview`** (homepage.py, anon, gated) — catalog-only studio, `buyUrl`→`GET /preview/buy` (anon, `AffiliateClick(user_id=None)`)→tracked store search; SEO meta + canonical + OG. Studio extracted to shared partial `templates/_preview_studio.html` (used by `dashboard/preview.html` [owned+catalog] + `preview_public.html` [catalog-only, extends base.html]). Shared `affiliate.build_preview_catalog(db, exclude_keys, buy_base)`. `filament_preview_enabled` Jinja global now on homepage+profile+web_dashboard+web_auth+billing; **guarded "Preview" link in base.html topbar for everyone**. Honesty label in the partial. Fix: no-owned (public) defaulted to fallback orange while picker showed catalog[0] → default now `catalog[0]` so render matches + Buy shows. Viewer `?v=10`, css `?v=18`, SW v6. Full QA PASS on staging (build 4981ce5); item-6 "topbar link missing when logged in" was a stale-capture artifact (link verified present on 5 logged-in page types). 85/85. **Still deferred (next round):** hosted share-link w/ URL-state (encode sample+filament → shareable preview URL), entry buttons from filament/print pages, a homepage CTA.
 - **Preview funnel + finish batch — DONE, LIVE on prod (session 30, edf7741).** Shipped to the live studio: (1) **buyable filament catalog** — community-sourced (distinct `(brand,material,finish,color_name,color_hex)` across ALL users' `Filament` rows, deduped, excl. owned, cap ~200); picker has "My filaments" + "Browse & buy" optgroups (values `own:i`/`cat:i`); catalog Buy → tracked `GET /dashboard/filaments/buy-search?brand&material&color&finish` → `store_search_url` → `AffiliateClick(filament_id=None)`; same list feeds compare-B; `setBuy` uses `f.buyUrl||/filaments/{id}/buy`. (2) responsive stack <1000px. (3) **cone silk fix** — dropped anisotropy (its tangent field spiraled → misleading wood-grain on cones; sheen+ridges follow the real print dir). (4) **marble/speckle/granite** — data-driven `specks` map (finish→intensity) → view-INDEPENDENT albedo flecks, fleck color auto-contrasts base. (5) **sparkle on all faces** — added view-independent base shimmer under the glint. Viewer `?v=9`, presets fetched `?v=8`, css `?v=17`. Full QA PASS on staging (1b355c0). **Still open (next round):** public no-login `/preview` demo (SEO/virality/top-of-funnel), entry buttons from filament/print pages, hosted share-link, honesty "approximate preview" label. Turntable-off "drift" = camera orbit damping (intentional), not a bug.
@@ -106,6 +107,13 @@ backend/scripts/qa.py      # 85-check automated QA suite (httpx, no browser)
 backend/scripts/visual_audit.py  # Playwright all-screens desktop+mobile audit (overflow/console/screenshots)
 chrome-extension/          # separate project — do not suggest changes here as backend changes
 ```
+
+## Instruments Collection
+A curated 3D-printable-instruments registry (PluggedIn3D) is being productionized as a PrintShelf collection. Spec of record lives in `docs/instruments/` (handoff doc, pre-handoff spec, v0.2 HTML prototype). Two non-negotiables from the spec:
+- **Prices never display without a checked-date** — staleness escalates (>90d "aging", >180d auto-hide).
+- **BOM parts are specs with 1..n fulfillment links, never bare URLs** — a dead link removes one fulfillment option, never breaks the entry.
+
+The trumpet valve-graft CAD thread (Route A) lives in a separate `brass-instraments` repo with its own session state — not built here; only its outputs (e.g. a finished build row) ever cross over into this repo.
 
 ## Operational Gotchas
 - **Cache-bust static assets on EVERY change** — `app.css` is loaded as `?v=N` (base.html + the SW precache list + SW `CACHE` name); **bump N whenever CSS changes** or browsers replay their cached copy (this bit twice in session 29 — stale CSS collapsed a viewer, stale CSS hid new rules). Vendored JS modules likewise need a `?v=` on their `import()` (e.g. `filament-viewer.js?v=2`) — bump it when that JS changes, or a fresh-browser test passes while real users get the old module. Fresh Playwright contexts have no cache, so they hide this — always assume real browsers cache.
@@ -235,3 +243,32 @@ PASS CRITERIA: All boxes checked, no unexpected behavior.
 
 **Backburner ideas (don't forget):**
 - **Slicer / printer auto-import** (Cam, 2026-06-30) — auto-capture print data (filament/settings/time/outcome) → POST to the JSON API so users never hand-type a print. Best v1 = a **slicer post-processing script** (Bambu Studio/OrcaSlicer parse gcode header comments → `/api/prints`); later a **Bambu LAN MQTT agent** for actual prints + AMS filament + success/fail (unofficial API → maintenance cost). Tricky part = filament→library "match-or-create". Full notes in memory `project_slicer_printer_integration_idea`.
+
+---
+
+## Relay Protocol
+
+You are operating in a human-review relay loop.
+
+### For every task:
+
+#### Step 1 — Plan
+1. Write your plan to REVIEW_NEEDED.md
+2. Run: `while [ ! -s CC_RESPONSE.md ]; do sleep 5; done`
+3. Read CC_RESPONSE.md, delete it, follow instructions
+
+#### Step 2 — Implement
+Do the work per the approved plan.
+
+#### Step 3 — Completion report
+1. Write completion report to REVIEW_NEEDED.md
+2. Run: `while [ ! -s CC_RESPONSE.md ]; do sleep 5; done`
+3. Read CC_RESPONSE.md, delete it
+4. If it contains a new task, start Step 1 for that task
+5. If it says DONE, stop
+
+### Rules:
+- Never skip the wait loop
+- Never proceed without CC_RESPONSE.md appearing
+- One plan or report at a time
+- Write `BLOCKED: [reason]` to REVIEW_NEEDED.md if you hit something that needs human intervention
