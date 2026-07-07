@@ -56,7 +56,7 @@
             </h3>
             <p class="meta">
                 {% if p.designer %}by {{ p.designer }} · {% endif %}
-                {{ p.source_platform }}
+                {% if p.source_platform == 'slicer' %}Bambu Studio{% else %}{{ p.source_platform }}{% endif %}
                 {% if p.printer_id and printer_names[p.printer_id] %} · {{ printer_names[p.printer_id] }}{% endif %}
                 {% if p.print_date %} · {{ p.print_date.strftime('%b %-d, %Y') }}{% endif %}
             </p>

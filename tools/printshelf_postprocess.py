@@ -313,6 +313,30 @@ def build_payload(path):
     }
 
 
+def find_makerworld_url(gcode_path):
+    """MakerWorld 3MFs embed the design id (e.g. 'DSM00000001150715' in
+    3D/3dmodel.model). Decode it to the public model URL so the server can pull
+    the real title, designer, and cover — same as pasting the URL on the site."""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
+    text = ""
+    try:
+        loose = os.path.join(proj, "3D", "3dmodel.model")
+        if os.path.exists(loose):
+            text = open(loose, errors="ignore").read()
+        else:
+            import zipfile
+            zp = os.path.join(proj, ".3mf")
+            if os.path.exists(zp):
+                with zipfile.ZipFile(zp) as z:
+                    text = z.read("3D/3dmodel.model").decode("utf-8", "ignore")
+    except Exception:
+        return None
+    m = re.search(r"DSM0*([1-9]\d+)", text)
+    if m:
+        return "https://makerworld.com/models/" + m.group(1)
+    return None
+
+
 def find_image(gcode_path):
     """Find a cover image in the slicer's project dir next to the gcode.
     Prefers the model's own pictures (MakerWorld gallery), falls back to the
@@ -381,6 +405,12 @@ def main():
     path = sys.argv[1]
     try:
         payload = build_payload(path)
+        try:
+            mw = find_makerworld_url(path)
+            if mw:
+                payload["source_url"] = mw
+        except Exception as e:
+            log("source-url detect skipped (%s: %s)" % (type(e).__name__, e))
         try:
             img = find_image(path)
             if img:

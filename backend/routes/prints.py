@@ -9,6 +9,7 @@ The core log entry. Supports:
 Free-tier cap (50) counts ALL prints — queued + completed — so a user
 can't game the limit by parking everything in the queue.
 """
+import logging
 from datetime import date
 from typing import List, Optional
 
@@ -32,6 +33,7 @@ from models import (
 )
 
 router = APIRouter(prefix="/api/prints", tags=["prints"])
+logger = logging.getLogger(__name__)
 
 VALID_PRINT_STATUSES = {s.value for s in PrintStatus}
 VALID_PLATFORMS = {p.value for p in SourcePlatform}
@@ -352,8 +354,27 @@ def ingest_print(
                 fil_ids.append(fid)
             if fcreated:
                 created.append(fcreated)
+    title = body.title
+    designer = None
+    thumbnail_url = None
+    if body.source_url:
+        try:
+            from import_service import detect_platform as _detect, extract as _extract
+            if _detect(body.source_url) != "manual":
+                meta = _extract(body.source_url)
+                if meta.get("title"):
+                    title = meta["title"]
+                designer = meta.get("designer")
+                thumbnail_url = meta.get("thumbnail_url")
+                logger.info("ingest enriched from %s: title=%r designer=%r",
+                            body.source_url, title, designer)
+        except Exception:
+            logger.info("ingest source enrich failed for %s", body.source_url)
+
     pc_body = PrintCreate(
-        title=body.title,
+        title=title,
+        designer=designer,
+        thumbnail_url=thumbnail_url,
         source_platform="slicer",
         source_url=body.source_url,
         photo_url=body.photo_url,
