@@ -165,17 +165,49 @@ def dump_debug(path):
         log("debug dump failed: %s" % e)
 
 
-def derive_title(gcode_path):
-    """Prefer the slicer's intended output name (the real project/plate name)
-    over the temp working filename it hands us (e.g. '.23792.0')."""
-    name = os.environ.get("SLIC3R_PP_OUTPUT_NAME") or gcode_path or ""
-    name = os.path.basename(name)
-    name = re.sub(r"\.(gcode|gco|g|bgcode)(\.\w+)?$", "", name, flags=re.IGNORECASE)
-    name = re.sub(r"[ _-]*plate[ _-]*\d+$", "", name, flags=re.IGNORECASE)  # drop "_plate_1"
+def _clean_model_name(raw):
+    """Turn a source filename / object name into a human title.
+    e.g. 'kazoo_mw(2).3mf' -> 'Kazoo', 'kazoo.stl_5' -> 'Kazoo'."""
+    name = os.path.basename(raw or "")
+    name = re.sub(r"\.stl_\d+$", "", name, flags=re.IGNORECASE)                # 'kazoo.stl_5'
+    name = re.sub(r"\.(3mf|stl|obj|step|stp|gcode|gco|g|bgcode)$", "", name, flags=re.IGNORECASE)
+    name = re.sub(r"\s*\(\d+\)$", "", name)                                   # drop '(2)' download suffix
+    name = re.sub(r"[ _-]*(mw|makerworld)$", "", name, flags=re.IGNORECASE)     # drop MakerWorld export marker
+    name = re.sub(r"[ _-]*plate[ _-]*\d+$", "", name, flags=re.IGNORECASE)      # drop '_plate_1'
     name = name.replace("_", " ").strip()
-    if not name or re.fullmatch(r"[\d.\s]+", name):  # reject junk like ".23792.0"
+    if not name or re.fullmatch(r"[\d.\s]+", name):                            # reject junk like '.23792.0'
         return None
-    return name
+    return name[0].upper() + name[1:]
+
+
+def derive_title(gcode_path):
+    """Bambu hands us a temp gcode ('.23792.1.gcode') with no model name, but the
+    gcode sits in an unpacked project dir. Recover the real name from:
+      1) origin.txt — the source file the user opened (e.g. '.../kazoo_mw(2).3mf')
+      2) the project .3mf's Metadata/model_settings.config object name
+    Returns None if neither yields a usable name (caller uses a dated fallback)."""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
+    try:
+        with open(os.path.join(proj, "origin.txt"), errors="ignore") as fh:
+            t = _clean_model_name(fh.read().strip())
+            if t:
+                return t
+    except Exception:
+        pass
+    try:
+        import zipfile
+        zp = os.path.join(proj, ".3mf")
+        if os.path.exists(zp):
+            with zipfile.ZipFile(zp) as z:
+                data = z.read("Metadata/model_settings.config").decode("utf-8", "ignore")
+                m = re.search(r'key="name"\s+value="([^"]+)"', data)
+                if m:
+                    t = _clean_model_name(m.group(1))
+                    if t:
+                        return t
+    except Exception:
+        pass
+    return None
 
 
 def _env(key):
