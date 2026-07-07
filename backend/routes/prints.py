@@ -302,6 +302,16 @@ def _resolve_printer(db: Session, user: User, printer_str: Optional[str]):
     return pr.id, {"type": "printer", "id": pr.id, "name": pr.name}
 
 
+def _bambu_name(brand, material, finish, hexv):
+    if not hexv:
+        return None
+    try:
+        from bambu_colors import color_name as _cn
+        return _cn(brand or "", material, finish, hexv)
+    except Exception:
+        return None
+
+
 def _resolve_filament(db: Session, user: User, desc: "IngestFilament", warnings: list):
     mat = desc.material.strip()
     hexv = (desc.color_hex or "").strip() or None
@@ -310,6 +320,11 @@ def _resolve_filament(db: Session, user: User, desc: "IngestFilament", warnings:
     same_mat = [f for f in owned if (f.material or "").lower() == mat.lower()]
     for f in same_mat:
         if hexv and f.color_hex and f.color_hex.lower() == hexv.lower():
+            if not (f.color_name or "").strip():   # backfill exact name onto an old nameless spool
+                nm = _bambu_name(f.brand, f.material, f.finish, f.color_hex)
+                if nm:
+                    f.color_name = nm
+                    db.commit()
             return f.id, None
         if cname and f.color_name and f.color_name.lower() == cname.lower():
             return f.id, None
@@ -318,11 +333,7 @@ def _resolve_filament(db: Session, user: User, desc: "IngestFilament", warnings:
         return same_mat[0].id, None
     # No name from the slicer? Look up the EXACT Bambu color name by hex (never a guess).
     if not cname and hexv:
-        try:
-            from bambu_colors import color_name as _bambu_color_name
-            cname = _bambu_color_name(desc.brand or "", mat, desc.finish, hexv)
-        except Exception:
-            cname = None
+        cname = _bambu_name(desc.brand or "", mat, desc.finish, hexv)
     try:
         enforce_filament_limit(db, user)
     except HTTPException:
