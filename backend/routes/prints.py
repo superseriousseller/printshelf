@@ -442,6 +442,65 @@ def ingest_print(
     return {"print": p.to_dict(), "created": created, "warnings": warnings}
 
 
+class PrintFromUrl(BaseModel):
+    """Log a print from just a model URL (mobile share sheet / Shortcut)."""
+    url: str = Field(min_length=1, max_length=1000)
+    queued: bool = False
+
+
+@router.post("/from-url", status_code=201)
+def create_from_url(
+    body: PrintFromUrl,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Share a MakerWorld/Printables/Thingiverse/Cults3D link -> a logged print,
+    enriched (title, designer, cover, source link) via the same extractor the web
+    importer uses. Visibility follows the account setting. Deduped by URL."""
+    url = body.url.strip()
+    from import_service import ImportError_, detect_platform, extract
+
+    platform = detect_platform(url)
+    if platform == "manual":
+        raise HTTPException(
+            status_code=400,
+            detail="Not a recognized model link (MakerWorld, Printables, Thingiverse, Cults3D).",
+        )
+
+    # Dedup: sharing the same model twice shouldn't stack duplicates.
+    existing = (
+        db.query(Print)
+        .filter(Print.user_id == user.id, Print.source_url == url)
+        .order_by(Print.created_at.desc())
+        .first()
+    )
+    if existing is not None:
+        return {**existing.to_dict(), "deduplicated": True}
+
+    try:
+        meta = extract(url)
+    except ImportError_ as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("from-url extract failed for %s", url)
+        raise HTTPException(status_code=502, detail="Couldn't read that model page — try again.")
+
+    title = (meta.get("title") or "").strip() or "Untitled print"
+    auto_public = bool((user.socials or {}).get("_slicer_public"))
+    pc_body = PrintCreate(
+        title=title,
+        designer=meta.get("designer"),
+        source_platform=platform,
+        source_url=meta.get("source_url") or url,
+        thumbnail_url=meta.get("thumbnail_url"),
+        status="printed",
+        queued=body.queued,
+        is_public=auto_public,
+    )
+    pr = _create_print(db, user, pc_body)
+    return pr.to_dict()
+
+
 @router.get("/{print_id}")
 def get_print(
     print_id: int,
