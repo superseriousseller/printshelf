@@ -316,6 +316,13 @@ def _resolve_filament(db: Session, user: User, desc: "IngestFilament", warnings:
     # No color signal -> match on material alone rather than spawn a duplicate spool.
     if not hexv and not cname and same_mat:
         return same_mat[0].id, None
+    # No name from the slicer? Look up the EXACT Bambu color name by hex (never a guess).
+    if not cname and hexv:
+        try:
+            from bambu_colors import color_name as _bambu_color_name
+            cname = _bambu_color_name(desc.brand or "", mat, desc.finish, hexv)
+        except Exception:
+            cname = None
     try:
         enforce_filament_limit(db, user)
     except HTTPException:
