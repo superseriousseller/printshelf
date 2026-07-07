@@ -12,8 +12,16 @@
     <section class="connect-step">
         <h2><span class="connect-num">1</span> Download your script</h2>
         <p>This copy has your API key already baked in — keep it private (anyone with it can post to your account).</p>
-        <a href="/dashboard/connect/printshelf_postprocess.py" class="btn-primary" download>⬇ Download printshelf_postprocess.py</a>
-        <p class="hint">Save it somewhere permanent (e.g. your Documents folder). If you re-generate your API key later, download it again.</p>
+        <label class="connect-visibility"><input type="checkbox" id="fp-public"> Post auto-logged prints straight to my <strong>public</strong> profile (default: keep private, publish when you review)</label>
+        <a href="/dashboard/connect/printshelf_postprocess.py" id="fp-download" class="btn-primary" download>⬇ Download printshelf_postprocess.py</a>
+        <p class="hint">Save it somewhere permanent (e.g. your Documents folder). If you re-generate your API key later, or change the toggle above, download it again.</p>
+        <script>
+        (function(){
+            var cb = document.getElementById('fp-public'), a = document.getElementById('fp-download');
+            function upd(){ a.href = '/dashboard/connect/printshelf_postprocess.py' + (cb.checked ? '?public=1' : ''); }
+            cb.addEventListener('change', upd); upd();
+        })();
+        </script>
     </section>
 
     <section class="connect-step">

@@ -54,12 +54,13 @@ LOG_PATH = os.path.join(os.path.expanduser("~"), "printshelf_postprocess.log")
 
 
 def log(msg):
+    line = time.strftime("%Y-%m-%d %H:%M:%S ") + msg.rstrip()
     try:
         with open(LOG_PATH, "a") as fh:
-            fh.write(msg.rstrip() + "\n")
+            fh.write(line + "\n")
     except Exception:
         pass
-    sys.stderr.write("[printshelf] " + msg.rstrip() + "\n")
+    sys.stderr.write("[printshelf] " + line + "\n")
 
 
 def read_comments(path):
@@ -180,34 +181,57 @@ def _clean_model_name(raw):
     return name[0].upper() + name[1:]
 
 
-def derive_title(gcode_path):
-    """Bambu hands us a temp gcode ('.23792.1.gcode') with no model name, but the
-    gcode sits in an unpacked project dir. Recover the real name from:
-      1) origin.txt — the source file the user opened (e.g. '.../kazoo_mw(2).3mf')
-      2) the project .3mf's Metadata/model_settings.config object name
-    Returns None if neither yields a usable name (caller uses a dated fallback)."""
+def _origin_name(gcode_path):
+    """The source file the user opened (from origin.txt). Can go STALE if they
+    swap the model in-place without starting a new project."""
     proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
     try:
         with open(os.path.join(proj, "origin.txt"), errors="ignore") as fh:
-            t = _clean_model_name(fh.read().strip())
-            if t:
-                return t
+            return os.path.basename(fh.read().strip())
     except Exception:
-        pass
+        return None
+
+
+def _plate_object_name(gcode_path):
+    """The object currently on the plate (from the project .3mf's model_settings) —
+    always reflects what is actually being sliced right now."""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
     try:
         import zipfile
         zp = os.path.join(proj, ".3mf")
         if os.path.exists(zp):
             with zipfile.ZipFile(zp) as z:
                 data = z.read("Metadata/model_settings.config").decode("utf-8", "ignore")
-                m = re.search(r'key="name"\s+value="([^"]+)"', data)
-                if m:
-                    t = _clean_model_name(m.group(1))
-                    if t:
-                        return t
+            m = re.search(r'key="name"\s+value="([^"]+)"', data)
+            if m:
+                return m.group(1)
     except Exception:
         pass
     return None
+
+
+def _core(name):
+    return re.sub(r"[^a-z0-9]", "", (name or "").lower())
+
+
+def _origin_matches_plate(gcode_path):
+    """False when origin.txt (source project) disagrees with the object actually on
+    the plate — i.e. the model was swapped in-place and origin.txt is stale."""
+    o = _core(_clean_model_name(_origin_name(gcode_path)) or "")
+    p = _core(_clean_model_name(_plate_object_name(gcode_path)) or "")
+    if not o or not p:
+        return True   # can't compare -> trust origin
+    return o in p or p in o
+
+
+def derive_title(gcode_path):
+    """Real model name. Prefer origin.txt (clean, MakerWorld-friendly) but if the
+    user swapped the model in-place (origin stale), use the current plate object."""
+    o = _clean_model_name(_origin_name(gcode_path))
+    p = _clean_model_name(_plate_object_name(gcode_path))
+    if o and p:
+        return o if _origin_matches_plate(gcode_path) else p
+    return o or p or None
 
 
 def _env(key):
@@ -422,7 +446,7 @@ def find_makerworld_url(gcode_path):
     except Exception:
         return None
     m = re.search(r"DSM0*([1-9]\d+)", text)
-    if m:
+    if m and _origin_matches_plate(gcode_path):
         return "https://makerworld.com/models/" + m.group(1)
     return None
 

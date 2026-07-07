@@ -175,9 +175,11 @@ def connect_slicer(
 @router.get("/connect/printshelf_postprocess.py")
 def download_postprocess(
     request: Request,
+    public: Optional[str] = None,
     user: Optional[User] = Depends(get_current_user_web_optional),
 ):
-    """Serve the post-processing script with the user's API key + base URL baked in."""
+    """Serve the post-processing script with the user's API key + base URL baked in.
+    ?public=1 bakes in IS_PUBLIC=True (auto-logged prints go straight to public)."""
     if (r := _require_user(user)) is not None:
         return r
     try:
@@ -189,6 +191,8 @@ def download_postprocess(
     base = os.environ.get("APP_URL", "https://printshelf.app").rstrip("/")
     script = script.replace("__PRINTSHELF_API_KEY__", user.api_key).replace(
         "__PRINTSHELF_BASE_URL__", base)
+    if str(public or "").lower() in {"1", "true", "yes", "on"}:
+        script = script.replace("IS_PUBLIC = False", "IS_PUBLIC = True", 1)
     return Response(
         content=script, media_type="text/x-python",
         headers={"Content-Disposition": 'attachment; filename="printshelf_postprocess.py"'},

@@ -10,7 +10,7 @@ Free-tier cap (50) counts ALL prints — queued + completed — so a user
 can't game the limit by parking everything in the queue.
 """
 import logging
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -360,6 +360,30 @@ def ingest_print(
 ) -> dict:
     """Slicer post-processing intake. Match-or-create printer + filaments from
     descriptors, then log the print (source_platform='slicer')."""
+    # Dedup: slicing plate-by-plate or re-slicing the same model shouldn't post twice.
+    # Key on the model source URL when present, else the title, within a short window.
+    cutoff = datetime.utcnow() - timedelta(hours=12)
+    recent = (
+        db.query(Print)
+        .filter(
+            Print.user_id == user.id,
+            Print.source_platform.in_(("slicer", "bambustudio", "orcaslicer", "prusaslicer")),
+            Print.created_at >= cutoff,
+        )
+        .order_by(Print.created_at.desc())
+        .limit(30)
+        .all()
+    )
+    for pr in recent:
+        if body.source_url:
+            same = pr.source_url == body.source_url
+        else:
+            same = (pr.title or "").strip().lower() == (body.title or "").strip().lower()
+        if same:
+            return {"print": pr.to_dict(), "created": [],
+                    "warnings": ["duplicate slice ignored — existing print kept"],
+                    "deduplicated": True}
+
     warnings: list = []
     created: list = []
     printer_id, pcreated = _resolve_printer(db, user, body.printer)
