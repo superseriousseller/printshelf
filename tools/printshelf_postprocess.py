@@ -231,6 +231,50 @@ def _used_grams_from_gcode(text):
     return [float(x) for x in re.findall(r"[\d.]+", m.group(1))]
 
 
+def _used_filaments_from_project(gcode_path):
+    """The sliced 3MF's Metadata/slice_info.config lists ONLY the filaments that
+    actually printed (with per-filament grams). Returns [{color,type,used_g}] or None."""
+    import zipfile
+    ap = os.path.abspath(gcode_path)
+    stem = os.path.splitext(ap)[0]
+    md = os.path.dirname(ap)
+    proj = os.path.dirname(md)
+    cands = [stem + ".3mf", os.path.join(proj, ".3mf")]
+    try:
+        for fn in sorted(os.listdir(md)):
+            if fn.lower().endswith(".3mf"):
+                cands.append(os.path.join(md, fn))
+    except Exception:
+        pass
+    seen = set()
+    for zp in cands:
+        if zp in seen or not os.path.exists(zp):
+            continue
+        seen.add(zp)
+        try:
+            with zipfile.ZipFile(zp) as z:
+                data = z.read("Metadata/slice_info.config").decode("utf-8", "ignore")
+        except Exception:
+            continue
+        fils = []
+        for tag in re.findall(r"<filament\b[^>]*/?>", data):
+            def a(n):
+                mm = re.search(n + r'="([^"]*)"', tag)
+                return mm.group(1) if mm else None
+            g = a("used_g")
+            if g is not None:
+                try:
+                    if float(g) <= 0:
+                        continue  # loaded but not used in this print
+                except ValueError:
+                    pass
+            if a("color") or g:
+                fils.append({"color": a("color"), "type": a("type"), "used_g": g})
+        if fils:
+            return fils
+    return None
+
+
 def build_payload(path):
     text = read_comments(path)
 
@@ -242,21 +286,22 @@ def build_payload(path):
     vendors = _env_semi_list("FILAMENT_VENDOR") or split_list(grab(text, r"^;\s*filament_vendor\s*[:=]\s*(.+)$"))
     settings_ids = _env_semi_list("FILAMENT_SETTINGS_ID") or split_list(grab(text, r"^;\s*filament_settings_id\s*[:=]\s*(.+)$"))
 
-    # Keep only slots that actually printed (per-slot grams > 0), if the gcode tells us.
-    used = _used_grams_from_gcode(text)
+    # slice_info.config lists ONLY the filaments actually used — attach just those.
+    used = _used_filaments_from_project(path)
+    used_hexes = set((f.get("color") or "").lower() for f in (used or []) if f.get("color"))
 
     filaments = []
     seen = set()
     for i, mat in enumerate(types):
-        if used and i < len(used) and used[i] <= 0:
+        hexv = colors[i] if i < len(colors) else None
+        if hexv and not hexv.startswith("#"):
+            hexv = None
+        if used_hexes and (not hexv or hexv.lower() not in used_hexes):
             continue  # this AMS slot wasn't used in this print
         sid = settings_ids[i] if i < len(settings_ids) else None
         vendor = vendors[i] if i < len(vendors) else None
         if not vendor and sid:
             vendor = sid.split()[0]  # e.g. "Bambu PLA Basic ..." -> "Bambu"
-        hexv = colors[i] if i < len(colors) else None
-        if hexv and not hexv.startswith("#"):
-            hexv = None
         key = (mat.lower(), (hexv or "").lower(), (vendor or "").lower())
         if key in seen:
             continue  # collapse identical spools
@@ -267,6 +312,14 @@ def build_payload(path):
             "brand": (vendor or None),
             "finish": detect_finish(sid),
         })
+    # A used color that matched no AMS slot (rare) — add it straight from slice_info.
+    env_hexes = set((c or "").lower() for c in colors)
+    for f in (used or []):
+        hx = f.get("color") or ""
+        if hx and hx.lower() not in env_hexes:
+            filaments.append({"material": f.get("type") or "PLA",
+                              "color_hex": hx if hx.startswith("#") else None,
+                              "brand": None, "finish": None})
 
     layer = _env("LAYER_HEIGHT") or grab(text, r"^;\s*layer_height\s*[:=]\s*([\d.]+)")
     infill = _env("SPARSE_INFILL_DENSITY") or grab(text, r"^;\s*sparse_infill_density\s*[:=]\s*([\d.]+)",
@@ -285,7 +338,11 @@ def build_payload(path):
                    r"^;\s*printer_settings_id\s*[:=]\s*(.+)$")
 
     used_g = None
-    if used_raw:
+    if used:
+        gs = [float(f["used_g"]) for f in used if f.get("used_g")]
+        if gs:
+            used_g = round(sum(gs), 2)
+    if used_g is None and used_raw:
         nums = [float(x) for x in re.findall(r"[\d.]+", used_raw)]
         if nums:
             used_g = round(sum(nums), 2)
