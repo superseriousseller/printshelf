@@ -42,7 +42,7 @@ _UNCONFIGURED_KEY = "__PRINTSHELF" + "_API_KEY__"
 
 # Diagnostic: when True, also write every SLIC3R_* env var + argv to a dump file
 # so we can see exactly what the slicer passes. Set False once you're set up.
-DEBUG = True
+DEBUG = False   # set True to write a full env/project-dir dump to ~/printshelf_debug.log
 DEBUG_PATH = os.path.join(os.path.expanduser("~"), "printshelf_debug.log")
 
 IS_PUBLIC = False      # False = private (review & publish later); True = straight to your public profile
