@@ -313,6 +313,39 @@ def build_payload(path):
     }
 
 
+def detect_slicer(gcode_path):
+    """Identify the slicer from the 3MF Application metadata or the gcode header,
+    so the print is labeled accurately (Bambu Studio / OrcaSlicer / PrusaSlicer)."""
+    text = ""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
+    try:
+        loose = os.path.join(proj, "3D", "3dmodel.model")
+        if os.path.exists(loose):
+            text = open(loose, errors="ignore").read(4000)
+        else:
+            import zipfile
+            zp = os.path.join(proj, ".3mf")
+            if os.path.exists(zp):
+                with zipfile.ZipFile(zp) as z:
+                    text = z.read("3D/3dmodel.model").decode("utf-8", "ignore")[:4000]
+    except Exception:
+        text = ""
+    if not text:
+        try:
+            with open(gcode_path, errors="ignore") as fh:
+                text = fh.read(4000)
+        except Exception:
+            text = ""
+    low = text.lower()
+    if "orca" in low:
+        return "orcaslicer"   # check before bambu (OrcaSlicer is a Bambu fork)
+    if "bambu" in low:
+        return "bambustudio"
+    if "prusa" in low:
+        return "prusaslicer"
+    return "slicer"
+
+
 def find_makerworld_url(gcode_path):
     """MakerWorld 3MFs embed the design id (e.g. 'DSM00000001150715' in
     3D/3dmodel.model). Decode it to the public model URL so the server can pull
@@ -406,6 +439,7 @@ def main():
     try:
         payload = build_payload(path)
         try:
+            payload["slicer"] = detect_slicer(path)
             mw = find_makerworld_url(path)
             if mw:
                 payload["source_url"] = mw

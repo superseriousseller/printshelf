@@ -204,8 +204,9 @@
                 {%- elif 'cults3d' in print_.source_url %} Cults3D
                 {%- else %} the source{% endif %}</a></p>
             {% endif %}
-            {% if print_.source_platform == 'slicer' %}
-            <p class="detail-source detail-slicer">🖨 Auto-logged straight from Bambu Studio</p>
+            {% set _slicers = {'bambustudio':'Bambu Studio','orcaslicer':'OrcaSlicer','prusaslicer':'PrusaSlicer','slicer':'a 3D slicer'} %}
+            {% if print_.source_platform in _slicers %}
+            <p class="detail-source detail-slicer">🖨 Auto-logged from {{ _slicers[print_.source_platform] }}</p>
             {% endif %}
         </div>
     </div>

@@ -282,6 +282,7 @@ class PrintIngest(BaseModel):
     notes: Optional[str] = Field(default=None, max_length=5000)
     source_url: Optional[str] = Field(default=None, max_length=1000)
     photo_url: Optional[str] = Field(default=None, max_length=1000)
+    slicer: Optional[str] = Field(default=None, max_length=20)
 
 
 def _resolve_printer(db: Session, user: User, printer_str: Optional[str]):
@@ -371,11 +372,13 @@ def ingest_print(
         except Exception:
             logger.info("ingest source enrich failed for %s", body.source_url)
 
+    _SLICER_PLATFORMS = {"bambustudio", "orcaslicer", "prusaslicer"}
+    platform = body.slicer if body.slicer in _SLICER_PLATFORMS else "slicer"
     pc_body = PrintCreate(
         title=title,
         designer=designer,
         thumbnail_url=thumbnail_url,
-        source_platform="slicer",
+        source_platform=platform,
         source_url=body.source_url,
         photo_url=body.photo_url,
         printer_id=printer_id,
