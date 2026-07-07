@@ -45,7 +45,6 @@ _UNCONFIGURED_KEY = "__PRINTSHELF" + "_API_KEY__"
 DEBUG = False   # set True to write a full env/project-dir dump to ~/printshelf_debug.log
 DEBUG_PATH = os.path.join(os.path.expanduser("~"), "printshelf_debug.log")
 
-IS_PUBLIC = False      # False = private (review & publish later); True = straight to your public profile
 QUEUED = False         # True = add to your queue instead of logging as printed
 STATUS = "printed"     # printed | printing | failed | partial (what to log the print as)
 TIMEOUT = 10           # seconds for the API call
@@ -390,7 +389,6 @@ def build_payload(path):
         "filament_used_g": used_g,
         "status": STATUS,
         "queued": QUEUED,
-        "is_public": IS_PUBLIC,
     }
 
 

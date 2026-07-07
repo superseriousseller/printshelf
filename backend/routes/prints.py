@@ -416,6 +416,9 @@ def ingest_print(
 
     _SLICER_PLATFORMS = {"bambustudio", "orcaslicer", "prusaslicer"}
     platform = body.slicer if body.slicer in _SLICER_PLATFORMS else "slicer"
+    # Visibility is a per-user account setting (Connect page), not baked into the
+    # downloaded script — so changing it takes effect immediately, no re-download.
+    auto_public = bool((user.socials or {}).get("_slicer_public"))
     pc_body = PrintCreate(
         title=title,
         designer=designer,
@@ -428,7 +431,7 @@ def ingest_print(
         status=body.status,
         notes=body.notes,
         queued=body.queued,
-        is_public=body.is_public,
+        is_public=auto_public,
         layer_height=body.layer_height,
         infill_pct=body.infill_pct,
         supports=body.supports,
