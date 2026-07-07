@@ -313,6 +313,50 @@ def build_payload(path):
     }
 
 
+def find_image(gcode_path):
+    """Find a cover image in the slicer's project dir next to the gcode.
+    Prefers the model's own pictures (MakerWorld gallery), falls back to the
+    rendered plate thumbnail (present for any Bambu slice)."""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
+    picdir = os.path.join(proj, "Auxiliaries", "Model Pictures")
+    cands = []
+    if os.path.isdir(picdir):
+        for fn in os.listdir(picdir):
+            if fn.lower().endswith((".webp", ".png", ".jpg", ".jpeg")):
+                cands.append(os.path.join(picdir, fn))
+    if cands:
+        return max(cands, key=lambda f: os.path.getsize(f))  # largest = main cover
+    for rel in ("Metadata/plate_1.png", "Metadata/plate_no_light_1.png", "Metadata/top_1.png"):
+        fp = os.path.join(proj, rel)
+        if os.path.exists(fp):
+            return fp
+    return None
+
+
+def upload_image(img_path):
+    """Multipart-upload the image to /api/uploads/photo; return its CDN URL."""
+    with open(img_path, "rb") as fh:
+        data = fh.read()
+    fname = os.path.basename(img_path)
+    ext = fname.lower().rsplit(".", 1)[-1]
+    ctype = {"png": "image/png", "webp": "image/webp", "jpg": "image/jpeg",
+             "jpeg": "image/jpeg"}.get(ext, "application/octet-stream")
+    boundary = "----printshelfBoundaryZ9x7Kq2LpR"
+    body = b"".join([
+        ("--%s\r\n" % boundary).encode(),
+        ('Content-Disposition: form-data; name="file"; filename="%s"\r\n' % fname).encode(),
+        ("Content-Type: %s\r\n\r\n" % ctype).encode(),
+        data,
+        ("\r\n--%s--\r\n" % boundary).encode(),
+    ])
+    req = urllib.request.Request(
+        BASE_URL + "/api/uploads/photo", data=body, method="POST",
+        headers={"Content-Type": "multipart/form-data; boundary=" + boundary,
+                 "Authorization": "Bearer " + API_KEY})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8")).get("url")
+
+
 def post(payload):
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
@@ -337,10 +381,19 @@ def main():
     path = sys.argv[1]
     try:
         payload = build_payload(path)
+        try:
+            img = find_image(path)
+            if img:
+                url = upload_image(img)
+                if url:
+                    payload["photo_url"] = url
+        except Exception as e:
+            log("image upload skipped (%s: %s)" % (type(e).__name__, e))
         result = post(payload)
         warns = result.get("warnings") or []
-        log("logged '%s' (%s filament(s)%s)" % (
+        log("logged '%s' (%s filament(s)%s%s)" % (
             payload["title"], len(payload["filaments"]),
+            ", +image" if payload.get("photo_url") else "",
             "; " + "; ".join(warns) if warns else ""))
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "ignore")[:300]

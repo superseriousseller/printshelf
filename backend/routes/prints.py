@@ -279,6 +279,7 @@ class PrintIngest(BaseModel):
     is_public: bool = True
     notes: Optional[str] = Field(default=None, max_length=5000)
     source_url: Optional[str] = Field(default=None, max_length=1000)
+    photo_url: Optional[str] = Field(default=None, max_length=1000)
 
 
 def _resolve_printer(db: Session, user: User, printer_str: Optional[str]):
@@ -355,6 +356,7 @@ def ingest_print(
         title=body.title,
         source_platform="slicer",
         source_url=body.source_url,
+        photo_url=body.photo_url,
         printer_id=printer_id,
         filament_ids=fil_ids,
         status=body.status,
