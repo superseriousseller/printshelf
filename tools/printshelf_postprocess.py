@@ -298,27 +298,6 @@ def _used_filaments_from_project(gcode_path):
     return None
 
 
-def _env(key):
-    return os.environ.get("SLIC3R_" + key)
-
-
-def _env_semi_list(key):
-    """Slicer config string-lists are ';'-separated and sometimes quoted."""
-    v = _env(key)
-    if not v:
-        return []
-    return [x.strip().strip('"').strip() for x in v.split(";") if x.strip()]
-
-
-def _used_grams_from_gcode(text):
-    """Per-filament grams from the gcode header ('; filament used [g] = a,b,c').
-    Returns a list of floats, or [] if not found. Used to keep only slots that printed."""
-    m = re.search(r"^;\s*filament used \[g\]\s*[:=]\s*([\d.,\s]+)$", text, re.IGNORECASE | re.MULTILINE)
-    if not m:
-        return []
-    return [float(x) for x in re.findall(r"[\d.]+", m.group(1))]
-
-
 def build_payload(path):
     text = read_comments(path)
 
