@@ -42,10 +42,9 @@ _UNCONFIGURED_KEY = "__PRINTSHELF" + "_API_KEY__"
 
 # Diagnostic: when True, also write every SLIC3R_* env var + argv to a dump file
 # so we can see exactly what the slicer passes. Set False once you're set up.
-DEBUG = True
+DEBUG = False   # set True to write a full env/project-dir dump to ~/printshelf_debug.log
 DEBUG_PATH = os.path.join(os.path.expanduser("~"), "printshelf_debug.log")
 
-IS_PUBLIC = False      # False = private (review & publish later); True = straight to your public profile
 QUEUED = False         # True = add to your queue instead of logging as printed
 STATUS = "printed"     # printed | printing | failed | partial (what to log the print as)
 TIMEOUT = 10           # seconds for the API call
@@ -54,12 +53,13 @@ LOG_PATH = os.path.join(os.path.expanduser("~"), "printshelf_postprocess.log")
 
 
 def log(msg):
+    line = time.strftime("%Y-%m-%d %H:%M:%S ") + msg.rstrip()
     try:
         with open(LOG_PATH, "a") as fh:
-            fh.write(msg.rstrip() + "\n")
+            fh.write(line + "\n")
     except Exception:
         pass
-    sys.stderr.write("[printshelf] " + msg.rstrip() + "\n")
+    sys.stderr.write("[printshelf] " + line + "\n")
 
 
 def read_comments(path):
@@ -165,17 +165,137 @@ def dump_debug(path):
         log("debug dump failed: %s" % e)
 
 
-def derive_title(gcode_path):
-    """Prefer the slicer's intended output name (the real project/plate name)
-    over the temp working filename it hands us (e.g. '.23792.0')."""
-    name = os.environ.get("SLIC3R_PP_OUTPUT_NAME") or gcode_path or ""
-    name = os.path.basename(name)
-    name = re.sub(r"\.(gcode|gco|g|bgcode)(\.\w+)?$", "", name, flags=re.IGNORECASE)
-    name = re.sub(r"[ _-]*plate[ _-]*\d+$", "", name, flags=re.IGNORECASE)  # drop "_plate_1"
+def _clean_model_name(raw):
+    """Turn a source filename / object name into a human title.
+    e.g. 'kazoo_mw(2).3mf' -> 'Kazoo', 'kazoo.stl_5' -> 'Kazoo'."""
+    name = os.path.basename(raw or "")
+    name = re.sub(r"\.stl_\d+$", "", name, flags=re.IGNORECASE)                # 'kazoo.stl_5'
+    name = re.sub(r"\.(3mf|stl|obj|step|stp|gcode|gco|g|bgcode)$", "", name, flags=re.IGNORECASE)
+    name = re.sub(r"\s*\(\d+\)$", "", name)                                   # drop '(2)' download suffix
+    name = re.sub(r"[ _-]*(mw|makerworld)$", "", name, flags=re.IGNORECASE)     # drop MakerWorld export marker
+    name = re.sub(r"[ _-]*plate[ _-]*\d+$", "", name, flags=re.IGNORECASE)      # drop '_plate_1'
     name = name.replace("_", " ").strip()
-    if not name or re.fullmatch(r"[\d.\s]+", name):  # reject junk like ".23792.0"
+    if not name or re.fullmatch(r"[\d.\s]+", name):                            # reject junk like '.23792.0'
         return None
-    return name
+    return name[0].upper() + name[1:]
+
+
+def _origin_name(gcode_path):
+    """The source file the user opened (from origin.txt). Can go STALE if they
+    swap the model in-place without starting a new project."""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
+    try:
+        with open(os.path.join(proj, "origin.txt"), errors="ignore") as fh:
+            return os.path.basename(fh.read().strip())
+    except Exception:
+        return None
+
+
+def _plate_object_name(gcode_path):
+    """The object currently on the plate (from the project .3mf's model_settings) —
+    always reflects what is actually being sliced right now."""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
+    try:
+        import zipfile
+        zp = os.path.join(proj, ".3mf")
+        if os.path.exists(zp):
+            with zipfile.ZipFile(zp) as z:
+                data = z.read("Metadata/model_settings.config").decode("utf-8", "ignore")
+            m = re.search(r'key="name"\s+value="([^"]+)"', data)
+            if m:
+                return m.group(1)
+    except Exception:
+        pass
+    return None
+
+
+def _core(name):
+    return re.sub(r"[^a-z0-9]", "", (name or "").lower())
+
+
+def _origin_matches_plate(gcode_path):
+    """False when origin.txt (source project) disagrees with the object actually on
+    the plate — i.e. the model was swapped in-place and origin.txt is stale."""
+    o = _core(_clean_model_name(_origin_name(gcode_path)) or "")
+    p = _core(_clean_model_name(_plate_object_name(gcode_path)) or "")
+    if not o or not p:
+        return True   # can't compare -> trust origin
+    return o in p or p in o
+
+
+def derive_title(gcode_path):
+    """Real model name. Prefer origin.txt (clean, MakerWorld-friendly) but if the
+    user swapped the model in-place (origin stale), use the current plate object."""
+    o = _clean_model_name(_origin_name(gcode_path))
+    p = _clean_model_name(_plate_object_name(gcode_path))
+    if o and p:
+        return o if _origin_matches_plate(gcode_path) else p
+    return o or p or None
+
+
+def _env(key):
+    return os.environ.get("SLIC3R_" + key)
+
+
+def _env_semi_list(key):
+    """Slicer config string-lists are ';'-separated and sometimes quoted."""
+    v = _env(key)
+    if not v:
+        return []
+    return [x.strip().strip('"').strip() for x in v.split(";") if x.strip()]
+
+
+def _used_grams_from_gcode(text):
+    """Per-filament grams from the gcode header ('; filament used [g] = a,b,c').
+    Returns a list of floats, or [] if not found. Used to keep only slots that printed."""
+    m = re.search(r"^;\s*filament used \[g\]\s*[:=]\s*([\d.,\s]+)$", text, re.IGNORECASE | re.MULTILINE)
+    if not m:
+        return []
+    return [float(x) for x in re.findall(r"[\d.]+", m.group(1))]
+
+
+def _used_filaments_from_project(gcode_path):
+    """The sliced 3MF's Metadata/slice_info.config lists ONLY the filaments that
+    actually printed (with per-filament grams). Returns [{color,type,used_g}] or None."""
+    import zipfile
+    ap = os.path.abspath(gcode_path)
+    stem = os.path.splitext(ap)[0]
+    md = os.path.dirname(ap)
+    proj = os.path.dirname(md)
+    cands = [stem + ".3mf", os.path.join(proj, ".3mf")]
+    try:
+        for fn in sorted(os.listdir(md)):
+            if fn.lower().endswith(".3mf"):
+                cands.append(os.path.join(md, fn))
+    except Exception:
+        pass
+    seen = set()
+    for zp in cands:
+        if zp in seen or not os.path.exists(zp):
+            continue
+        seen.add(zp)
+        try:
+            with zipfile.ZipFile(zp) as z:
+                data = z.read("Metadata/slice_info.config").decode("utf-8", "ignore")
+        except Exception:
+            continue
+        fils = []
+        for tag in re.findall(r"<filament\b[^>]*/?>", data):
+            def a(n):
+                mm = re.search(n + r'="([^"]*)"', tag)
+                return mm.group(1) if mm else None
+            g = a("used_g")
+            if g is not None:
+                try:
+                    if float(g) <= 0:
+                        continue  # loaded but not used in this print
+                except ValueError:
+                    pass
+            if a("color") or g:
+                fils.append({"color": a("color"), "type": a("type"), "used_g": g})
+        if fils:
+            return fils
+    return None
 
 
 def _env(key):
@@ -210,21 +330,22 @@ def build_payload(path):
     vendors = _env_semi_list("FILAMENT_VENDOR") or split_list(grab(text, r"^;\s*filament_vendor\s*[:=]\s*(.+)$"))
     settings_ids = _env_semi_list("FILAMENT_SETTINGS_ID") or split_list(grab(text, r"^;\s*filament_settings_id\s*[:=]\s*(.+)$"))
 
-    # Keep only slots that actually printed (per-slot grams > 0), if the gcode tells us.
-    used = _used_grams_from_gcode(text)
+    # slice_info.config lists ONLY the filaments actually used — attach just those.
+    used = _used_filaments_from_project(path)
+    used_hexes = set((f.get("color") or "").lower() for f in (used or []) if f.get("color"))
 
     filaments = []
     seen = set()
     for i, mat in enumerate(types):
-        if used and i < len(used) and used[i] <= 0:
+        hexv = colors[i] if i < len(colors) else None
+        if hexv and not hexv.startswith("#"):
+            hexv = None
+        if used_hexes and (not hexv or hexv.lower() not in used_hexes):
             continue  # this AMS slot wasn't used in this print
         sid = settings_ids[i] if i < len(settings_ids) else None
         vendor = vendors[i] if i < len(vendors) else None
         if not vendor and sid:
             vendor = sid.split()[0]  # e.g. "Bambu PLA Basic ..." -> "Bambu"
-        hexv = colors[i] if i < len(colors) else None
-        if hexv and not hexv.startswith("#"):
-            hexv = None
         key = (mat.lower(), (hexv or "").lower(), (vendor or "").lower())
         if key in seen:
             continue  # collapse identical spools
@@ -235,6 +356,14 @@ def build_payload(path):
             "brand": (vendor or None),
             "finish": detect_finish(sid),
         })
+    # A used color that matched no AMS slot (rare) — add it straight from slice_info.
+    env_hexes = set((c or "").lower() for c in colors)
+    for f in (used or []):
+        hx = f.get("color") or ""
+        if hx and hx.lower() not in env_hexes:
+            filaments.append({"material": f.get("type") or "PLA",
+                              "color_hex": hx if hx.startswith("#") else None,
+                              "brand": None, "finish": None})
 
     layer = _env("LAYER_HEIGHT") or grab(text, r"^;\s*layer_height\s*[:=]\s*([\d.]+)")
     infill = _env("SPARSE_INFILL_DENSITY") or grab(text, r"^;\s*sparse_infill_density\s*[:=]\s*([\d.]+)",
@@ -253,7 +382,11 @@ def build_payload(path):
                    r"^;\s*printer_settings_id\s*[:=]\s*(.+)$")
 
     used_g = None
-    if used_raw:
+    if used:
+        gs = [float(f["used_g"]) for f in used if f.get("used_g")]
+        if gs:
+            used_g = round(sum(gs), 2)
+    if used_g is None and used_raw:
         nums = [float(x) for x in re.findall(r"[\d.]+", used_raw)]
         if nums:
             used_g = round(sum(nums), 2)
@@ -277,8 +410,108 @@ def build_payload(path):
         "filament_used_g": used_g,
         "status": STATUS,
         "queued": QUEUED,
-        "is_public": IS_PUBLIC,
     }
+
+
+def detect_slicer(gcode_path):
+    """Identify the slicer from the 3MF Application metadata or the gcode header,
+    so the print is labeled accurately (Bambu Studio / OrcaSlicer / PrusaSlicer)."""
+    text = ""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
+    try:
+        loose = os.path.join(proj, "3D", "3dmodel.model")
+        if os.path.exists(loose):
+            text = open(loose, errors="ignore").read(4000)
+        else:
+            import zipfile
+            zp = os.path.join(proj, ".3mf")
+            if os.path.exists(zp):
+                with zipfile.ZipFile(zp) as z:
+                    text = z.read("3D/3dmodel.model").decode("utf-8", "ignore")[:4000]
+    except Exception:
+        text = ""
+    if not text:
+        try:
+            with open(gcode_path, errors="ignore") as fh:
+                text = fh.read(4000)
+        except Exception:
+            text = ""
+    low = text.lower()
+    if "orca" in low:
+        return "orcaslicer"   # check before bambu (OrcaSlicer is a Bambu fork)
+    if "bambu" in low:
+        return "bambustudio"
+    if "prusa" in low:
+        return "prusaslicer"
+    return "slicer"
+
+
+def find_makerworld_url(gcode_path):
+    """MakerWorld 3MFs embed the design id (e.g. 'DSM00000001150715' in
+    3D/3dmodel.model). Decode it to the public model URL so the server can pull
+    the real title, designer, and cover — same as pasting the URL on the site."""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
+    text = ""
+    try:
+        loose = os.path.join(proj, "3D", "3dmodel.model")
+        if os.path.exists(loose):
+            text = open(loose, errors="ignore").read()
+        else:
+            import zipfile
+            zp = os.path.join(proj, ".3mf")
+            if os.path.exists(zp):
+                with zipfile.ZipFile(zp) as z:
+                    text = z.read("3D/3dmodel.model").decode("utf-8", "ignore")
+    except Exception:
+        return None
+    m = re.search(r"DSM0*([1-9]\d+)", text)
+    if m and _origin_matches_plate(gcode_path):
+        return "https://makerworld.com/models/" + m.group(1)
+    return None
+
+
+def find_image(gcode_path):
+    """Find a cover image in the slicer's project dir next to the gcode.
+    Prefers the model's own pictures (MakerWorld gallery), falls back to the
+    rendered plate thumbnail (present for any Bambu slice)."""
+    proj = os.path.dirname(os.path.dirname(os.path.abspath(gcode_path)))
+    picdir = os.path.join(proj, "Auxiliaries", "Model Pictures")
+    cands = []
+    if os.path.isdir(picdir):
+        for fn in os.listdir(picdir):
+            if fn.lower().endswith((".webp", ".png", ".jpg", ".jpeg")):
+                cands.append(os.path.join(picdir, fn))
+    if cands:
+        return max(cands, key=lambda f: os.path.getsize(f))  # largest = main cover
+    for rel in ("Metadata/plate_1.png", "Metadata/plate_no_light_1.png", "Metadata/top_1.png"):
+        fp = os.path.join(proj, rel)
+        if os.path.exists(fp):
+            return fp
+    return None
+
+
+def upload_image(img_path):
+    """Multipart-upload the image to /api/uploads/photo; return its CDN URL."""
+    with open(img_path, "rb") as fh:
+        data = fh.read()
+    fname = os.path.basename(img_path)
+    ext = fname.lower().rsplit(".", 1)[-1]
+    ctype = {"png": "image/png", "webp": "image/webp", "jpg": "image/jpeg",
+             "jpeg": "image/jpeg"}.get(ext, "application/octet-stream")
+    boundary = "----printshelfBoundaryZ9x7Kq2LpR"
+    body = b"".join([
+        ("--%s\r\n" % boundary).encode(),
+        ('Content-Disposition: form-data; name="file"; filename="%s"\r\n' % fname).encode(),
+        ("Content-Type: %s\r\n\r\n" % ctype).encode(),
+        data,
+        ("\r\n--%s--\r\n" % boundary).encode(),
+    ])
+    req = urllib.request.Request(
+        BASE_URL + "/api/uploads/photo", data=body, method="POST",
+        headers={"Content-Type": "multipart/form-data; boundary=" + boundary,
+                 "Authorization": "Bearer " + API_KEY})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8")).get("url")
 
 
 def post(payload):
@@ -305,10 +538,26 @@ def main():
     path = sys.argv[1]
     try:
         payload = build_payload(path)
+        try:
+            payload["slicer"] = detect_slicer(path)
+            mw = find_makerworld_url(path)
+            if mw:
+                payload["source_url"] = mw
+        except Exception as e:
+            log("source-url detect skipped (%s: %s)" % (type(e).__name__, e))
+        try:
+            img = find_image(path)
+            if img:
+                url = upload_image(img)
+                if url:
+                    payload["photo_url"] = url
+        except Exception as e:
+            log("image upload skipped (%s: %s)" % (type(e).__name__, e))
         result = post(payload)
         warns = result.get("warnings") or []
-        log("logged '%s' (%s filament(s)%s)" % (
+        log("logged '%s' (%s filament(s)%s%s)" % (
             payload["title"], len(payload["filaments"]),
+            ", +image" if payload.get("photo_url") else "",
             "; " + "; ".join(warns) if warns else ""))
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "ignore")[:300]

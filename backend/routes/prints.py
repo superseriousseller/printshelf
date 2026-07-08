@@ -9,7 +9,8 @@ The core log entry. Supports:
 Free-tier cap (50) counts ALL prints — queued + completed — so a user
 can't game the limit by parking everything in the queue.
 """
-from datetime import date
+import logging
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -32,6 +33,7 @@ from models import (
 )
 
 router = APIRouter(prefix="/api/prints", tags=["prints"])
+logger = logging.getLogger(__name__)
 
 VALID_PRINT_STATUSES = {s.value for s in PrintStatus}
 VALID_PLATFORMS = {p.value for p in SourcePlatform}
@@ -279,6 +281,8 @@ class PrintIngest(BaseModel):
     is_public: bool = True
     notes: Optional[str] = Field(default=None, max_length=5000)
     source_url: Optional[str] = Field(default=None, max_length=1000)
+    photo_url: Optional[str] = Field(default=None, max_length=1000)
+    slicer: Optional[str] = Field(default=None, max_length=20)
 
 
 def _resolve_printer(db: Session, user: User, printer_str: Optional[str]):
@@ -298,6 +302,16 @@ def _resolve_printer(db: Session, user: User, printer_str: Optional[str]):
     return pr.id, {"type": "printer", "id": pr.id, "name": pr.name}
 
 
+def _bambu_name(brand, material, finish, hexv):
+    if not hexv:
+        return None
+    try:
+        from bambu_colors import color_name as _cn
+        return _cn(brand or "", material, finish, hexv)
+    except Exception:
+        return None
+
+
 def _resolve_filament(db: Session, user: User, desc: "IngestFilament", warnings: list):
     mat = desc.material.strip()
     hexv = (desc.color_hex or "").strip() or None
@@ -306,12 +320,20 @@ def _resolve_filament(db: Session, user: User, desc: "IngestFilament", warnings:
     same_mat = [f for f in owned if (f.material or "").lower() == mat.lower()]
     for f in same_mat:
         if hexv and f.color_hex and f.color_hex.lower() == hexv.lower():
+            if not (f.color_name or "").strip():   # backfill exact name onto an old nameless spool
+                nm = _bambu_name(f.brand, f.material, f.finish, f.color_hex)
+                if nm:
+                    f.color_name = nm
+                    db.commit()
             return f.id, None
         if cname and f.color_name and f.color_name.lower() == cname.lower():
             return f.id, None
     # No color signal -> match on material alone rather than spawn a duplicate spool.
     if not hexv and not cname and same_mat:
         return same_mat[0].id, None
+    # No name from the slicer? Look up the EXACT Bambu color name by hex (never a guess).
+    if not cname and hexv:
+        cname = _bambu_name(desc.brand or "", mat, desc.finish, hexv)
     try:
         enforce_filament_limit(db, user)
     except HTTPException:
@@ -338,6 +360,30 @@ def ingest_print(
 ) -> dict:
     """Slicer post-processing intake. Match-or-create printer + filaments from
     descriptors, then log the print (source_platform='slicer')."""
+    # Dedup: slicing plate-by-plate or re-slicing the same model shouldn't post twice.
+    # Key on the model source URL when present, else the title, within a short window.
+    cutoff = datetime.utcnow() - timedelta(hours=12)
+    recent = (
+        db.query(Print)
+        .filter(
+            Print.user_id == user.id,
+            Print.source_platform.in_(("slicer", "bambustudio", "orcaslicer", "prusaslicer")),
+            Print.created_at >= cutoff,
+        )
+        .order_by(Print.created_at.desc())
+        .limit(30)
+        .all()
+    )
+    for pr in recent:
+        if body.source_url:
+            same = pr.source_url == body.source_url
+        else:
+            same = (pr.title or "").strip().lower() == (body.title or "").strip().lower()
+        if same:
+            return {"print": pr.to_dict(), "created": [],
+                    "warnings": ["duplicate slice ignored — existing print kept"],
+                    "deduplicated": True}
+
     warnings: list = []
     created: list = []
     printer_id, pcreated = _resolve_printer(db, user, body.printer)
@@ -351,16 +397,41 @@ def ingest_print(
                 fil_ids.append(fid)
             if fcreated:
                 created.append(fcreated)
+    title = body.title
+    designer = None
+    thumbnail_url = None
+    if body.source_url:
+        try:
+            from import_service import detect_platform as _detect, extract as _extract
+            if _detect(body.source_url) != "manual":
+                meta = _extract(body.source_url)
+                if meta.get("title"):
+                    title = meta["title"]
+                designer = meta.get("designer")
+                thumbnail_url = meta.get("thumbnail_url")
+                logger.info("ingest enriched from %s: title=%r designer=%r",
+                            body.source_url, title, designer)
+        except Exception:
+            logger.info("ingest source enrich failed for %s", body.source_url)
+
+    _SLICER_PLATFORMS = {"bambustudio", "orcaslicer", "prusaslicer"}
+    platform = body.slicer if body.slicer in _SLICER_PLATFORMS else "slicer"
+    # Visibility is a per-user account setting (Connect page), not baked into the
+    # downloaded script — so changing it takes effect immediately, no re-download.
+    auto_public = bool((user.socials or {}).get("_slicer_public"))
     pc_body = PrintCreate(
-        title=body.title,
-        source_platform="slicer",
+        title=title,
+        designer=designer,
+        thumbnail_url=thumbnail_url,
+        source_platform=platform,
         source_url=body.source_url,
+        photo_url=body.photo_url,
         printer_id=printer_id,
         filament_ids=fil_ids,
         status=body.status,
         notes=body.notes,
         queued=body.queued,
-        is_public=body.is_public,
+        is_public=auto_public,
         layer_height=body.layer_height,
         infill_pct=body.infill_pct,
         supports=body.supports,
@@ -369,6 +440,65 @@ def ingest_print(
     )
     p = _create_print(db, user, pc_body)
     return {"print": p.to_dict(), "created": created, "warnings": warnings}
+
+
+class PrintFromUrl(BaseModel):
+    """Log a print from just a model URL (mobile share sheet / Shortcut)."""
+    url: str = Field(min_length=1, max_length=1000)
+    queued: bool = False
+
+
+@router.post("/from-url", status_code=201)
+def create_from_url(
+    body: PrintFromUrl,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Share a MakerWorld/Printables/Thingiverse/Cults3D link -> a logged print,
+    enriched (title, designer, cover, source link) via the same extractor the web
+    importer uses. Visibility follows the account setting. Deduped by URL."""
+    url = body.url.strip()
+    from import_service import ImportError_, detect_platform, extract
+
+    platform = detect_platform(url)
+    if platform == "manual":
+        raise HTTPException(
+            status_code=400,
+            detail="Not a recognized model link (MakerWorld, Printables, Thingiverse, Cults3D).",
+        )
+
+    # Dedup: sharing the same model twice shouldn't stack duplicates.
+    existing = (
+        db.query(Print)
+        .filter(Print.user_id == user.id, Print.source_url == url)
+        .order_by(Print.created_at.desc())
+        .first()
+    )
+    if existing is not None:
+        return {**existing.to_dict(), "deduplicated": True}
+
+    try:
+        meta = extract(url)
+    except ImportError_ as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("from-url extract failed for %s", url)
+        raise HTTPException(status_code=502, detail="Couldn't read that model page — try again.")
+
+    title = (meta.get("title") or "").strip() or "Untitled print"
+    auto_public = bool((user.socials or {}).get("_slicer_public"))
+    pc_body = PrintCreate(
+        title=title,
+        designer=meta.get("designer"),
+        source_platform=platform,
+        source_url=meta.get("source_url") or url,
+        thumbnail_url=meta.get("thumbnail_url"),
+        status="printed",
+        queued=body.queued,
+        is_public=auto_public,
+    )
+    pr = _create_print(db, user, pc_body)
+    return pr.to_dict()
 
 
 @router.get("/{print_id}")

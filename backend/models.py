@@ -114,6 +114,9 @@ class SourcePlatform(str, enum.Enum):
     THINGIVERSE = "thingiverse"
     MANUAL = "manual"
     SLICER = "slicer"          # auto-imported via the slicer post-processing script
+    BAMBU_STUDIO = "bambustudio"
+    ORCA_SLICER = "orcaslicer"
+    PRUSA_SLICER = "prusaslicer"
 
 
 # Free-tier limits — checked on POST /api/prints and POST /api/filaments

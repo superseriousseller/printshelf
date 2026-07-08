@@ -56,7 +56,8 @@
             </h3>
             <p class="meta">
                 {% if p.designer %}by {{ p.designer }} · {% endif %}
-                {{ p.source_platform }}
+                {% set _sl = {'bambustudio':'Bambu Studio','orcaslicer':'OrcaSlicer','prusaslicer':'PrusaSlicer','slicer':'Slicer'} %}
+                {{ _sl.get(p.source_platform, p.source_platform) }}
                 {% if p.printer_id and printer_names[p.printer_id] %} · {{ printer_names[p.printer_id] }}{% endif %}
                 {% if p.print_date %} · {{ p.print_date.strftime('%b %-d, %Y') }}{% endif %}
             </p>

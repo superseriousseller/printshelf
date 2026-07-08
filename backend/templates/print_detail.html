@@ -197,7 +197,16 @@
             {% endif %}
 
             {% if print_.source_url %}
-            <p class="detail-source"><a href="{{ print_.source_url }}" target="_blank" rel="noopener">View on {{ print_.source_platform }}</a></p>
+            <p class="detail-source"><a href="{{ print_.source_url }}" target="_blank" rel="noopener">View on
+                {%- if 'makerworld' in print_.source_url %} MakerWorld
+                {%- elif 'printables' in print_.source_url %} Printables
+                {%- elif 'thingiverse' in print_.source_url %} Thingiverse
+                {%- elif 'cults3d' in print_.source_url %} Cults3D
+                {%- else %} the source{% endif %}</a></p>
+            {% endif %}
+            {% set _slicers = {'bambustudio':'Bambu Studio','orcaslicer':'OrcaSlicer','prusaslicer':'PrusaSlicer','slicer':'a 3D slicer'} %}
+            {% if print_.source_platform in _slicers %}
+            <p class="detail-source detail-slicer">🖨 Auto-logged from {{ _slicers[print_.source_platform] }}</p>
             {% endif %}
         </div>
     </div>

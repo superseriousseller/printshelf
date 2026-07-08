@@ -168,8 +168,29 @@ def connect_slicer(
     base = os.environ.get("APP_URL", "https://printshelf.app").rstrip("/")
     return templates.TemplateResponse(
         request, "dashboard/connect.html",
-        _ctx(user, db=db, api_key=user.api_key, base_url=base),
+        _ctx(user, db=db, api_key=user.api_key, base_url=base,
+             slicer_public=bool((user.socials or {}).get("_slicer_public"))),
     )
+
+
+@router.post("/connect/visibility")
+def connect_visibility(
+    auto_public: str = Form(""),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    """Save whether auto-logged (slicer) prints go straight to the public profile.
+    Stored on the account so it applies to every slice with no script re-download."""
+    if (r := _require_user(user)) is not None:
+        return r
+    soc = dict(user.socials or {})
+    if str(auto_public).lower() in {"1", "true", "yes", "on"}:
+        soc["_slicer_public"] = True
+    else:
+        soc.pop("_slicer_public", None)
+    user.socials = soc or None
+    db.commit()
+    return RedirectResponse("/dashboard/connect", status_code=303)
 
 
 @router.get("/connect/printshelf_postprocess.py")
@@ -1443,7 +1464,10 @@ async def save_account_settings(
     user.display_name = display_name or None
     user.bio = bio or None
     user.avatar_url = avatar_url or None
-    user.socials = {k: v for k, v in resolved_socials.items() if v} or None
+    _prefs = {k: v for k, v in (user.socials or {}).items() if k.startswith("_")}
+    _merged = {k: v for k, v in resolved_socials.items() if v}
+    _merged.update(_prefs)
+    user.socials = _merged or None
     user.notify_follow = bool(notify_follow)
     user.notify_feed = bool(notify_feed)
     if new_password_hash:
