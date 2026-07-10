@@ -216,6 +216,25 @@ def download_postprocess(
     )
 
 
+_SHORTCUT_FILE = os.path.join(_BACKEND_DIR, "static", "shortcuts", "PrintShelf.shortcut")
+
+
+@router.get("/connect/PrintShelf.shortcut")
+def download_shortcut():
+    """Serve the signed iOS 'Add to PrintShelf' share-sheet shortcut (keyless — auth
+    is the browser session via /share, so the file is identical for every user)."""
+    try:
+        with open(_SHORTCUT_FILE, "rb") as fh:
+            blob = fh.read()
+    except OSError:
+        _log.exception("shortcut file missing at %s", _SHORTCUT_FILE)
+        raise HTTPException(status_code=500, detail="Shortcut temporarily unavailable")
+    return Response(
+        content=blob, media_type="application/octet-stream",
+        headers={"Content-Disposition": 'attachment; filename="PrintShelf.shortcut"'},
+    )
+
+
 @router.get("/printers", response_class=HTMLResponse)
 def list_printers(
     request: Request,
