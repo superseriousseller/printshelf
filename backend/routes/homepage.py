@@ -494,6 +494,37 @@ def terms_of_service(
     )
 
 
+@router.get("/share", response_class=HTMLResponse)
+def share_capture(
+    request: Request,
+    url: str = "",
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Mobile share-sheet landing (like the SS Books ?share= flow): log a shared
+    model link to the shelf. Auth is the browser session — no API key needed."""
+    from urllib.parse import quote
+    from fastapi import HTTPException as _HTTPException
+    if current_user is None:
+        return RedirectResponse("/login?next=" + quote("/share?url=" + url, safe=""), status_code=303)
+    base_ctx = {"request": request, "current_user": current_user,
+                "app_url": os.environ.get("APP_URL", "https://printshelf.app")}
+    link = (url or "").strip()
+    if not link:
+        return templates.TemplateResponse(
+            request, "share_result.html",
+            {**base_ctx, "error": "No link was shared. Open a model and use Share \u2192 Add to PrintShelf."})
+    from routes.prints import log_print_from_model_url
+    try:
+        pr, deduped = log_print_from_model_url(db, current_user, link)
+    except _HTTPException as e:
+        return templates.TemplateResponse(
+            request, "share_result.html", {**base_ctx, "error": e.detail})
+    return templates.TemplateResponse(
+        request, "share_result.html",
+        {**base_ctx, "print_": pr, "deduped": deduped, "username": current_user.username})
+
+
 @router.get("/sitemap.xml")
 def sitemap(
     request: Request,

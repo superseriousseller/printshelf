@@ -448,25 +448,17 @@ class PrintFromUrl(BaseModel):
     queued: bool = False
 
 
-@router.post("/from-url", status_code=201)
-def create_from_url(
-    body: PrintFromUrl,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> dict:
-    """Share a MakerWorld/Printables/Thingiverse/Cults3D link -> a logged print,
-    enriched (title, designer, cover, source link) via the same extractor the web
-    importer uses. Visibility follows the account setting. Deduped by URL."""
-    url = body.url.strip()
+def log_print_from_model_url(db: Session, user: User, url: str, queued: bool = False):
+    """Shared core for the mobile share flow (API /from-url + web /share).
+    Returns (print, deduped_bool). Raises HTTPException on a bad/unreadable URL."""
+    url = (url or "").strip()
     from import_service import ImportError_, detect_platform, extract
 
-    platform = detect_platform(url)
-    if platform == "manual":
+    if not url or detect_platform(url) == "manual":
         raise HTTPException(
             status_code=400,
             detail="Not a recognized model link (MakerWorld, Printables, Thingiverse, Cults3D).",
         )
-
     # Dedup: sharing the same model twice shouldn't stack duplicates.
     existing = (
         db.query(Print)
@@ -475,8 +467,7 @@ def create_from_url(
         .first()
     )
     if existing is not None:
-        return {**existing.to_dict(), "deduplicated": True}
-
+        return existing, True
     try:
         meta = extract(url)
     except ImportError_ as e:
@@ -486,19 +477,32 @@ def create_from_url(
         raise HTTPException(status_code=502, detail="Couldn't read that model page — try again.")
 
     title = (meta.get("title") or "").strip() or "Untitled print"
-    auto_public = bool((user.socials or {}).get("_slicer_public"))
     pc_body = PrintCreate(
         title=title,
         designer=meta.get("designer"),
-        source_platform=platform,
+        source_platform=detect_platform(url),
         source_url=meta.get("source_url") or url,
         thumbnail_url=meta.get("thumbnail_url"),
         status="printed",
-        queued=body.queued,
-        is_public=auto_public,
+        queued=queued,
+        is_public=bool((user.socials or {}).get("_slicer_public")),
     )
-    pr = _create_print(db, user, pc_body)
-    return pr.to_dict()
+    return _create_print(db, user, pc_body), False
+
+
+@router.post("/from-url", status_code=201)
+def create_from_url(
+    body: PrintFromUrl,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Share a model link -> a logged, enriched print. Visibility follows the
+    account setting. Deduped by URL."""
+    pr, deduped = log_print_from_model_url(db, user, body.url, body.queued)
+    out = pr.to_dict()
+    if deduped:
+        out["deduplicated"] = True
+    return out
 
 
 @router.get("/{print_id}")
