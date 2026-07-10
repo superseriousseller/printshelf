@@ -448,7 +448,6 @@ class PrintFromUrl(BaseModel):
     queued: bool = False
 
 
-@router.post("/from-url", status_code=201)
 def log_print_from_model_url(db: Session, user: User, url: str, queued: bool = False):
     """Shared core for the mobile share flow (API /from-url + web /share).
     Returns (print, deduped_bool). Raises HTTPException on a bad/unreadable URL."""
@@ -491,6 +490,7 @@ def log_print_from_model_url(db: Session, user: User, url: str, queued: bool = F
     return _create_print(db, user, pc_body), False
 
 
+@router.post("/from-url", status_code=201)
 def create_from_url(
     body: PrintFromUrl,
     user: User = Depends(get_current_user),
