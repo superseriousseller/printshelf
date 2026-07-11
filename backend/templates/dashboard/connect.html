@@ -46,35 +46,17 @@
 
 <section class="connect-step" style="border-color:var(--accent)">
     <h2>📱 Or log from your phone — one tap</h2>
-    <p>Install a shortcut once, then <strong>share any model</strong> from Safari, the MakerWorld app, or Bambu Handy — it lands on your shelf with the title, designer, cover image, and link, automatically. No slicer, no computer.</p>
+    <p>Install a shortcut once, then <strong>share any model link</strong> from Safari — it lands on your shelf with the title, designer, cover image, and link, automatically. No key to paste, no slicer, no computer.</p>
     <ol style="padding-left:22px; margin:10px 0 4px">
-        <li style="margin:12px 0"><strong>Install the shortcut</strong> (iPhone / iPad):<br>
-            <a href="https://www.icloud.com/shortcuts/bf2108bc716d432da24d3b2c929d2c13" class="btn-primary" target="_blank" rel="noopener" style="margin-top:6px">⬇ Add the PrintShelf shortcut</a>
+        <li style="margin:12px 0"><strong>Open this page on your iPhone / iPad</strong> and download the shortcut:<br>
+            <a href="/dashboard/connect/PrintShelf.shortcut" class="btn-primary" style="margin-top:6px">⬇ Add the PrintShelf shortcut</a>
+            <br><span class="hint">Tap it → <strong>Add Shortcut</strong>. It's signed, so there's no "untrusted" warning.</span>
         </li>
-        <li style="margin:12px 0"><strong>Paste your key when it asks</strong> during install — tap Copy, then paste into the prompt:
-            <div class="connect-key" style="display:flex; gap:8px; align-items:center; margin:8px 0">
-                <input type="text" id="ps-key" value="{{ api_key }}" readonly onclick="this.select()" aria-label="Your API key" style="flex:1">
-                <button type="button" class="btn-secondary" id="ps-copy" style="white-space:nowrap">Copy key</button>
-            </div>
-        </li>
-        <li style="margin:12px 0"><strong>Use it:</strong> open any model → <strong>Share</strong> → <strong>Add to PrintShelf</strong>. Done.</li>
+        <li style="margin:12px 0"><strong>Sign in once in Safari</strong> — make sure you're logged into printshelf.app in your phone's Safari (the shortcut uses that session, so no API key is needed).</li>
+        <li style="margin:12px 0"><strong>Use it:</strong> open any model in Safari (MakerWorld, Printables, Thingiverse, Cults3D) → <strong>Share</strong> → <strong>Add to PrintShelf</strong>. Done.</li>
     </ol>
-    <p class="hint">Visibility follows your setting above (private by default). Re-sharing the same model won't duplicate it. Works with MakerWorld, Printables, Thingiverse &amp; Cults3D links.</p>
+    <p class="hint">Visibility follows your setting above (private by default). Re-sharing the same model won't duplicate it. Sharing from Safari's page share works best — some apps hand off a picture instead of the link.</p>
 </section>
-<script>
-(function(){
-    var b = document.getElementById('ps-copy'), k = document.getElementById('ps-key');
-    if (!b || !k) return;
-    b.addEventListener('click', function(){
-        k.focus(); k.select();
-        var done = function(){ b.textContent = 'Copied \u2713'; setTimeout(function(){ b.textContent = 'Copy key'; }, 1500); };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(k.value).then(done, function(){ try { document.execCommand('copy'); done(); } catch(e){} });
-        } else { try { document.execCommand('copy'); done(); } catch(e){} }
-    });
-})();
-</script>
-
 <details class="connect-advanced">
     <summary>Options &amp; details</summary>
     <ul>
