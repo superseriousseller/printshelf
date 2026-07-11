@@ -452,20 +452,36 @@ def log_print_from_model_url(db: Session, user: User, url: str, queued: bool = F
     """Shared core for the mobile share flow (API /from-url + web /share).
     Returns (print, deduped_bool). Raises HTTPException on a bad/unreadable URL."""
     url = (url or "").strip()
-    from import_service import ImportError_, detect_platform, extract
+    from import_service import ImportError_, detect_platform, extract, canonical_model_url
 
     if not url or detect_platform(url) == "manual":
         raise HTTPException(
             status_code=400,
             detail="Not a recognized model link (MakerWorld, Printables, Thingiverse, Cults3D).",
         )
-    # Dedup: sharing the same model twice shouldn't stack duplicates.
+    # Dedup: sharing the same model twice shouldn't stack duplicates. Match the exact
+    # URL first (fast path), then a canonical per-model key so the same model shared via
+    # a different slug/query/fragment/locale still dedups (path-based, no network).
     existing = (
         db.query(Print)
         .filter(Print.user_id == user.id, Print.source_url == url)
         .order_by(Print.created_at.desc())
         .first()
     )
+    if existing is None:
+        canon = canonical_model_url(url)
+        if canon:
+            # Keys are platform-prefixed, so no cross-platform collision. Scan is over
+            # this one user's own imported prints only (bounded); fine at current scale.
+            for pr in (
+                db.query(Print)
+                .filter(Print.user_id == user.id, Print.source_url.isnot(None))
+                .order_by(Print.created_at.desc())
+                .all()
+            ):
+                if canonical_model_url(pr.source_url) == canon:
+                    existing = pr
+                    break
     if existing is not None:
         return existing, True
     try:
