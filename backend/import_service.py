@@ -194,6 +194,34 @@ def _makerworld_model_id(url: str) -> Optional[str]:
     return m.group(1) if m else None
 
 
+def canonical_model_url(url: str) -> Optional[str]:
+    """A stable per-model dedup key derived from the URL path only (no network),
+    so the same model shared via different slug / query / fragment / locale variants
+    collapses to one key. Returns e.g. "makerworld:1150715", or None when no stable
+    id can be found (caller then falls back to exact-URL matching)."""
+    try:
+        parsed = urlparse(url or "")
+    except Exception:
+        return None
+    host = (parsed.hostname or "").lower()
+    path = parsed.path or ""
+    if "makerworld" in host:
+        m = re.search(r"/models/(\d+)", path)
+        return f"makerworld:{m.group(1)}" if m else None
+    if "printables" in host:
+        m = re.search(r"/model/(\d+)", path)
+        return f"printables:{m.group(1)}" if m else None
+    if "thingiverse" in host:
+        m = re.search(r"thing:(\d+)", path)
+        return f"thingiverse:{m.group(1)}" if m else None
+    if "cults3d" in host or "cults." in host:
+        # Cults uses a slug, not a numeric id. Drop locale segments (2-letter) and
+        # key on the final path segment (the design slug).
+        segs = [seg for seg in path.split("/") if seg and not re.fullmatch(r"[a-z]{2}", seg)]
+        return f"cults3d:{segs[-1].lower()}" if segs else None
+    return None
+
+
 def _fetch_json(url: str, use_proxy: bool):
     """Fetch a JSON endpoint (optionally via the CF proxy). Returns (status, parsed_or_None)."""
     if use_proxy:
