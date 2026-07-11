@@ -511,8 +511,8 @@ def share_capture(
     base_ctx = {"request": request, "current_user": current_user,
                 "app_url": os.environ.get("APP_URL", "https://printshelf.app")}
     link = (url or "").strip()
-    logging.getLogger("printshelf.share").info(
-        "share_capture user=%s url=%r", current_user.username, link)
+    print("SHARE_DEBUG user=%s raw_url=%r stripped=%r" % (
+        current_user.username, url, link), flush=True)
     if not link:
         return templates.TemplateResponse(
             request, "share_result.html",
