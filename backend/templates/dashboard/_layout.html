@@ -14,7 +14,7 @@
             {% if filament_preview_enabled is defined and filament_preview_enabled() %}<li><a href="/dashboard/preview" {% if section == "preview" %}class="active"{% endif %}>🎨 Preview</a></li>{% endif %}
             <li class="sidebar-divider"></li>
             <li><a href="/dashboard/account" {% if section == "account" %}class="active"{% endif %}>Account</a></li>
-            <li><a href="/dashboard/connect" {% if section == "connect" %}class="active"{% endif %}>🔌 Connect slicer</a></li>
+            <li><a href="/dashboard/connect" {% if section == "connect" %}class="active"{% endif %}>📥 Auto-log prints</a></li>
             {% if current_user and current_user.tier != "pro" %}
             <li><a href="/dashboard/upgrade" {% if section == "upgrade" %}class="active"{% endif %} class="sidebar-upgrade">⚡ Go Pro</a></li>
             {% endif %}

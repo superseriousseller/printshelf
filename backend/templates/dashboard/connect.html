@@ -1,67 +1,71 @@
 {% extends "dashboard/_layout.html" %}
 {% set section = "connect" %}
-{% block title %}Connect your slicer — PrintShelf{% endblock %}
+{% block title %}Auto-log your prints — PrintShelf{% endblock %}
 
 {% block dash %}
 <header class="dash-header">
-    <h1>🔌 Connect your slicer</h1>
+    <h1>📥 Auto-log your prints</h1>
 </header>
-<p class="dash-breadcrumb">Auto-log every print. Add a one-line post-processing script in Bambu Studio, OrcaSlicer, or PrusaSlicer and each slice logs itself to your shelf — filament, colors, print time, layer height, infill, and printer, no typing.</p>
+<p class="dash-breadcrumb">Two ways to log prints without typing — from your <strong>slicer</strong>, or straight from your <strong>phone</strong>. Use either or both; prints land on your shelf automatically with title, filament, and image.</p>
 
-<div class="connect-steps">
-    <section class="connect-step">
-        <h2><span class="connect-num">1</span> Download your script</h2>
-        <p>This copy has your API key already baked in — keep it private (anyone with it can post to your account).</p>
-        <form method="post" action="/dashboard/connect/visibility" class="connect-visibility-form">
-            <label class="connect-visibility">
-                <input type="checkbox" name="auto_public" value="1" onchange="this.form.submit()"{% if slicer_public %} checked{% endif %}>
-                Post auto-logged prints straight to my <strong>public</strong> profile
-            </label>
-            <span class="hint">Off = they stay private so you can review &amp; publish first. This is an account setting — flip it anytime, no re-download needed.</span>
-        </form>
-        <a href="/dashboard/connect/printshelf_postprocess.py" class="btn-primary" download>⬇ Download printshelf_postprocess.py</a>
-        <p class="hint">Save it somewhere permanent (e.g. your Documents folder). If you re-generate your API key later, download it again.</p>
-    </section>
+<section class="connect-step">
+    <h2>👁 Visibility</h2>
+    <form method="post" action="/dashboard/connect/visibility" class="connect-visibility-form">
+        <label class="connect-visibility">
+            <input type="checkbox" name="auto_public" value="1" onchange="this.form.submit()"{% if slicer_public %} checked{% endif %}>
+            Post auto-logged prints straight to my <strong>public</strong> profile
+        </label>
+        <span class="hint">Applies to <strong>both</strong> methods below. Off = prints stay private so you can review &amp; publish first. It's an account setting — flip it anytime, no re-download needed.</span>
+    </form>
+</section>
 
-    <section class="connect-step">
-        <h2><span class="connect-num">2</span> Add it in your slicer</h2>
-        <p><strong>Bambu Studio / OrcaSlicer:</strong> turn on the <strong>Advanced</strong> toggle at the top of the Print Settings panel — Post-processing Scripts is hidden until you do — then open the <strong>Others</strong> tab → <strong>Post-processing Scripts</strong>. <strong>PrusaSlicer:</strong> switch to <strong>Expert</strong> mode → Print Settings → <strong>Output options</strong> → Post-processing scripts. Paste the line for your OS, editing the path to where you saved the file:</p>
-        <div class="connect-code">
-            <span class="connect-code-os">macOS / Linux</span>
-            <code>/usr/bin/python3 "/Users/you/Documents/printshelf_postprocess.py"</code>
-        </div>
-        <div class="connect-code">
-            <span class="connect-code-os">Windows</span>
-            <code>"C:\\Path\\To\\python.exe" "C:\\Users\\you\\Documents\\printshelf_postprocess.py"</code>
-        </div>
-        <p class="hint">Needs Python 3.8+ (no extra packages). On Windows, use the full path to <code>python.exe</code>.</p>
-        <p class="notice notice-warn"><strong>Heads-up:</strong> when you slice, Bambu Studio shows a <em>“Security Warning”</em> that a post-processing script will run automatically (it may reappear each time you slice). That's expected — this script only reads the sliced G-code and posts the details to PrintShelf. Click <strong>Execute</strong> to continue. Because it runs <em>during slicing</em>, any action that slices — <strong>Export</strong> or <strong>Print plate</strong> — triggers it.</p>
-    </section>
-
-    <section class="connect-step">
-        <h2><span class="connect-num">3</span> Slice something</h2>
-        <p>Hit <strong>Slice</strong>, then <strong>Export</strong> or <strong>Print plate</strong>. A new print appears on <a href="/dashboard/prints">your shelf</a> within a couple seconds — with the filament matched to your library (or created if it's new). The script never changes your G-code and never blocks slicing.</p>
-    </section>
-</div>
+<section class="connect-step">
+    <h2>🖥 From your slicer</h2>
+    <p>Add a one-line post-processing script in Bambu Studio, OrcaSlicer, or PrusaSlicer and each slice logs itself — filament, colors, print time, layer height, infill, and printer.</p>
+    <ol class="connect-substeps">
+        <li style="margin:12px 0"><strong>Download your script.</strong> This copy has your API key baked in — keep it private (anyone with it can post to your account).<br>
+            <a href="/dashboard/connect/printshelf_postprocess.py" class="btn-primary" download style="margin-top:6px">⬇ Download printshelf_postprocess.py</a>
+            <br><span class="hint">Save it somewhere permanent (e.g. Documents). If you rotate your API key later, download it again.</span></li>
+        <li style="margin:12px 0"><strong>Add it in your slicer.</strong> <strong>Bambu Studio / OrcaSlicer:</strong> turn on the <strong>Advanced</strong> toggle at the top of the Print Settings panel — Post-processing Scripts is hidden until you do — then <strong>Others</strong> tab → <strong>Post-processing Scripts</strong>. <strong>PrusaSlicer:</strong> <strong>Expert</strong> mode → Print Settings → <strong>Output options</strong> → Post-processing scripts. Paste the line for your OS, editing the path to where you saved the file:
+            <div class="connect-code">
+                <span class="connect-code-os">macOS / Linux</span>
+                <code>/usr/bin/python3 "/Users/you/Documents/printshelf_postprocess.py"</code>
+            </div>
+            <div class="connect-code">
+                <span class="connect-code-os">Windows</span>
+                <code>"C:\\Path\\To\\python.exe" "C:\\Users\\you\\Documents\\printshelf_postprocess.py"</code>
+            </div>
+            <span class="hint">Needs Python 3.8+ (no extra packages). On Windows, use the full path to <code>python.exe</code>.</span></li>
+        <li style="margin:12px 0"><strong>Slice something.</strong> Hit <strong>Slice</strong>, then <strong>Export</strong> or <strong>Print plate</strong>. A new print appears on <a href="/dashboard/prints">your shelf</a> within a couple seconds — filament matched to your library (or created if new). The script never changes your G-code and never blocks slicing.</li>
+    </ol>
+    <p class="notice notice-warn"><strong>Heads-up:</strong> when you slice, Bambu Studio shows a <em>“Security Warning”</em> that a post-processing script will run automatically (it may reappear each time you slice). That's expected — this script only reads the sliced G-code and posts the details to PrintShelf. Click <strong>Execute</strong> to continue. Because it runs <em>during slicing</em>, any action that slices — <strong>Export</strong> or <strong>Print plate</strong> — triggers it.</p>
+</section>
 
 <section class="connect-step" style="border-color:var(--accent)">
-    <h2>📱 Or log from your phone — one tap</h2>
-    <p>Install a shortcut once, then <strong>share any model link</strong> from Safari — it lands on your shelf with the title, designer, cover image, and link, automatically. No key to paste, no slicer, no computer.</p>
-    <ol style="padding-left:22px; margin:10px 0 4px">
-        <li style="margin:12px 0"><strong>Install the shortcut</strong> — on your iPhone / iPad, tap:<br>
-            <a href="https://www.icloud.com/shortcuts/d91a2998872841bd87fe990d755f7920" class="btn-primary" target="_blank" rel="noopener" style="margin-top:6px">⬇ Add the PrintShelf shortcut</a>
-            <br><span class="hint">Opens in the Shortcuts app → tap <strong>Add Shortcut</strong>.</span>
-        </li>
-        <li style="margin:12px 0"><strong>Sign in once in Safari</strong> — make sure you're logged into printshelf.app in your phone's Safari (the shortcut uses that session, so no API key is needed).</li>
-        <li style="margin:12px 0"><strong>Use it:</strong> open any model in Safari (MakerWorld, Printables, Thingiverse, Cults3D) → <strong>Share</strong> → <strong>Add to PrintShelf</strong>. Done.</li>
-    </ol>
-    <p class="hint">Visibility follows your setting above (private by default). Re-sharing the same model won't duplicate it. Sharing from Safari's page share works best — some apps hand off a picture instead of the link.</p>
+    <h2>📱 From your phone</h2>
+    <p>Install a shortcut once, then <strong>share any model link</strong> from your phone — it lands on your shelf with the title, designer, cover image, and link. No key to paste, no computer.</p>
+    <div style="display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start; margin-top:6px">
+        <figure style="margin:0; text-align:center; flex:0 0 auto">
+            <img src="/static/img/shortcut-qr.png" alt="QR code — install the PrintShelf shortcut" width="150" height="150" style="background:#fff; padding:8px; border-radius:10px; display:block">
+            <figcaption class="hint" style="max-width:166px; margin-top:6px">On a computer? Scan with your phone camera to open the install.</figcaption>
+        </figure>
+        <ol style="padding-left:22px; margin:0; flex:1 1 260px">
+            <li style="margin:10px 0"><strong>Install the shortcut</strong> — on your iPhone / iPad, tap
+                <a href="https://www.icloud.com/shortcuts/d91a2998872841bd87fe990d755f7920" target="_blank" rel="noopener">Add the PrintShelf shortcut</a>
+                (or scan the code) → <strong>Add Shortcut</strong>.</li>
+            <li style="margin:10px 0"><strong>Sign in once</strong> to printshelf.app in your phone's Safari — the shortcut uses that session, so there's no API key to paste.</li>
+            <li style="margin:10px 0"><strong>Use it:</strong> open any model (MakerWorld, Printables, Thingiverse, Cults3D) → <strong>Share</strong> → <strong>Add to PrintShelf</strong>. Done.</li>
+        </ol>
+    </div>
+    <p class="hint" style="margin-top:12px">Visibility follows your setting above. Re-sharing the same model won't duplicate it — even via a different link to the same model.</p>
 </section>
+
 <details class="connect-advanced">
     <summary>Options &amp; details</summary>
     <ul>
-        <li><strong>Public vs private:</strong> auto-logged prints are public by default. To keep them private or send them to your queue instead, open the script and set <code>IS_PUBLIC = False</code> or <code>QUEUED = True</code> near the top.</li>
-        <li><strong>When it fires:</strong> at <em>slice</em> time (your intent to print), not on actual success — so re-slicing the same model logs it again. Delete duplicates from your shelf if needed.</li>
+        <li><strong>Public vs private</strong> is the <strong>Visibility</strong> toggle at the top — an account setting that governs both the slicer and phone methods (no script editing needed).</li>
+        <li><strong>Log as queued / a different status</strong> (slicer only): the script logs prints as <code>printed</code> by default. To send them to your queue instead, open the script and set <code>QUEUED = True</code> near the top; <code>STATUS</code> can be <code>printed</code>, <code>printing</code>, <code>failed</code>, or <code>partial</code>.</li>
+        <li><strong>When the slicer script fires:</strong> at <em>slice</em> time (your intent to print), not on actual success — so re-slicing the same model logs it again; delete duplicates from your shelf if needed. (Phone shares dedupe automatically.)</li>
         <li><strong>Your API key</strong> (for the <code>PRINTSHELF_API_KEY</code> env-var route, or to double-check the download):</li>
     </ul>
     <div class="connect-key">
