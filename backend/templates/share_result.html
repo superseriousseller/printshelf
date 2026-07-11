@@ -6,6 +6,9 @@
     <div style="font-size:2.4rem">😕</div>
     <h1 style="margin:8px 0">Couldn't log that</h1>
     <p class="notice notice-warn">{{ error }}</p>
+    {% if attempted_url %}
+    <p class="hint" style="word-break:break-all">Link received:<br><code>{{ attempted_url }}</code></p>
+    {% endif %}
     <p class="hint">Share a model link from MakerWorld, Printables, Thingiverse, or Cults3D.</p>
     <a href="/dashboard/prints" class="btn-secondary">Go to your shelf</a>
     {% else %}

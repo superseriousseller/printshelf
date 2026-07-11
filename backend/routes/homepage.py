@@ -5,6 +5,7 @@ the most recent public prints across all users. Empty at fresh-launch;
 fills out as people sign up and log prints.
 """
 import os
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 from urllib.parse import urlencode
@@ -510,6 +511,8 @@ def share_capture(
     base_ctx = {"request": request, "current_user": current_user,
                 "app_url": os.environ.get("APP_URL", "https://printshelf.app")}
     link = (url or "").strip()
+    logging.getLogger("printshelf.share").info(
+        "share_capture user=%s url=%r", current_user.username, link)
     if not link:
         return templates.TemplateResponse(
             request, "share_result.html",
@@ -519,7 +522,8 @@ def share_capture(
         pr, deduped = log_print_from_model_url(db, current_user, link)
     except _HTTPException as e:
         return templates.TemplateResponse(
-            request, "share_result.html", {**base_ctx, "error": e.detail})
+            request, "share_result.html",
+            {**base_ctx, "error": e.detail, "attempted_url": link})
     return templates.TemplateResponse(
         request, "share_result.html",
         {**base_ctx, "print_": pr, "deduped": deduped, "username": current_user.username})
