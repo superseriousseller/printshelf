@@ -5,6 +5,7 @@ Railway cron setup: new Cron service → schedule "0 10 * * *" (10am UTC daily) 
   command: curl -sf -X POST https://printshelf.app/internal/drip
            -H "X-Cron-Secret: $CRON_SECRET"
 """
+import hmac
 import logging
 import os
 from datetime import datetime, timedelta
@@ -24,7 +25,7 @@ _SECRET = os.environ.get("CRON_SECRET", "")
 
 
 def _check_secret(x_cron_secret: str = Header(default="")):
-    if not _SECRET or x_cron_secret != _SECRET:
+    if not _SECRET or not hmac.compare_digest(x_cron_secret, _SECRET):
         raise HTTPException(status_code=403, detail="Forbidden")
 
 
