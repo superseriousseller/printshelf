@@ -125,6 +125,10 @@ _LOCAL_UPLOADS = os.path.join(os.path.dirname(_BACKEND_DIR), "uploads", "photos"
 os.makedirs(_LOCAL_UPLOADS, exist_ok=True)
 app.mount("/uploads/photos", StaticFiles(directory=_LOCAL_UPLOADS), name="uploads")
 
+_LOCAL_AUDIO_UPLOADS = os.path.join(os.path.dirname(_BACKEND_DIR), "uploads", "audio")
+os.makedirs(_LOCAL_AUDIO_UPLOADS, exist_ok=True)
+app.mount("/uploads/audio", StaticFiles(directory=_LOCAL_AUDIO_UPLOADS), name="uploads-audio")
+
 
 # --- Lifecycle ---
 @app.on_event("startup")

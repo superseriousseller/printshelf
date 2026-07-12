@@ -1,4 +1,4 @@
-"""Photo storage backend.
+"""Photo + audio storage backend.
 
 Two modes, picked by env vars:
 
@@ -7,9 +7,10 @@ Two modes, picked by env vars:
                            Public URL is `{R2_PUBLIC_URL_BASE}/{filename}`.
 
   Local mode (dev)       — when R2 isn't configured, uploads land in
-                           `<repo>/uploads/photos/` and are served from
-                           `/uploads/photos/{filename}` by the FastAPI
-                           static mount in main.py.
+                           `<repo>/uploads/photos/` (or `uploads/audio/`) and
+                           are served from `/uploads/photos/{filename}` (or
+                           `/uploads/audio/{filename}`) by the FastAPI static
+                           mounts in main.py.
 
 Image pipeline (both modes):
   1. Validate as image via Pillow.
@@ -17,6 +18,13 @@ Image pipeline (both modes):
   3. Resize to max 1600px on the longest side, preserving aspect.
   4. Re-encode: JPEG q=85 for opaque images, PNG for transparent.
   5. Filename = SHA-256(processed bytes) + extension → deterministic dedup.
+
+Audio pipeline (upload_audio): no processing here — the caller (currently
+only ingest_instrument_audio.py) already normalized/encoded the bytes via
+ffmpeg before calling this. Just a raw-bytes store with the same SHA-256
+dedup. Deliberately no "kind" (printed/real) in the prefix or filename —
+the Instruments Index blind A/B toggle depends on the URL itself not
+leaking which clip is which.
 """
 import hashlib
 import io
@@ -32,6 +40,8 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10MB raw upload cap
 MAX_DIMENSION = 1600                  # longest-side cap after resize
 JPEG_QUALITY = 85
 ACCEPTED_INPUT_FORMATS = {"JPEG", "PNG", "WEBP", "GIF", "BMP", "TIFF"}
+
+MAX_AUDIO_UPLOAD_BYTES = 5 * 1024 * 1024  # 5MB — short clips, generous ceiling
 
 
 class UploadError(Exception):
@@ -132,6 +142,13 @@ def _local_uploads_dir() -> str:
     return out
 
 
+def _local_audio_dir() -> str:
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    out = os.path.join(os.path.dirname(backend_dir), "uploads", "audio")
+    os.makedirs(out, exist_ok=True)
+    return out
+
+
 def upload_image(raw: bytes, *, prefix: str = "p") -> str:
     """Process and store an image. Returns the public URL.
 
@@ -163,6 +180,42 @@ def upload_image(raw: bytes, *, prefix: str = "p") -> str:
     with open(target, "wb") as f:
         f.write(processed)
     return f"/uploads/photos/{filename}"
+
+
+def upload_audio(raw: bytes, *, prefix: str = "instr-audio") -> str:
+    """Store an already-encoded MP3 clip. Returns the public URL.
+
+    No processing — callers must hand this finished bytes (see module
+    docstring). `prefix` should be a generic bucket name shared by every
+    clip kind (never "printed"/"real") so the URL alone can't answer a
+    blind A/B guess.
+    """
+    if len(raw) > MAX_AUDIO_UPLOAD_BYTES:
+        raise UploadError(f"File too large (max {MAX_AUDIO_UPLOAD_BYTES // 1024 // 1024}MB)")
+    if len(raw) == 0:
+        raise UploadError("Empty file")
+
+    digest = hashlib.sha256(raw).hexdigest()
+    filename = f"{prefix}/{digest[:2]}/{digest}.mp3"
+
+    if _r2_configured():
+        base = os.environ["R2_PUBLIC_URL_BASE"].rstrip("/")
+        client = _get_r2_client()
+        client.put_object(
+            Bucket=os.environ["R2_BUCKET"],
+            Key=filename,
+            Body=raw,
+            ContentType="audio/mpeg",
+            CacheControl="public, max-age=31536000, immutable",
+        )
+        return f"{base}/{filename}"
+
+    local_dir = _local_audio_dir()
+    target = os.path.join(local_dir, filename)
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    with open(target, "wb") as f:
+        f.write(raw)
+    return f"/uploads/audio/{filename}"
 
 
 def delete_image(url: str) -> None:

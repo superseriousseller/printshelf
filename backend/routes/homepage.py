@@ -6,6 +6,7 @@ fills out as people sign up and log prints.
 """
 import os
 import logging
+import random
 from datetime import datetime, timedelta
 from typing import Optional
 from urllib.parse import urlencode
@@ -436,6 +437,7 @@ def instruments_index(
 
     price_table = {p.material: p.price_per_kg for p in db.query(FilamentPrice).all()}
     pricing = {}
+    audio = {}
     for entry in listed:
         costs = compute_costs(entry, price_table)
         pricing[entry.id] = {
@@ -444,6 +446,23 @@ def instruments_index(
             "retail_premium_state": staleness_state(entry.retail_premium_checked_at),
         }
 
+        # Blind A/B: only render when both clips exist (honesty pattern —
+        # no placeholder player). Position is shuffled per-request so the
+        # printed clip isn't predictably always slot A/B across visits —
+        # the "kind" itself never reaches the template/DOM, only a/b slots.
+        media = entry.media or []
+        printed_clip = next((m for m in media if m.get("kind") == "audio_printed"), None)
+        real_clip = next((m for m in media if m.get("kind") == "audio_real"), None)
+        if printed_clip and real_clip:
+            pair = [("printed", printed_clip), ("real", real_clip)]
+            random.shuffle(pair)
+            audio[entry.id] = {
+                "clip_a_url": pair[0][1]["url"],
+                "clip_b_url": pair[1][1]["url"],
+                "real_slot": "a" if pair[0][0] == "real" else "b",
+                "phrase": printed_clip.get("phrase"),
+            }
+
     return templates.TemplateResponse(
         request, "instruments_index.html",
         {
@@ -451,6 +470,7 @@ def instruments_index(
             "families": _group_by_family(listed),
             "frontier": frontier,
             "pricing": pricing,
+            "audio": audio,
             "q": q,
             "family": family,
             "family_opts": family_opts,
@@ -489,9 +509,9 @@ def instruments_notify(
 # Bump CACHE version when the SW logic or precache list changes, so clients
 # fetch the new worker and drop the stale cache on activate.
 _SERVICE_WORKER_JS = """\
-const CACHE = 'printshelf-v12';
+const CACHE = 'printshelf-v13';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/offline', '/static/app.css?v=24'];
+const PRECACHE = ['/offline', '/static/app.css?v=25'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

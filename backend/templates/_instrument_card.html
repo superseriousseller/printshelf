@@ -49,6 +49,9 @@
             <span class="badge axis-cost-real">Cost: {{ cost.build | cost_display }}</span>
         {% endif %}
     </div>
+    {% if entry.objective_score is not none %}
+    <p class="instrument-objective-score">librosa similarity: {{ "%.2f"|format(entry.objective_score) }} <span class="instrument-objective-note">(a signal, not gospel)</span></p>
+    {% endif %}
 
     <div class="instrument-bom">
         <h4>What it takes</h4>
@@ -90,6 +93,25 @@
             {% if pricing[entry.id].retail_premium_state == "aging" %}<span class="badge price-aging">aging price</span>{% endif %}
         {% endif %}
     </p>
+    {% endif %}
+
+    {% set ab = audio.get(entry.id) %}
+    {% if ab %}
+    <div class="instrument-audio-ab" data-real-slot="{{ ab.real_slot }}">
+        <h4>Does it sound real?</h4>
+        {% if ab.phrase %}<p class="instrument-audio-phrase">Phrase: {{ ab.phrase }}</p>{% endif %}
+        <div class="instrument-audio-clips">
+            <div class="instrument-audio-clip">
+                <span class="instrument-audio-label" data-slot="a">Clip A</span>
+                <audio controls preload="none" src="{{ ab.clip_a_url }}"></audio>
+            </div>
+            <div class="instrument-audio-clip">
+                <span class="instrument-audio-label" data-slot="b">Clip B</span>
+                <audio controls preload="none" src="{{ ab.clip_b_url }}"></audio>
+            </div>
+        </div>
+        <button type="button" class="btn-secondary instrument-audio-reveal">Which one's real?</button>
+    </div>
     {% endif %}
 
     {% if entry.note %}<p class="instrument-note">{{ entry.note }}</p>{% endif %}

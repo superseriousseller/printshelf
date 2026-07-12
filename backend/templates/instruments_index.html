@@ -74,4 +74,20 @@
         {% endif %}
     </section>
 </div>
+<script>
+(function() {
+    document.querySelectorAll('.instrument-audio-reveal').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var container = btn.closest('.instrument-audio-ab');
+            var realSlot = container.getAttribute('data-real-slot');
+            container.querySelectorAll('.instrument-audio-label').forEach(function(label) {
+                var slot = label.getAttribute('data-slot');
+                label.textContent = (slot === realSlot) ? 'Real' : 'Printed';
+            });
+            btn.disabled = true;
+            btn.textContent = 'Revealed';
+        });
+    });
+})();
+</script>
 {% endblock %}
