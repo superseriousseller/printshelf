@@ -15,29 +15,45 @@ page tells you that inline if it's missing rather than crashing.
 """
 import html
 import os
+import subprocess
 import sys
 import tempfile
 import threading
 import webbrowser
+from datetime import datetime
+
+import yaml
 
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_REPO_ROOT = os.path.dirname(_BACKEND_DIR)
 sys.path.insert(0, _BACKEND_DIR)
 
 from dotenv import load_dotenv  # noqa: E402
 load_dotenv(os.path.join(_BACKEND_DIR, ".env"))
 
-from fastapi import FastAPI, Form, UploadFile, File  # noqa: E402
+from fastapi import FastAPI, Form, Request, UploadFile, File  # noqa: E402
 from fastapi.responses import HTMLResponse  # noqa: E402
 import uvicorn  # noqa: E402
 
-from models import RegistryEntry, SessionLocal  # noqa: E402
+from models import FilamentPrice, RegistryEntry, SessionLocal  # noqa: E402
 from storage import upload_audio  # noqa: E402
+from instruments_pricing import compute_costs, staleness_state  # noqa: E402
 
 # Sibling scripts, imported for their functions (not their CLI __main__ block).
 import ingest_instrument_audio as ingest_lib  # noqa: E402
 import score_instrument_audio as score_lib  # noqa: E402
 import iowa_mis_fetch as iowa_lib  # noqa: E402
+import seed_instruments as seed_lib  # noqa: E402
 import import_service  # noqa: E402 — reuses the same OG-image scraper print imports use
+
+# Everything below this exact line in seed/instruments_overlay.yaml is
+# machine-managed — read verbatim as "header", regenerated as YAML on save.
+# Must match the marker text written into that file's own header comment
+# (see seed/instruments_overlay.yaml) — that's what lets the save path
+# preserve the format-documentation comments PyYAML's dumper would
+# otherwise silently drop.
+_OVERLAY_MARKER = "# ---- machine-managed below this line by instruments_admin.py — hand-edit if you want, the format above still applies ----"
+_OVERLAY_PATH = os.path.join(_REPO_ROOT, "seed", "instruments_overlay.yaml")
 
 app = FastAPI()
 
@@ -77,6 +93,190 @@ def _entry_or_404(db, slug):
     ).first()
 
 
+class OverlayWriteError(Exception):
+    pass
+
+
+def _read_overlay_header_and_data():
+    """Split the overlay file into (header_text_including_marker, data_dict).
+    Missing marker (e.g. someone hand-restored an old copy) -> whole file
+    becomes header, data starts empty, marker gets appended back on write."""
+    if not os.path.exists(_OVERLAY_PATH):
+        return _OVERLAY_MARKER, {}
+    with open(_OVERLAY_PATH, "r", encoding="utf-8") as f:
+        content = f.read()
+    if _OVERLAY_MARKER in content:
+        header, _, data_text = content.partition(_OVERLAY_MARKER)
+        header = header.rstrip("\n") + "\n" + _OVERLAY_MARKER
+    else:
+        header = content.rstrip("\n") + "\n\n" + _OVERLAY_MARKER
+        data_text = ""
+    data = yaml.safe_load(data_text) or {}
+    return header, data
+
+
+def _write_overlay(header: str, data: dict) -> None:
+    """Atomic + self-verifying: write to a temp file, re-parse it, confirm
+    the parsed data matches what we intended, only then replace the real
+    file. A malformed write to the source of truth every entry's pricing
+    depends on is the one failure mode this must never have."""
+    dumped = yaml.safe_dump(data, sort_keys=True, default_flow_style=False, allow_unicode=True)
+    new_content = header.rstrip("\n") + "\n\n" + dumped
+    tmp_path = _OVERLAY_PATH + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        f.write(new_content)
+    with open(tmp_path, "r", encoding="utf-8") as f:
+        written = f.read()
+    _, _, written_data_text = written.partition(_OVERLAY_MARKER)
+    reparsed = yaml.safe_load(written_data_text) or {}
+    if reparsed != data:
+        os.remove(tmp_path)
+        raise OverlayWriteError("YAML round-trip verification failed — refusing to write")
+    os.replace(tmp_path, _OVERLAY_PATH)
+
+
+def _maybe_commit_overlay(slug: str, summary: str) -> str:
+    """Best-effort, local-only commit of just the overlay file — never
+    pushes, never blocks the save if it fails (dirty worktree, no git, etc).
+    Opt-in per save (the caller only invokes this when the form's checkbox
+    is ticked), so it never surprises anyone mid-testing."""
+    try:
+        subprocess.run(
+            ["git", "add", "seed/instruments_overlay.yaml"],
+            cwd=_REPO_ROOT, check=True, capture_output=True, timeout=10,
+        )
+        result = subprocess.run(
+            ["git", "commit", "-m", f"pricing({slug}): {summary}"],
+            cwd=_REPO_ROOT, capture_output=True, timeout=10, text=True,
+        )
+        if result.returncode != 0:
+            return f"(git commit skipped: {result.stdout.strip() or result.stderr.strip()})"
+        return "committed locally (not pushed)."
+    except Exception as e:
+        return f"(git commit skipped: {e})"
+
+
+MAX_FILAMENT_ROWS = 4
+MAX_FULFILLMENT_ROWS = 3
+
+
+def _parse_positive_float(value: str, field_name: str) -> float:
+    try:
+        f = float(value)
+    except ValueError:
+        raise ValueError(f"{field_name}: {value!r} isn't a number")
+    if f <= 0:
+        raise ValueError(f"{field_name}: must be positive")
+    return f
+
+
+def _validate_url(value: str, field_name: str) -> str:
+    if not (value.startswith("http://") or value.startswith("https://")):
+        raise ValueError(f"{field_name}: must start with http:// or https://")
+    return value
+
+
+def _build_overlay_entry(form, bom_items: list, now_iso: str) -> dict:
+    """Rebuilds the whole overlay block for one slug from submitted form
+    fields — not an incremental merge, so removing a row and re-saving
+    actually removes it rather than leaving a stale row behind. Raises
+    ValueError with a form-facing message on any bad input."""
+    entry = {}
+
+    filament_usage = []
+    for i in range(1, MAX_FILAMENT_ROWS + 1):
+        material = (form.get(f"fu_material_{i}") or "").strip()
+        grams_raw = (form.get(f"fu_grams_{i}") or "").strip()
+        if not material and not grams_raw:
+            continue
+        if not material or not grams_raw:
+            raise ValueError(f"Filament row {i}: material and grams are both required together")
+        filament_usage.append({"material": material, "grams": _parse_positive_float(grams_raw, f"Filament row {i} grams")})
+    if filament_usage:
+        entry["filament_usage"] = filament_usage
+
+    fidelity_axis = (form.get("fidelity_axis") or "").strip()
+    if fidelity_axis:
+        entry["fidelity_axis"] = int(fidelity_axis)
+    effort_print_load = (form.get("effort_print_load") or "").strip()
+    if effort_print_load:
+        entry["effort_print_load"] = effort_print_load
+    effort_assembly_skill = (form.get("effort_assembly_skill") or "").strip()
+    if effort_assembly_skill:
+        entry["effort_assembly_skill"] = int(effort_assembly_skill)
+
+    bom_fulfillments = []
+    for bom_idx, bom_item in enumerate(bom_items):
+        fulfillments = []
+        for i in range(1, MAX_FULFILLMENT_ROWS + 1):
+            vendor = (form.get(f"bom_{bom_idx}_vendor_{i}") or "").strip()
+            url_raw = (form.get(f"bom_{bom_idx}_url_{i}") or "").strip()
+            price_raw = (form.get(f"bom_{bom_idx}_price_{i}") or "").strip()
+            if not (vendor or url_raw or price_raw):
+                continue
+            label = f"{bom_item['spec'][:40]} fulfillment {i}"
+            if not (vendor and url_raw and price_raw):
+                raise ValueError(f"{label}: vendor, URL, and price are all required together")
+            fulfillments.append({
+                "vendor": vendor,
+                "url": _validate_url(url_raw, f"{label} URL"),
+                "price": _parse_positive_float(price_raw, f"{label} price"),
+                "currency": (form.get(f"bom_{bom_idx}_currency_{i}") or "USD").strip() or "USD",
+                "checked_at": now_iso,
+            })
+        if fulfillments:
+            bom_fulfillments.append({"spec": bom_item["spec"], "fulfillments": fulfillments})
+    if bom_fulfillments:
+        entry["bom_fulfillments"] = bom_fulfillments
+
+    for field in ("retail_budget", "retail_premium"):
+        price_raw = (form.get(f"{field}_price") or "").strip()
+        url_raw = (form.get(f"{field}_url") or "").strip()
+        if not price_raw and not url_raw:
+            continue
+        label = field.replace("_", " ").title()
+        if not (price_raw and url_raw):
+            raise ValueError(f"{label}: price and URL are both required together")
+        entry[field] = {
+            "price": _parse_positive_float(price_raw, f"{label} price"),
+            "url": _validate_url(url_raw, f"{label} URL"),
+            "checked_at": now_iso,
+        }
+
+    return entry
+
+
+def _prefill(overlay_entry: dict, bom_items: list) -> dict:
+    """Flat dict of form-field-name -> value, for populating the edit form
+    from whatever's already saved for this slug."""
+    values = {}
+    for i, row in enumerate(overlay_entry.get("filament_usage", [])[:MAX_FILAMENT_ROWS], start=1):
+        values[f"fu_material_{i}"] = row.get("material", "")
+        values[f"fu_grams_{i}"] = row.get("grams", "")
+
+    values["fidelity_axis"] = overlay_entry.get("fidelity_axis", "")
+    values["effort_print_load"] = overlay_entry.get("effort_print_load", "")
+    values["effort_assembly_skill"] = overlay_entry.get("effort_assembly_skill", "")
+
+    by_spec = {bf.get("spec"): bf for bf in overlay_entry.get("bom_fulfillments", [])}
+    for bom_idx, bom_item in enumerate(bom_items):
+        bf = by_spec.get(bom_item["spec"])
+        if not bf:
+            continue
+        for i, f in enumerate(bf.get("fulfillments", [])[:MAX_FULFILLMENT_ROWS], start=1):
+            values[f"bom_{bom_idx}_vendor_{i}"] = f.get("vendor", "")
+            values[f"bom_{bom_idx}_url_{i}"] = f.get("url", "")
+            values[f"bom_{bom_idx}_price_{i}"] = f.get("price", "")
+            values[f"bom_{bom_idx}_currency_{i}"] = f.get("currency", "USD")
+
+    for field in ("retail_budget", "retail_premium"):
+        block = overlay_entry.get(field) or {}
+        values[f"{field}_price"] = block.get("price", "")
+        values[f"{field}_url"] = block.get("url", "")
+
+    return values
+
+
 @app.get("/", response_class=HTMLResponse)
 def index():
     db = SessionLocal()
@@ -93,14 +293,63 @@ def index():
         has_real = any(m.get("kind") == "audio_real" for m in media)
         audio_badge = '<span class="badge yes">audio ✓</span>' if (has_printed and has_real) else '<span class="badge">no audio</span>'
         score_badge = f'<span class="badge yes">score {e.objective_score}</span>' if e.objective_score is not None else ""
+        pricing_badge = '<span class="badge yes">pricing ✓</span>' if e.filament_usage else '<span class="badge">no pricing</span>'
         rows.append(f"""<div class="entry-row">
             <a href="/entry/{html.escape(e.slug)}">{html.escape(e.name)}</a>
-            <span>{audio_badge} {score_badge}</span>
+            <span>{audio_badge} {pricing_badge} {score_badge}</span>
         </div>""")
     return _page("Entries", f"""
-    <p>Pick an entry to add or replace its audio A/B pair.</p>
+    <p>Pick an entry to add or replace its audio A/B pair, or edit its pricing/BOM/retail data.
+    <a href="/prices">Manage filament $/kg prices</a></p>
     <div class="card">{''.join(rows)}</div>
     """)
+
+
+@app.get("/prices", response_class=HTMLResponse)
+def prices_page(msg: str = "", err: str = ""):
+    db = SessionLocal()
+    rows = db.query(FilamentPrice).order_by(FilamentPrice.material).all()
+    banner = f'<div class="msg ok">{html.escape(msg)}</div>' if msg else (f'<div class="msg err">{html.escape(err)}</div>' if err else "")
+    existing_rows = "".join(
+        f'<div class="file-row"><span>{html.escape(p.material)}</span><span>${p.price_per_kg:.2f}/kg</span></div>'
+        for p in rows
+    ) or '<p style="color:#7a7a80">No prices set yet — costs show "pending verification" until a material used in filament_usage has a price here.</p>'
+    return _page("Filament prices", f"""
+    <a class="back" href="/">&larr; all entries</a>
+    <h1>Filament $/kg prices</h1>
+    <p style="color:#a8a8ae">Global lookup, not per-entry — compute_costs() reads this table by material name (must match filament_usage's "material" string exactly).</p>
+    {banner}
+    <div class="card">{existing_rows}</div>
+    <h2>Add / update a price</h2>
+    <div class="card">
+        <form method="post" action="/prices/save">
+            <label>Material (must match filament_usage entries exactly, e.g. "PLA")</label>
+            <input type="text" name="material" required>
+            <label>Price per kg (USD)</label>
+            <input type="text" name="price_per_kg" placeholder="18.99" required>
+            <button type="submit">Save</button>
+        </form>
+    </div>
+    """)
+
+
+@app.post("/prices/save", response_class=HTMLResponse)
+def prices_save(material: str = Form(...), price_per_kg: str = Form(...)):
+    material = material.strip()
+    try:
+        price = _parse_positive_float(price_per_kg.strip(), "Price per kg")
+    except ValueError as e:
+        return prices_page(err=str(e))
+
+    db = SessionLocal()
+    row = db.query(FilamentPrice).filter(FilamentPrice.material == material).first()
+    if row:
+        row.price_per_kg = price
+        row.updated_at = datetime.utcnow()
+    else:
+        db.add(FilamentPrice(material=material, price_per_kg=price, updated_at=datetime.utcnow()))
+    db.commit()
+    return prices_page(msg=f"Saved {material} = ${price:.2f}/kg")
 
 
 @app.get("/entry/{slug}", response_class=HTMLResponse)
@@ -168,6 +417,7 @@ def entry_detail(slug: str, msg: str = "", err: str = ""):
     return _page(entry.name, f"""
     <a class="back" href="/">&larr; all entries</a>
     <h1>{html.escape(entry.name)}</h1>
+    <p><a href="/entry/{html.escape(slug)}/pricing">Edit pricing / BOM / retail &amp; fidelity-effort &rarr;</a></p>
     {identity}
     {banner}
     {current}
@@ -328,6 +578,156 @@ def compute_score(slug: str):
         return entry_detail(slug, err=f"Scoring failed: {e}")
 
     return entry_detail(slug, msg=f"Objective score: {score}")
+
+
+def _cost_summary_html(entry, db) -> str:
+    price_table = {p.material: p.price_per_kg for p in db.query(FilamentPrice).all()}
+    cost = compute_costs(entry, price_table)
+    if cost["spool"] is None:
+        return '<p class="msg err" style="margin-top:0">Cost: pending verification — either no filament_usage yet, or a material used isn\'t in <a href="/prices">the $/kg price table</a>.</p>'
+    if cost["build"] is None:
+        return f'<p class="msg err" style="margin-top:0">Spool: ${cost["spool"]:.2f} — Cost: source needed (a BOM item has no usable fulfillment yet).</p>'
+    lo, hi = cost["build"]
+    build_str = f"${lo:.2f}" if round(lo) == round(hi) else f"${lo:.2f}–${hi:.2f}"
+    play_str = ""
+    if cost["play"] is not None:
+        plo, phi = cost["play"]
+        play_str = f' &middot; Play-ready {("$%.2f" % plo) if round(plo) == round(phi) else f"${plo:.2f}–${phi:.2f}"}'
+    return f'<p class="msg ok" style="margin-top:0">Spool ${cost["spool"]:.2f} &middot; Build {build_str}{play_str}</p>'
+
+
+def entry_pricing_page(slug: str, msg: str = "", err: str = ""):
+    db = SessionLocal()
+    entry = _entry_or_404(db, slug)
+    if entry is None:
+        return _page("Not found", '<p>No such entry.</p><a href="/">&larr; back</a>')
+
+    bom_items = entry.bom or []
+    header, overlay_data = _read_overlay_header_and_data()
+    overlay_entry = overlay_data.get(slug, {})
+    values = _prefill(overlay_entry, bom_items)
+
+    banner = f'<div class="msg ok">{html.escape(msg)}</div>' if msg else (f'<div class="msg err">{html.escape(err)}</div>' if err else "")
+
+    v = lambda k: html.escape(str(values.get(k, "")))  # noqa: E731
+
+    filament_rows = "".join(f"""
+        <div style="display:flex;gap:10px;margin-bottom:6px">
+            <input type="text" name="fu_material_{i}" value="{v(f'fu_material_{i}')}" placeholder="Material, e.g. PLA" style="flex:2">
+            <input type="text" name="fu_grams_{i}" value="{v(f'fu_grams_{i}')}" placeholder="Grams" style="flex:1">
+        </div>""" for i in range(1, MAX_FILAMENT_ROWS + 1))
+
+    bom_sections = ""
+    if bom_items:
+        for bom_idx, item in enumerate(bom_items):
+            rows = "".join(f"""
+                <div style="display:flex;gap:8px;margin-bottom:6px">
+                    <input type="text" name="bom_{bom_idx}_vendor_{i}" value="{v(f'bom_{bom_idx}_vendor_{i}')}" placeholder="Vendor" style="flex:1">
+                    <input type="text" name="bom_{bom_idx}_url_{i}" value="{v(f'bom_{bom_idx}_url_{i}')}" placeholder="https://..." style="flex:2">
+                    <input type="text" name="bom_{bom_idx}_price_{i}" value="{v(f'bom_{bom_idx}_price_{i}')}" placeholder="Price" style="flex:1">
+                    <input type="text" name="bom_{bom_idx}_currency_{i}" value="{v(f'bom_{bom_idx}_currency_{i}') or 'USD'}" placeholder="USD" style="flex:0 0 60px">
+                </div>""" for i in range(1, MAX_FULFILLMENT_ROWS + 1))
+            bom_sections += f"""
+            <p style="margin:14px 0 6px;color:#c8c8cc">{html.escape(item.get('spec', ''))}</p>
+            {rows}"""
+    else:
+        bom_sections = '<p style="color:#7a7a80">Fully printed — no BOM parts to source for this entry.</p>'
+
+    fidelity_opts = "".join(f'<option value="{n}" {"selected" if str(values.get("fidelity_axis")) == str(n) else ""}>{n}</option>' for n in range(0, 6))
+    effort_load_opts = "".join(f'<option value="{o}" {"selected" if values.get("effort_print_load") == o else ""}>{o}</option>' for o in ("", "S", "M", "L", "XL"))
+    effort_skill_opts = "".join(f'<option value="{n}" {"selected" if str(values.get("effort_assembly_skill")) == str(n) else ""}>{n}</option>' for n in range(1, 6))
+
+    return _page(f"{entry.name} — pricing", f"""
+    <a class="back" href="/entry/{html.escape(slug)}">&larr; {html.escape(entry.name)}</a>
+    <h1>{html.escape(entry.name)} — pricing / BOM / retail</h1>
+    {banner}
+    {_cost_summary_html(entry, db)}
+
+    <form method="post" action="/entry/{html.escape(slug)}/pricing/save">
+        <h2>Filament usage</h2>
+        <div class="card">
+            {filament_rows}
+            <p style="color:#7a7a80;font-size:0.8rem;margin:6px 0 0">Material name must exactly match a row in <a href="/prices">the $/kg price table</a>.</p>
+        </div>
+
+        <h2>Fidelity &amp; effort</h2>
+        <div class="card">
+            <label>Sound fidelity (0-5, how close it sounds to the real instrument)</label>
+            <select name="fidelity_axis"><option value="">&mdash;</option>{fidelity_opts}</select>
+            <label>Print load (S/M/L/XL)</label>
+            <select name="effort_print_load">{effort_load_opts}</select>
+            <label>Assembly skill (1-5)</label>
+            <select name="effort_assembly_skill"><option value="">&mdash;</option>{effort_skill_opts}</select>
+        </div>
+
+        <h2>BOM fulfillments</h2>
+        <div class="card">{bom_sections}</div>
+
+        <h2>Retail comparison</h2>
+        <div class="card">
+            <label>Budget option</label>
+            <div style="display:flex;gap:10px">
+                <input type="text" name="retail_budget_price" value="{v('retail_budget_price')}" placeholder="Price" style="flex:1">
+                <input type="text" name="retail_budget_url" value="{v('retail_budget_url')}" placeholder="https://..." style="flex:2">
+            </div>
+            <label style="margin-top:14px">Premium option</label>
+            <div style="display:flex;gap:10px">
+                <input type="text" name="retail_premium_price" value="{v('retail_premium_price')}" placeholder="Price" style="flex:1">
+                <input type="text" name="retail_premium_url" value="{v('retail_premium_url')}" placeholder="https://..." style="flex:2">
+            </div>
+        </div>
+
+        <div class="card">
+            <label style="display:flex;align-items:center;gap:8px;margin:0"><input type="checkbox" name="auto_commit" style="width:auto"> Also commit seed/instruments_overlay.yaml to git (local only, never pushed)</label>
+        </div>
+
+        <button type="submit">Save &amp; apply</button>
+    </form>
+    """)
+
+
+@app.get("/entry/{slug}/pricing", response_class=HTMLResponse)
+def entry_pricing_get(slug: str):
+    return entry_pricing_page(slug)
+
+
+@app.post("/entry/{slug}/pricing/save", response_class=HTMLResponse)
+async def entry_pricing_save(slug: str, request: Request):
+    db = SessionLocal()
+    entry = _entry_or_404(db, slug)
+    if entry is None:
+        return _page("Not found", '<p>No such entry.</p><a href="/">&larr; back</a>')
+
+    form = await request.form()
+    bom_items = entry.bom or []
+    now_iso = datetime.utcnow().isoformat()
+
+    try:
+        new_entry_block = _build_overlay_entry(form, bom_items, now_iso)
+    except ValueError as e:
+        return entry_pricing_page(slug, err=str(e))
+
+    header, overlay_data = _read_overlay_header_and_data()
+    if new_entry_block:
+        overlay_data[slug] = new_entry_block
+    else:
+        overlay_data.pop(slug, None)  # everything cleared -> remove the block entirely
+
+    try:
+        _write_overlay(header, overlay_data)
+    except OverlayWriteError as e:
+        return entry_pricing_page(slug, err=f"Save failed, nothing was written: {e}")
+
+    try:
+        seed_lib.run(dry_run=False)
+    except Exception as e:
+        return entry_pricing_page(slug, err=f"Saved to the overlay file, but reseeding failed: {e}")
+
+    commit_note = ""
+    if form.get("auto_commit"):
+        commit_note = " " + _maybe_commit_overlay(slug, f"{entry.name} — filament/BOM/retail update")
+
+    return entry_pricing_page(slug, msg=f"Saved and applied.{commit_note}")
 
 
 def _open_browser():

@@ -4,7 +4,12 @@
 #
 # This file is tracked in git on purpose (no secrets in it) — Cam's real
 # grams/prices/BOM data should be versioned, reviewable, and re-runnable,
-# not one-off SQL against a JSON column. Add/edit an entry below, then:
+# not one-off SQL against a JSON column.
+#
+# Primary editing path: `python backend/scripts/instruments_admin.py` (local
+# web UI) — pick an entry, fill in the pricing/BOM/retail form, save. It
+# writes this file (below the marker) and reseeds automatically. Hand-editing
+# still works if you'd rather — same format, same commands:
 #
 #   DATABASE_URL=... python backend/scripts/seed_instruments.py --dry-run
 #   DATABASE_URL=... python backend/scripts/seed_instruments.py
@@ -19,15 +24,26 @@
 #   filament_usage:
 #     - {material: PLA, grams: 340}
 #   bom_fulfillments:
-#     - match: "PVC or carbon-fiber slide tubes"   # substring match vs. the
-#                                                    # existing bom item's spec
+#     - spec: "PVC or carbon-fiber slide tubes"   # EXACT match vs. the bom
+#                                                   # item's spec string (the
+#                                                   # admin form always knows
+#                                                   # this exactly). `match`
+#                                                   # (substring, case-
+#                                                   # insensitive) still works
+#                                                   # as a legacy fallback.
 #       fulfillments:
-#         - {vendor: Amazon, url: "https://www.amazon.com/dp/XXXXXXXXXX", price: 12.99}
-#         - {vendor: "Some Other Store", url: "https://...", price: 15.00}
-#   retail_budget: {price: 45.00, url: "https://..."}
-#   retail_premium: {price: 89.00, url: "https://..."}
+#         - {vendor: Amazon, url: "https://www.amazon.com/dp/XXXXXXXXXX", price: 12.99, checked_at: "2026-07-12T00:00:00"}
+#         - {vendor: "Some Other Store", url: "https://...", price: 15.00, checked_at: "2026-07-12T00:00:00"}
+#   retail_budget: {price: 45.00, url: "https://...", checked_at: "2026-07-12T00:00:00"}
+#   retail_premium: {price: 89.00, url: "https://...", checked_at: "2026-07-12T00:00:00"}
 #   fidelity_axis: 4          # 0-5, how close it sounds to the real instrument
 #   effort_print_load: L      # S | M | L | XL bucket
 #   effort_assembly_skill: 3  # 1-5, assembly/tuning difficulty
 #
-# No entries yet — nothing to seed until real numbers land.
+# checked_at matters: it's what the 90d/180d staleness engine in
+# instruments_pricing.py reads. The admin form stamps it at save time —
+# re-saving an unchanged price *is* how you "re-verify" it (bumps the
+# timestamp). Reseeding never overwrites an existing checked_at on its own.
+#
+# ---- machine-managed below this line by instruments_admin.py — hand-edit if you want, the format above still applies ----
+
