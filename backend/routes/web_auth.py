@@ -29,7 +29,7 @@ from auth import (
     instruments_index_enabled,
 )
 from email_service import send_password_reset, send_verification_email, send_welcome
-from models import EmailVerificationToken, Filament, PasswordResetToken, Print, Printer, User, generate_api_key, get_db, slugify
+from models import Collection, EmailVerificationToken, Filament, PasswordResetToken, Print, Printer, User, generate_api_key, get_db, slugify
 import rate_limiter
 
 _log = logging.getLogger(__name__)
@@ -532,6 +532,7 @@ def dashboard(
     success = db.query(Print).filter(Print.user_id == user.id, Print.queued == False, Print.status == "printed").count()  # noqa: E712
     filaments_count = db.query(Filament).filter(Filament.user_id == user.id).count()
     printers = db.query(Printer).filter(Printer.user_id == user.id).count()
+    collections_count = db.query(Collection).filter(Collection.user_id == user.id).count()
 
     # Estimated total filament spend — one query for all filaments, then iterate prints
     all_prints = db.query(Print).filter(Print.user_id == user.id, Print.queued == False, Print.filament_used_g.isnot(None)).all()  # noqa: E712
@@ -563,8 +564,10 @@ def dashboard(
         "user": user,
         "current_user": user,
         "stats": stats,
-        "sidebar_prints": total_prints,
+        "sidebar_prints": total_prints + queued,
         "sidebar_queue": queued,
         "sidebar_filaments": filaments_count,
+        "sidebar_collections": collections_count,
+        "sidebar_printers": printers,
         "resend_notice": resend_notice,
     })
