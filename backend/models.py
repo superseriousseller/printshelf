@@ -613,6 +613,17 @@ class FilamentPrice(Base):
 Index("ix_filament_prices_material", FilamentPrice.material, unique=True)
 
 
+class InstrumentsNotifySignup(Base):
+    __tablename__ = "instruments_notify_signups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+Index("ix_instruments_notify_signups_email", InstrumentsNotifySignup.email, unique=True)
+
+
 # ============== Community Filament (shared autocomplete DB) ==============
 
 class CommunityFilament(Base):

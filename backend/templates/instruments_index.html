@@ -17,6 +17,26 @@
         <p>The registry that tells you if it actually plays — 3D-printable instruments rated on whether they work, what they cost, and what they take to build. Where nothing playable exists yet, we say so.</p>
     </header>
 
+    <form class="explore-sort-form instruments-filter-bar" method="get" action="/instruments">
+        <input type="search" name="q" value="{{ q }}" placeholder="Search name or designer…" class="filter-search">
+        {% if family_opts %}
+        <select name="family" class="filter-sort" onchange="this.form.submit()" aria-label="Filter by family">
+            <option value="">All families</option>
+            {% for f in family_opts %}<option value="{{ f }}" {% if family == f %}selected{% endif %}>{{ f }}</option>{% endfor %}
+        </select>
+        {% endif %}
+        <select name="playability" class="filter-sort" onchange="this.form.submit()" aria-label="Filter by playability">
+            <option value="">Any playability</option>
+            {% for value, label in playability_opts %}<option value="{{ value }}" {% if playability == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn-secondary">Search</button>
+        {% if has_facets %}<a class="clear-link" href="/instruments">Clear filters</a>{% endif %}
+    </form>
+
+    {% if has_facets and not families and not frontier %}
+    <p class="instruments-empty">No entries match those filters. <a href="/instruments">Clear filters</a> to see the full index.</p>
+    {% endif %}
+
     {% for family, entries in families %}
     <section class="instrument-family">
         <h2>{{ family }}</h2>
@@ -39,5 +59,19 @@
         </div>
     </section>
     {% endif %}
+
+    <section class="instruments-notify">
+        <h2>Get notified</h2>
+        {% if notify == "ok" %}
+        <p class="instruments-notify-status">You're on the list — we'll email you when new entries or verified builds land.</p>
+        {% else %}
+        <p>New entries and verified builds (playable on camera) land here first. Leave your email to hear about them.</p>
+        <form method="post" action="/instruments/notify" class="instruments-notify-form">
+            <input type="email" name="email" placeholder="you@example.com" required class="filter-search">
+            <button type="submit" class="btn-secondary">Notify me</button>
+        </form>
+        {% if notify == "invalid" %}<p class="instruments-notify-status instruments-notify-error">That doesn't look like a valid email — try again.</p>{% endif %}
+        {% endif %}
+    </section>
 </div>
 {% endblock %}

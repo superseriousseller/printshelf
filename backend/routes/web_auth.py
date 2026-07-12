@@ -26,6 +26,7 @@ from auth import (
     filament_preview_enabled,
     get_current_user_web_optional,
     hash_password,
+    instruments_index_enabled,
 )
 from email_service import send_password_reset, send_verification_email, send_welcome
 from models import EmailVerificationToken, Filament, PasswordResetToken, Print, Printer, User, generate_api_key, get_db, slugify

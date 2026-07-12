@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -20,7 +20,7 @@ from auth import filament_preview_enabled, instruments_index_enabled, get_curren
 from instruments_pricing import compute_costs, staleness_state
 from sqlalchemy import func, nullslast, or_
 
-from models import AffiliateClick, Filament, FilamentPrice, Like, Print, Printer, RegistryEntry, User, get_db, print_url_id, PRINT_CATEGORIES
+from models import AffiliateClick, Filament, FilamentPrice, InstrumentsNotifySignup, Like, Print, Printer, RegistryEntry, User, get_db, print_url_id, PRINT_CATEGORIES
 
 router = APIRouter(tags=["homepage"])
 
@@ -374,15 +374,22 @@ def public_preview_buy(
 
 # ============== Printed Instruments Index (public, flag-hidden) ==============
 
+_PLAYABILITY_OPTS = {"0": "Decoration", "1": "Plays, with caveats", "2": "Playable", "3": "Verified on video"}
+
+
 @router.get("/instruments", response_class=HTMLResponse)
 def instruments_index(
     request: Request,
+    q: str = "",
+    family: str = "",
+    playability: str = "",
+    notify: str = "",
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     """Curated registry of 3D-printable instruments — no login required.
     Flag-hidden on prod until all 4 slices land (see instruments_index_enabled).
-    Slice 3: real cost computation + staleness, still no search/filter (2b)."""
+    Slice 3: real cost computation + staleness. Slice 2b: search/filter."""
     if not instruments_index_enabled():
         return RedirectResponse("/", status_code=303)
 
@@ -398,6 +405,34 @@ def instruments_index(
         .order_by(RegistryEntry.name)
         .all()
     )
+
+    # Facet option lists driven by whatever's actually in the data (mirrors the
+    # Explore facets pattern) — unknown/junk query values are ignored rather
+    # than yielding a confusing empty page.
+    family_opts = [f for (f,) in db.query(RegistryEntry.family).filter(RegistryEntry.vertical == "instruments", RegistryEntry.status == "listed", RegistryEntry.family.isnot(None)).distinct().order_by(RegistryEntry.family) if f]
+    family = family if family in family_opts else ""
+    playability = playability if playability in _PLAYABILITY_OPTS else ""
+    q_norm = q.strip().lower()
+
+    def _matches_text(entry, *fields):
+        return any(q_norm in (getattr(entry, f, None) or "").lower() for f in fields)
+
+    if q_norm:
+        listed = [e for e in listed if _matches_text(e, "name", "designer", "note")]
+    if family:
+        listed = [e for e in listed if e.family == family]
+    if playability:
+        listed = [e for e in listed if str(e.function_axis) == playability]
+
+    has_facets = bool(q_norm or family or playability)
+    # Frontier entries carry no family/playability taxonomy (that's the point —
+    # nothing confidently fits those axes yet), so a facet filter hides the
+    # section entirely rather than showing it half-filtered; text search still
+    # applies since frontier rows have real names/gap text to match against.
+    if family or playability:
+        frontier = []
+    elif q_norm:
+        frontier = [e for e in frontier if _matches_text(e, "name", "gap_why", "gap_closest")]
 
     price_table = {p.material: p.price_per_kg for p in db.query(FilamentPrice).all()}
     pricing = {}
@@ -416,9 +451,37 @@ def instruments_index(
             "families": _group_by_family(listed),
             "frontier": frontier,
             "pricing": pricing,
+            "q": q,
+            "family": family,
+            "family_opts": family_opts,
+            "playability": playability,
+            "playability_opts": list(_PLAYABILITY_OPTS.items()),
+            "has_facets": has_facets,
+            "notify": notify if notify in {"ok", "invalid"} else "",
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
         },
     )
+
+
+@router.post("/instruments/notify", response_class=RedirectResponse)
+def instruments_notify(
+    request: Request,
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """Notify-me signup (Slice 4) — no login required, matches the page's own gate."""
+    if not instruments_index_enabled():
+        return RedirectResponse("/", status_code=303)
+
+    email_n = email.strip().lower()
+    if "@" not in email_n or "." not in email_n.split("@")[-1] or len(email_n) > 255:
+        return RedirectResponse("/instruments?notify=invalid", status_code=303)
+
+    existing = db.query(InstrumentsNotifySignup).filter(InstrumentsNotifySignup.email == email_n).first()
+    if not existing:
+        db.add(InstrumentsNotifySignup(email=email_n))
+        db.commit()
+    return RedirectResponse("/instruments?notify=ok", status_code=303)
 
 
 # ============== PWA: service worker + offline page ==============
@@ -426,9 +489,9 @@ def instruments_index(
 # Bump CACHE version when the SW logic or precache list changes, so clients
 # fetch the new worker and drop the stale cache on activate.
 _SERVICE_WORKER_JS = """\
-const CACHE = 'printshelf-v11';
+const CACHE = 'printshelf-v12';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/offline', '/static/app.css?v=23'];
+const PRECACHE = ['/offline', '/static/app.css?v=24'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

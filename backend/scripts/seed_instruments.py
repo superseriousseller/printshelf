@@ -126,6 +126,9 @@ def registry_to_entry(item: dict) -> dict:
         "retail_premium_price": None,
         "retail_premium_url": None,
         "retail_premium_checked_at": None,
+        "fidelity_axis": None,
+        "effort_print_load": None,
+        "effort_assembly_skill": None,
     }
 
 
@@ -174,6 +177,13 @@ def _apply_overlay(row: dict, overlay_entry: dict, now: datetime) -> dict:
 
     if "filament_usage" in overlay_entry:
         row["filament_usage"] = overlay_entry["filament_usage"]
+
+    if "fidelity_axis" in overlay_entry:
+        row["fidelity_axis"] = overlay_entry["fidelity_axis"]
+    if "effort_print_load" in overlay_entry:
+        row["effort_print_load"] = overlay_entry["effort_print_load"]
+    if "effort_assembly_skill" in overlay_entry:
+        row["effort_assembly_skill"] = overlay_entry["effort_assembly_skill"]
 
     for match in overlay_entry.get("bom_fulfillments", []):
         target = next(
