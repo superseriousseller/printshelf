@@ -30,7 +30,11 @@ import tempfile
 
 import httpx
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _BACKEND_DIR)
+
+from dotenv import load_dotenv  # noqa: E402
+load_dotenv(os.path.join(_BACKEND_DIR, ".env"))  # backend/.env, regardless of cwd — DATABASE_URL
 
 from models import RegistryEntry, SessionLocal  # noqa: E402
 
