@@ -186,12 +186,21 @@ def _apply_overlay(row: dict, overlay_entry: dict, now: datetime) -> dict:
         row["effort_assembly_skill"] = overlay_entry["effort_assembly_skill"]
 
     for match in overlay_entry.get("bom_fulfillments", []):
-        target = next(
-            (item for item in row["bom"] if match["match"].lower() in item["spec"].lower()),
-            None,
-        )
+        # "spec" is an exact match against the bom item's spec string — the
+        # admin UI writes this, since it always knows the entry's real BOM
+        # text. "match" (substring, case-insensitive) is a legacy fallback
+        # for anything hand-written before the exact-key form existed.
+        target = None
+        if "spec" in match:
+            target = next((item for item in row["bom"] if item["spec"] == match["spec"]), None)
+        if target is None and "match" in match:
+            target = next(
+                (item for item in row["bom"] if match["match"].lower() in item["spec"].lower()),
+                None,
+            )
         if target is None:
-            print(f"  WARNING: overlay bom_fulfillments match {match['match']!r} not found in {row['slug']}'s bom — skipped")
+            key = match.get("spec", match.get("match", "<no spec/match key>"))
+            print(f"  WARNING: overlay bom_fulfillments key {key!r} not found in {row['slug']}'s bom — skipped")
             continue
         target["fulfillments"] = [
             {
@@ -199,7 +208,13 @@ def _apply_overlay(row: dict, overlay_entry: dict, now: datetime) -> dict:
                 "url": f.get("url"),
                 "price": f.get("price"),
                 "currency": f.get("currency", "USD"),
-                "checked_at": now.isoformat(),
+                # Preserve the timestamp the admin UI wrote at save time —
+                # falling back to "now" only covers hand-written overlay
+                # entries with no checked_at at all. Stamping "now" on every
+                # reseed regardless would mean a price never goes stale no
+                # matter how old it actually is, defeating the whole
+                # 90d/180d freshness engine in instruments_pricing.py.
+                "checked_at": f.get("checked_at") or now.isoformat(),
                 "availability": "ok",
                 "affiliate": f.get("affiliate", False),
             }
@@ -210,12 +225,23 @@ def _apply_overlay(row: dict, overlay_entry: dict, now: datetime) -> dict:
         if field in overlay_entry:
             row[f"{field}_price"] = overlay_entry[field].get("price")
             row[f"{field}_url"] = overlay_entry[field].get("url")
-            row[f"{field}_checked_at"] = now  # real DateTime column, not the JSON-embedded string form above
+            checked_at_str = overlay_entry[field].get("checked_at")
+            # Real DateTime column (not the JSON-embedded ISO string form
+            # used above) — same preserve-don't-stamp rule as fulfillments.
+            row[f"{field}_checked_at"] = datetime.fromisoformat(checked_at_str) if checked_at_str else now
 
     return row
 
 
-def main():
+def run(dry_run: bool = None) -> tuple[int, int]:
+    """Parse the HTML registry + overlay YAML and upsert RegistryEntry rows.
+    Returns (created, updated). `dry_run` defaults to the --dry-run CLI flag;
+    callers running this in-process (e.g. instruments_admin.py, right after
+    writing a fresh overlay entry) should pass it explicitly so behavior
+    never depends on this process's own argv."""
+    if dry_run is None:
+        dry_run = DRY_RUN
+
     with open(HTML_PATH, "r", encoding="utf-8") as f:
         source = f.read()
 
@@ -250,12 +276,12 @@ def main():
                 created += 1
                 action = "CREATE"
 
-            if DRY_RUN:
+            if dry_run:
                 fulfilled = sum(1 for item in row["bom"] for f in item.get("fulfillments", []))
                 extra = f", filament_usage={len(row.get('filament_usage') or [])}, fulfillments={fulfilled}" if (row.get("filament_usage") or fulfilled) else ""
                 print(f"  [{action}] {row['vertical']}/{row['slug']} — {row['name']} (status={row['status']}, bom={len(row['bom'])} item(s){extra})")
 
-        if DRY_RUN:
+        if dry_run:
             db.rollback()
             print(f"\nDRY RUN — would create {created}, update {updated}. No changes written.")
         else:
@@ -263,6 +289,12 @@ def main():
             print(f"\nDone — created {created}, updated {updated}.")
     finally:
         db.close()
+
+    return created, updated
+
+
+def main():
+    run()
 
 
 if __name__ == "__main__":
