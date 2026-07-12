@@ -1,0 +1,9 @@
+# Only for score_instrument_audio.py — deliberately NOT part of the repo-root
+# requirements.txt that Railway installs. librosa pulls in numpy/scipy/numba/
+# soundfile, which the deployed app has no reason to carry (see the plan
+# reviewed via the relay for this slice: the app only ever renders the
+# resulting float, it never computes one).
+#
+# Install into your local venv before running the script:
+#   pip install -r backend/scripts/requirements-audio-scoring.txt
+librosa>=0.10
