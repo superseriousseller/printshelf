@@ -976,3 +976,17 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .instrument-retail { margin: 0; font-size: 0.78rem; color: var(--text-dim); }
 .instrument-retail a { color: var(--accent); }
 .price-aging { background: rgba(245,166,35,0.14); color: var(--warning); margin-left: 4px; }
+
+.instrument-objective-score { margin: -6px 0 0; font-size: 0.78rem; color: var(--text-dim); }
+.instrument-objective-note { color: var(--text-dim); opacity: 0.75; }
+
+/* Audio A/B (blind guess toggle) */
+.instrument-audio-ab { background: var(--bg-hover); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.instrument-audio-ab h4 { margin: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
+.instrument-audio-phrase { margin: -6px 0 0; font-size: 0.78rem; color: var(--text-dim); }
+.instrument-audio-clips { display: flex; flex-direction: column; gap: 8px; }
+.instrument-audio-clip { display: flex; flex-direction: column; gap: 4px; }
+.instrument-audio-label { font-size: 0.78rem; font-weight: 600; color: var(--text-body); }
+.instrument-audio-clip audio { width: 100%; height: 32px; }
+.instrument-audio-reveal { align-self: flex-start; }
+.instrument-audio-reveal:disabled { opacity: 0.6; cursor: default; }

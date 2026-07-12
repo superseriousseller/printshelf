@@ -521,7 +521,12 @@ class RegistryEntry(Base):
 
     # filament_usage: [{material, grams}]
     # bom: [{spec, qty, tier, consumable, fulfillments:[{vendor,url,price,currency,checked_at,availability,affiliate}]}]
-    # media: [] — Slice 3 audio A/B bolts on here
+    # media: [] — audio A/B pair, written by scripts/ingest_instrument_audio.py:
+    #   [{kind:"audio_printed", url, phrase, ingested_at},
+    #    {kind:"audio_real", url, phrase, source, license, ingested_at}]
+    #   Card only renders the A/B player when both kinds are present. `kind`
+    #   never leaks into the URL/filename — the instruments route randomizes
+    #   printed/real into clip_a/clip_b per render for the blind-guess toggle.
     filament_usage = Column(JSON, nullable=True, default=list)
     bom = Column(JSON, nullable=True, default=list)
     media = Column(JSON, nullable=True, default=list)
