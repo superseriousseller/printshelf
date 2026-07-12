@@ -42,6 +42,7 @@ from routes import imports as imports_routes
 from routes import admin as admin_routes
 from routes import billing as billing_routes
 from routes import cron as cron_routes
+from routes import stats as stats_routes
 
 # --- Logging ---
 logging.basicConfig(
@@ -109,6 +110,7 @@ app.include_router(web_dashboard_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(billing_routes.router)
 app.include_router(cron_routes.router)
+app.include_router(stats_routes.router)
 
 # Serve /static/* (CSS, future favicon etc.)
 from fastapi.staticfiles import StaticFiles  # noqa: E402
