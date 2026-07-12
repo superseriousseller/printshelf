@@ -217,6 +217,17 @@ a:hover { text-decoration: underline; }
 .filament-row { display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 6px; cursor: pointer; color: var(--text); font-size: 0.86rem; min-height: 40px; box-sizing: border-box; }
 .filament-row:hover { background: var(--bg); }
 .filament-row input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
+.filament-last-used { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.filament-dropdown-heading { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-dim); cursor: default; padding: 8px 14px 4px !important; }
+.filament-dropdown-heading:hover { background: none !important; }
+.filament-dropdown-community { color: var(--accent); }
+.filament-dropdown-addnew { color: var(--accent); border-top: 1px solid var(--border); font-weight: 600; }
+.filament-quickadd { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+.filament-quickadd[hidden] { display: none; }
+.filament-quickadd input[type="text"] { flex: 1; min-width: 100px; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 0.86rem; font-family: inherit; }
+.filament-quickadd .btn-secondary { padding: 7px 14px; font-size: 0.85rem; }
+.filament-quickadd .fqa-cancel { background: none; border: none; color: var(--text-dim); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 4px; }
+.filament-quickadd .fqa-cancel:hover { color: var(--text); }
 .checkbox-list { list-style: none; padding: 0; margin: 4px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
 .checkbox-label { flex-direction: row !important; align-items: center; gap: 8px; color: var(--text); cursor: pointer; padding: 6px 8px; border-radius: 6px; }
 .checkbox-label:hover { background: var(--bg-card); }
@@ -285,6 +296,12 @@ a:hover { text-decoration: underline; }
 .notice-error { background: #4a2222; border: 1px solid #7a3333; color: #f0a0a0; }
 .verify-banner { background: #2a2d1a; border: 1px solid #4a5020; color: #d4e08a; font-size: 0.875rem; padding: 10px 14px; border-radius: 8px; margin-bottom: 18px; }
 .verify-banner strong { color: #e8f0a0; }
+
+.filament-prompt { background: var(--bg-card); border: 1px solid var(--accent); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; max-width: 760px; }
+.filament-prompt-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.filament-prompt-head p { margin: 0; font-size: 0.92rem; }
+.filament-prompt-dismiss { background: none; border: none; color: var(--text-dim); font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 2px 6px; }
+.filament-prompt-dismiss:hover { color: var(--text); }
 
 /* ── Auth notice (success/info, used on login after password reset) ── */
 .auth-notice { background: #143a26; border: 1px solid #1f5c3a; color: #9be5b6; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 16px; }
@@ -653,6 +670,11 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .rate-clear.hidden { display: none; }
 .detail-section-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 20px 0 8px; }
 .chip-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.filament-nudge { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 20px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--bg-hover); border: 1px solid var(--border); }
+.filament-nudge p { margin: 0; font-size: 0.85rem; color: var(--text-dim); flex: 1; min-width: 200px; }
+.filament-nudge .btn-secondary { padding: 5px 12px; font-size: 0.82rem; }
+.filament-nudge-dismiss { background: none; border: none; color: var(--text-dim); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 4px; }
+.filament-nudge-dismiss:hover { color: var(--text); }
 .detail-settings { margin-top: 20px; }
 .settings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 20px; }
 .settings-list li { font-size: 0.9rem; color: var(--text); }

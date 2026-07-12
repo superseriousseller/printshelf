@@ -151,6 +151,24 @@
                     {% endfor %}
                 </ul>
             </div>
+            {% elif is_owner %}
+            <div class="filament-nudge" id="filament-nudge-{{ print_.id }}">
+                <p>Add the filament you used to see a cost estimate and a buy link.</p>
+                <a href="/dashboard/prints/{{ print_.id }}/edit" class="btn-secondary">Add filament</a>
+                <button type="button" class="filament-nudge-dismiss" aria-label="Dismiss">&times;</button>
+            </div>
+            <script>
+            (function() {
+                var key = 'dismissed-filament-nudge-{{ print_.id }}';
+                var el = document.getElementById('filament-nudge-{{ print_.id }}');
+                if (!el) return;
+                if (localStorage.getItem(key)) { el.remove(); return; }
+                el.querySelector('.filament-nudge-dismiss').addEventListener('click', function() {
+                    localStorage.setItem(key, '1');
+                    el.remove();
+                });
+            })();
+            </script>
             {% endif %}
 
             {% if links_ctx %}

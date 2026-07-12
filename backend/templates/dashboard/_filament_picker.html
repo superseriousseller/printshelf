@@ -1,0 +1,282 @@
+{# Reusable filament picker: chips + search/dropdown (your filaments ->
+   community suggestions -> quick-add new) + browse-by-brand. Two callers:
+   print_form.html (mode="form" — accumulates hidden filament_ids inputs for
+   the surrounding <form>) and the dashboard prints-list post-save prompt
+   (mode="attach" — fires POST /dashboard/prints/{print_id}/filaments via
+   fetch after every add/remove, no surrounding form).
+
+   Expects in context: mode ("form"|"attach"), uid (a unique suffix so two
+   instances of this partial can coexist on one page without id collisions),
+   filaments, filaments_json, community_json, selected_filaments, selected_ids,
+   print_id (attach mode only), last_used (optional dict, same shape as a
+   filament JSON entry — powers the "same as last time" one-tap button). #}
+<div class="filament-picker" data-mode="{{ mode }}" {% if mode == "attach" %}data-print-id="{{ print_id }}"{% endif %}>
+    {% if last_used %}
+    <button type="button" class="btn-secondary filament-last-used" id="filament-last-used-{{ uid }}">
+        {% if last_used.colorHex %}<span class="swatch-sm" style="background:{{ last_used.colorHex }}"></span>{% endif %}
+        Same as last time: {{ last_used.brand }} {{ last_used.material }}{% if last_used.colorName %} · {{ last_used.colorName }}{% endif %}
+    </button>
+    {% endif %}
+    <div id="filament-chips-{{ uid }}" class="filament-token-chips">
+        {% for f in selected_filaments %}
+        <span class="filament-token" data-id="{{ f.id }}">
+            {% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span> {% endif %}
+            {{ f.brand }} {{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}{% if f.finish %} {{ f.finish }}{% endif %}
+            <button type="button" class="token-remove" aria-label="Remove">×</button>
+            {% if mode == "form" %}<input type="hidden" name="filament_ids" value="{{ f.id }}">{% endif %}
+        </span>
+        {% endfor %}
+    </div>
+    <div class="filament-token-wrap">
+        <input type="text" id="filament-token-input-{{ uid }}" class="filament-search" placeholder="Type to search or add a filament…" autocomplete="off">
+        <ul id="filament-dropdown-{{ uid }}" class="filament-dropdown" hidden></ul>
+    </div>
+    <div class="filament-quickadd" id="filament-quickadd-{{ uid }}" hidden>
+        <input type="text" class="fqa-brand" placeholder="Brand">
+        <input type="text" class="fqa-material" placeholder="Material">
+        <input type="text" class="fqa-color" placeholder="Color (optional)">
+        <button type="button" class="btn-secondary fqa-save">Add</button>
+        <button type="button" class="fqa-cancel" aria-label="Cancel">×</button>
+    </div>
+    {% if filaments %}
+    <div class="filament-browse">
+        <span class="filament-browse-label">or browse by brand</span>
+        {% for brand, items in filaments | groupby('brand') %}
+        <details class="filament-group">
+            <summary>{{ brand }} <span class="filament-group-count">{{ items | list | length }}</span></summary>
+            <ul class="filament-group-list">
+                {% for f in items %}
+                <li>
+                    <label class="filament-row">
+                        <input type="checkbox" class="filament-row-check-{{ uid }}" value="{{ f.id }}" {% if f.id in selected_ids %}checked{% endif %}>
+                        {% if f.color_hex %}<span class="swatch-sm" style="background:{{ f.color_hex }}"></span>{% endif %}
+                        <span>{{ f.material }}{% if f.color_name %} · {{ f.color_name }}{% endif %}{% if f.finish %} {{ f.finish }}{% endif %}</span>
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+        </details>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+<script>
+(function(){
+    const MODE = {{ mode | tojson }};
+    const PRINT_ID = {{ print_id | default(none) | tojson }};
+    const LAST_USED = {{ last_used | default(none) | tojson }};
+    const FILAMENTS = {{ filaments_json | safe }};
+    const COMMUNITY = {{ community_json | safe }};
+
+    const chipsEl = document.getElementById('filament-chips-{{ uid }}');
+    const input = document.getElementById('filament-token-input-{{ uid }}');
+    const dropdown = document.getElementById('filament-dropdown-{{ uid }}');
+    const qa = document.getElementById('filament-quickadd-{{ uid }}');
+    const byId = {};
+    FILAMENTS.forEach(f => { byId[f.id] = f; });
+
+    const selected = new Set(
+        Array.from(chipsEl.querySelectorAll('[data-id]')).map(el => Number(el.dataset.id))
+    );
+
+    function label(f) {
+        return [f.brand, f.material, f.colorName, f.finish].filter(Boolean).join(' · ');
+    }
+
+    function setRowChecked(id, val) {
+        const cb = document.querySelector('.filament-row-check-{{ uid }}[value="' + id + '"]');
+        if (cb) cb.checked = val;
+    }
+
+    function syncPrint() {
+        if (MODE !== 'attach') return;
+        const ids = Array.from(chipsEl.querySelectorAll('[data-id]')).map(el => el.dataset.id);
+        const body = new URLSearchParams();
+        ids.forEach(id => body.append('filament_ids', id));
+        fetch('/dashboard/prints/' + PRINT_ID + '/filaments', {
+            method: 'POST', body: body, headers: {'X-Requested-With': 'fetch'},
+        }).catch(() => {});
+    }
+
+    function addChip(f) {
+        if (selected.has(f.id)) return;
+        byId[f.id] = f;
+        selected.add(f.id);
+        const chip = document.createElement('span');
+        chip.className = 'filament-token';
+        chip.dataset.id = f.id;
+        if (f.colorHex) {
+            const sw = document.createElement('span');
+            sw.className = 'swatch-sm';
+            sw.style.background = f.colorHex;
+            chip.appendChild(sw);
+        }
+        chip.appendChild(document.createTextNode(' ' + label(f) + ' '));
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'token-remove';
+        btn.textContent = '×';
+        btn.setAttribute('aria-label', 'Remove');
+        btn.onclick = () => removeChip(f.id);
+        chip.appendChild(btn);
+        if (MODE === 'form') {
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'filament_ids';
+            hidden.value = f.id;
+            chip.appendChild(hidden);
+        }
+        chipsEl.appendChild(chip);
+        setRowChecked(f.id, true);
+        syncPrint();
+    }
+
+    function removeChip(id) {
+        selected.delete(id);
+        const chip = chipsEl.querySelector('[data-id="' + id + '"]');
+        if (chip) chip.remove();
+        setRowChecked(id, false);
+        syncPrint();
+    }
+
+    function quickAdd(prefill) {
+        qa.hidden = false;
+        dropdown.hidden = true;
+        qa.querySelector('.fqa-brand').value = (prefill && prefill.brand) || '';
+        qa.querySelector('.fqa-material').value = (prefill && prefill.material) || '';
+        qa.querySelector('.fqa-color').value = (prefill && prefill.colorName) || '';
+        qa.querySelector('.fqa-brand').focus();
+    }
+
+    qa.querySelector('.fqa-cancel').addEventListener('click', () => { qa.hidden = true; });
+    qa.querySelector('.fqa-save').addEventListener('click', () => {
+        const brand = qa.querySelector('.fqa-brand').value.trim();
+        const material = qa.querySelector('.fqa-material').value.trim();
+        const color = qa.querySelector('.fqa-color').value.trim();
+        if (!brand || !material) { qa.querySelector(!brand ? '.fqa-brand' : '.fqa-material').focus(); return; }
+        const body = new URLSearchParams({brand: brand, material: material, color_name: color});
+        fetch('/dashboard/filaments/quick-add', {method: 'POST', body: body})
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) { alert(data.error); return; }
+                addChip(data);
+                qa.hidden = true;
+                input.value = '';
+            })
+            .catch(() => alert('Could not add that filament — try again.'));
+    });
+
+    function renderDropdown(q) {
+        const ownMatches = FILAMENTS.filter(f => !selected.has(f.id) && label(f).toLowerCase().includes(q)).slice(0, 8);
+        const ownKeys = new Set(FILAMENTS.map(f => (f.brand + '|' + f.material + '|' + (f.colorName || '')).toLowerCase()));
+        const communityMatches = COMMUNITY.filter(f => {
+            const key = (f.brand + '|' + f.material + '|' + (f.colorName || '')).toLowerCase();
+            return !ownKeys.has(key) && label(f).toLowerCase().includes(q);
+        }).slice(0, 6);
+
+        dropdown.innerHTML = '';
+        if (ownMatches.length) {
+            ownMatches.forEach(f => {
+                const li = document.createElement('li');
+                if (f.colorHex) {
+                    const sw = document.createElement('span');
+                    sw.className = 'swatch-sm';
+                    sw.style.background = f.colorHex;
+                    li.appendChild(sw);
+                    li.appendChild(document.createTextNode(' '));
+                }
+                li.appendChild(document.createTextNode(label(f)));
+                li.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    addChip(f);
+                    input.value = '';
+                    dropdown.hidden = true;
+                    input.focus();
+                });
+                dropdown.appendChild(li);
+            });
+        }
+        if (communityMatches.length) {
+            const heading = document.createElement('li');
+            heading.className = 'filament-dropdown-heading';
+            heading.textContent = 'From the community';
+            dropdown.appendChild(heading);
+            communityMatches.forEach(f => {
+                const li = document.createElement('li');
+                li.className = 'filament-dropdown-community';
+                if (f.colorHex) {
+                    const sw = document.createElement('span');
+                    sw.className = 'swatch-sm';
+                    sw.style.background = f.colorHex;
+                    li.appendChild(sw);
+                    li.appendChild(document.createTextNode(' '));
+                }
+                li.appendChild(document.createTextNode(label(f) + ' +'));
+                li.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    const body = new URLSearchParams({brand: f.brand, material: f.material, color_name: f.colorName || '', color_hex: f.colorHex || '', finish: f.finish || ''});
+                    fetch('/dashboard/filaments/quick-add', {method: 'POST', body: body})
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.error) { alert(data.error); return; }
+                            addChip(data);
+                            input.value = '';
+                            dropdown.hidden = true;
+                            input.focus();
+                        });
+                });
+                dropdown.appendChild(li);
+            });
+        }
+        const addNew = document.createElement('li');
+        addNew.className = 'filament-dropdown-addnew';
+        addNew.textContent = q ? ('+ Add "' + q + '" as a new filament') : '+ Add a new filament';
+        addNew.addEventListener('mousedown', e => {
+            e.preventDefault();
+            quickAdd({brand: '', material: q});
+        });
+        dropdown.appendChild(addNew);
+        dropdown.hidden = false;
+    }
+
+    input.addEventListener('input', function() {
+        renderDropdown(this.value.toLowerCase().trim());
+    });
+    input.addEventListener('focus', function() { renderDropdown(this.value.toLowerCase().trim()); });
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { dropdown.hidden = true; input.value = ''; }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const first = dropdown.querySelector('li:not(.filament-dropdown-heading)');
+            if (first) first.dispatchEvent(new MouseEvent('mousedown'));
+        }
+        if (e.key === 'Backspace' && !this.value) {
+            const chips = chipsEl.querySelectorAll('[data-id]');
+            if (chips.length) removeChip(Number(chips[chips.length - 1].dataset.id));
+        }
+    });
+
+    document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) dropdown.hidden = true;
+    });
+
+    chipsEl.querySelectorAll('.token-remove').forEach(btn => {
+        const chip = btn.closest('[data-id]');
+        if (chip) btn.onclick = () => removeChip(Number(chip.dataset.id));
+    });
+
+    document.querySelectorAll('.filament-row-check-{{ uid }}').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const id = Number(this.value);
+            if (this.checked) { addChip(byId[id]); }
+            else { removeChip(id); }
+        });
+    });
+
+    const lastUsedBtn = document.getElementById('filament-last-used-{{ uid }}');
+    if (lastUsedBtn && LAST_USED) {
+        lastUsedBtn.addEventListener('click', () => addChip(LAST_USED));
+    }
+})();
+</script>

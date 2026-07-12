@@ -16,7 +16,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import nullslast, or_
 from sqlalchemy.orm import Session
@@ -521,6 +521,46 @@ def create_filament(
     return RedirectResponse("/dashboard/filaments", status_code=303)
 
 
+@router.post("/filaments/quick-add")
+def quick_add_filament(
+    brand: str = Form(...),
+    material: str = Form(...),
+    color_name: str = Form(""),
+    color_hex: str = Form(""),
+    finish: str = Form(""),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    """Minimal filament creation for the inline quick-add tier of the
+    filament picker (own filaments -> community suggestions -> this). Same
+    required-field floor as the full form (brand + material), everything
+    else optional. Fetch-only, JSON in/out — returns the filament in the
+    exact shape _print_form_ctx's filaments_json uses so the picker's
+    existing addChip() can consume it with no changes."""
+    if user is None:
+        return JSONResponse({"error": "Log in to add a filament."}, status_code=401)
+    brand, material = brand.strip(), material.strip()
+    if not brand or not material:
+        return JSONResponse({"error": "Brand and material are required."}, status_code=400)
+    try:
+        enforce_filament_limit(db, user)
+    except HTTPException as e:
+        if e.status_code == 402:
+            return JSONResponse({"error": "Free tier filament limit reached."}, status_code=402)
+        raise
+    f = Filament(
+        user_id=user.id, brand=brand, material=material,
+        color_name=color_name.strip() or None, color_hex=_normalize_hex(color_hex),
+        diameter=1.75, finish=finish.strip() or None, status="own",
+    )
+    db.add(f)
+    db.commit()
+    return JSONResponse({
+        "id": f.id, "brand": f.brand, "material": f.material,
+        "colorName": f.color_name, "colorHex": f.color_hex, "finish": f.finish,
+    })
+
+
 @router.get("/filaments/{filament_id}/edit", response_class=HTMLResponse)
 def edit_filament(
     request: Request,
@@ -705,12 +745,45 @@ def list_prints(
         Print.queued == False,      # noqa: E712
         Print.is_public == False,   # noqa: E712
     ).count()
+
+    # Filament-capture prompt: your single most recent (non-queued) print,
+    # regardless of the list's own filters/sort, if it has no filament yet.
+    # Queued/wishlist prints are skipped — nothing's been made yet, so "which
+    # filament did you use" doesn't apply.
+    filament_prompt_print = None
+    latest = (
+        db.query(Print)
+        .filter(Print.user_id == user.id, Print.queued == False)  # noqa: E712
+        .order_by(Print.created_at.desc())
+        .first()
+    )
+    if latest is not None and not latest.filament_ids:
+        filament_prompt_print = latest
+
+    picker_ctx = {}
+    if filament_prompt_print is not None:
+        own_filaments = db.query(Filament).filter(Filament.user_id == user.id).order_by(Filament.brand, Filament.material).all()
+        picker_ctx = {
+            "prompt_print": filament_prompt_print,
+            "prompt_filaments": own_filaments,
+            "prompt_filaments_json": json.dumps([
+                {"id": f.id, "brand": f.brand, "material": f.material,
+                 "colorName": f.color_name, "colorHex": f.color_hex, "finish": f.finish}
+                for f in own_filaments
+            ]),
+            "prompt_community_json": _community_filament_json(
+                db, exclude_keys={(f.brand.lower(), f.material.lower(), (f.finish or "").lower(), (f.color_name or "").lower()) for f in own_filaments}
+            ),
+            "prompt_last_used": _last_used_filament(db, user.id),
+        }
+
     return templates.TemplateResponse(
         request, "dashboard/prints_list.html",
         _ctx(user, db=db, prints=rows, queued_filter=queued_filter,
              printer_names=printer_names, fil_meta=fil_meta,
              private_finished_count=private_finished_count,
-             search=search_val, sort=sort or "newest", cap_hit=cap == "1"),
+             search=search_val, sort=sort or "newest", cap_hit=cap == "1",
+             **picker_ctx),
     )
 
 
@@ -743,6 +816,42 @@ def _save_links(db: Session, print_id: int, user_id: int, pairs: list[tuple[str,
     db.commit()
 
 
+def _last_used_filament(db: Session, user_id: int) -> Optional[dict]:
+    """Most recent filament this user attached to any print, in the picker's
+    JSON shape — powers the "same as last time" one-tap default. Looks back
+    across the last 20 prints (not just the most recent) in case the latest
+    one's filament_ids is empty or was since deleted."""
+    rows = (
+        db.query(Print.filament_ids)
+        .filter(Print.user_id == user_id, Print.filament_ids.isnot(None))
+        .order_by(Print.created_at.desc())
+        .limit(20)
+        .all()
+    )
+    for (fids,) in rows:
+        if not fids:
+            continue
+        f = db.query(Filament).filter(Filament.id == fids[0], Filament.user_id == user_id).first()
+        if f:
+            return {"id": f.id, "brand": f.brand, "material": f.material,
+                    "colorName": f.color_name, "colorHex": f.color_hex, "finish": f.finish}
+    return None
+
+
+def _community_filament_json(db: Session, exclude_keys: set) -> str:
+    """Cross-user filament suggestions for the picker's 'from the community'
+    tier — reuses build_preview_catalog (Preview studio's exact same query)
+    rather than standing up a second mechanism for the same problem. Remaps
+    its brand/material/finish/color_hex/color_name keys to the picker's
+    camelCase shape; drops buyUrl (not relevant here)."""
+    catalog = build_preview_catalog(db, exclude_keys=exclude_keys, limit=200)
+    return json.dumps([
+        {"brand": c["brand"], "material": c["material"], "finish": c["finish"] or None,
+         "colorHex": c["color_hex"] or None, "colorName": c["color_name"] or None}
+        for c in catalog
+    ])
+
+
 def _print_form_ctx(user: User, db: Session, p: Optional[Print], errors: list, values: dict) -> dict:
     printers = db.query(Printer).filter(Printer.user_id == user.id).order_by(Printer.name).all()
     filaments = db.query(Filament).filter(Filament.user_id == user.id).order_by(Filament.brand, Filament.material).all()
@@ -751,12 +860,16 @@ def _print_form_ctx(user: User, db: Session, p: Optional[Print], errors: list, v
          "colorName": f.color_name, "colorHex": f.color_hex, "finish": f.finish}
         for f in filaments
     ])
+    own_keys = {(f.brand.lower(), f.material.lower(), (f.finish or "").lower(), (f.color_name or "").lower()) for f in filaments}
+    community_json = _community_filament_json(db, exclude_keys=own_keys)
     selected_ids = set(int(i) for i in (values.get("filament_ids") or []) if i)
     filament_by_id = {f.id: f for f in filaments}
     selected_filaments = [filament_by_id[i] for i in selected_ids if i in filament_by_id]
     return _ctx(
         user, db=db, print_=p, errors=errors, values=values,
         printers=printers, filaments=filaments, filaments_json=filaments_json,
+        community_json=community_json, mode="form", uid="printform", print_id=None,
+        last_used=_last_used_filament(db, user.id),
         selected_filaments=selected_filaments, selected_ids=selected_ids,
         platforms=[p.value for p in SourcePlatform],
         statuses=[s.value for s in PrintStatus],
@@ -1315,6 +1428,32 @@ def publish_print(
         db.commit()
         _log.info("print %s published to profile by user %s", print_id, user.id)
     return RedirectResponse("/dashboard/prints?queued=false", status_code=303)
+
+
+@router.post("/prints/{print_id}/filaments")
+def attach_filaments(
+    print_id: int,
+    filament_ids: list[str] = Form(default=[]),
+    user: Optional[User] = Depends(get_current_user_web_optional),
+    db: Session = Depends(get_db),
+):
+    """Owner-only, session-cookie, fetch-only — replaces filament_ids on an
+    already-saved print. Backs the dashboard-list post-save filament prompt
+    (and the picker's 'attach' mode generally) so attaching a filament after
+    the fact doesn't require reopening the full print-edit form."""
+    if user is None:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    p = db.query(Print).filter(Print.id == print_id, Print.user_id == user.id).first()
+    if p is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    fil_ids = _parse_int_list(filament_ids)
+    if fil_ids:
+        owned_ids = {r[0] for r in db.query(Filament.id).filter(Filament.user_id == user.id, Filament.id.in_(fil_ids)).all()}
+        if any(fid not in owned_ids for fid in fil_ids):
+            return JSONResponse({"error": "filament not found"}, status_code=400)
+    p.filament_ids = fil_ids
+    db.commit()
+    return JSONResponse({"filamentIds": fil_ids})
 
 
 @router.post("/prints/{print_id}/delete")
