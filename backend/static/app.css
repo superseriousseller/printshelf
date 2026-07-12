@@ -653,6 +653,11 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .rate-clear.hidden { display: none; }
 .detail-section-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 20px 0 8px; }
 .chip-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.filament-nudge { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 20px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--bg-hover); border: 1px solid var(--border); }
+.filament-nudge p { margin: 0; font-size: 0.85rem; color: var(--text-dim); flex: 1; min-width: 200px; }
+.filament-nudge .btn-secondary { padding: 5px 12px; font-size: 0.82rem; }
+.filament-nudge-dismiss { background: none; border: none; color: var(--text-dim); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 4px; }
+.filament-nudge-dismiss:hover { color: var(--text); }
 .detail-settings { margin-top: 20px; }
 .settings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 20px; }
 .settings-list li { font-size: 0.9rem; color: var(--text); }

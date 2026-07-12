@@ -509,9 +509,9 @@ def instruments_notify(
 # Bump CACHE version when the SW logic or precache list changes, so clients
 # fetch the new worker and drop the stale cache on activate.
 _SERVICE_WORKER_JS = """\
-const CACHE = 'printshelf-v13';
+const CACHE = 'printshelf-v14';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/offline', '/static/app.css?v=25'];
+const PRECACHE = ['/offline', '/static/app.css?v=26'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
