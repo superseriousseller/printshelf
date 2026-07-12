@@ -8,7 +8,10 @@
 </header>
 
 <div class="upgrade-wrap">
-    <p class="upgrade-pitch">You've hit the free-tier limit. Go Pro for unlimited prints and filaments.</p>
+    <p class="upgrade-pitch">
+        {% if cap_hit %}You've hit the free-tier limit. Go Pro for unlimited prints and filaments.
+        {% else %}Go Pro for unlimited prints and filaments.{% endif %}
+    </p>
 
     <div class="upgrade-plans">
         <div class="upgrade-plan">

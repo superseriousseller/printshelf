@@ -144,7 +144,7 @@
                     {% for fc in filaments_ctx %}
                     <li class="chip">
                         {% if fc.f.color_hex %}<span class="swatch-sm" style="background:{{ fc.f.color_hex }}"></span>{% endif %}
-                        {{ fc.f.brand }} {{ fc.f.material }}{% if fc.f.finish %} {{ fc.f.finish }}{% endif %}{% if fc.f.color_name %} · {{ fc.f.color_name }}{% endif %}
+                        {{ fc.f.brand }} {{ fc.f.material }}{% if fc.f.color_name %} · {{ fc.f.color_name }}{% endif %}{% if fc.f.finish %} {{ fc.f.finish }}{% endif %}
                         {% if fc.price_per_kg %}<span class="chip-price">${{ "%.2f"|format(fc.price_per_kg) }}/kg</span>{% endif %}
                         {% if fc.buy_url %}<a href="{{ fc.buy_url }}" class="chip-buy" target="_blank" rel="noopener sponsored">Buy →</a>{% endif %}
                     </li>

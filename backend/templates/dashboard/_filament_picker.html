@@ -38,7 +38,7 @@
         <button type="button" class="btn-secondary fqa-save">Add</button>
         <button type="button" class="fqa-cancel" aria-label="Cancel">×</button>
     </div>
-    {% if filaments %}
+    {% if filaments and mode == "form" %}
     <div class="filament-browse">
         <span class="filament-browse-label">or browse by brand</span>
         {% for brand, items in filaments | groupby('brand') %}
