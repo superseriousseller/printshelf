@@ -76,6 +76,7 @@ def _ctx(user: User, db: Optional[Session] = None, **extra) -> dict:
         base["sidebar_queue"] = db.query(Print).filter(Print.user_id == user.id, Print.queued == True).count()  # noqa: E712
         base["sidebar_filaments"] = db.query(Filament).filter(Filament.user_id == user.id).count()
         base["sidebar_collections"] = db.query(Collection).filter(Collection.user_id == user.id).count()
+        base["sidebar_printers"] = db.query(Printer).filter(Printer.user_id == user.id).count()
     return base
 
 
@@ -475,7 +476,7 @@ def create_filament(
         enforce_filament_limit(db, user)
     except HTTPException as e:
         if e.status_code == 402:
-            return RedirectResponse("/dashboard/upgrade", status_code=303)
+            return RedirectResponse("/dashboard/upgrade?cap_hit=1", status_code=303)
         raise
     status = "want" if wishlist else "own"
     errors = []
@@ -1028,7 +1029,7 @@ async def create_print(
         enforce_print_limit(db, user)
     except HTTPException as e:
         if e.status_code == 402:
-            return RedirectResponse("/dashboard/upgrade", status_code=303)
+            return RedirectResponse("/dashboard/upgrade?cap_hit=1", status_code=303)
         raise
     errors: list[str] = []
 
@@ -1759,7 +1760,7 @@ def create_collection(
         enforce_collection_limit(db, user)
     except HTTPException as e:
         if e.status_code == 402:
-            return RedirectResponse("/dashboard/upgrade", status_code=303)
+            return RedirectResponse("/dashboard/upgrade?cap_hit=1", status_code=303)
         raise
     c = Collection(user_id=user.id, name=name[:100], description=(description.strip()[:500] or None))
     db.add(c)

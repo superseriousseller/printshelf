@@ -41,6 +41,7 @@ def _stripe():
 @router.get("/dashboard/upgrade", response_class=HTMLResponse)
 def upgrade_page(
     request: Request,
+    cap_hit: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_web_optional),
     db: Session = Depends(get_db),
 ):
@@ -54,6 +55,7 @@ def upgrade_page(
         "monthly_price": "4.99",
         "annual_price": "39",
         "annual_monthly_equiv": "3.25",
+        "cap_hit": cap_hit == "1",
     })
 
 
