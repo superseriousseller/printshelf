@@ -26,5 +26,8 @@
 #         - {vendor: "Some Other Store", url: "https://...", price: 15.00}
 #   retail_budget: {price: 45.00, url: "https://..."}
 #   retail_premium: {price: 89.00, url: "https://..."}
+#   fidelity_axis: 4          # 0-5, how close it sounds to the real instrument
+#   effort_print_load: L      # S | M | L | XL bucket
+#   effort_assembly_skill: 3  # 1-5, assembly/tuning difficulty
 #
 # No entries yet — nothing to seed until real numbers land.

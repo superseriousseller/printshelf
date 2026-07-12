@@ -30,8 +30,16 @@
                 {%- endif -%}
             </span>
         </div>
-        <span class="badge axis-pending">Sound fidelity: pending verification</span>
-        <span class="badge axis-pending">Effort: pending verification</span>
+        {% if entry.fidelity_axis is not none %}
+            <span class="badge axis-cost-real">Sound fidelity: {{ entry.fidelity_axis }}/5</span>
+        {% else %}
+            <span class="badge axis-pending">Sound fidelity: pending verification</span>
+        {% endif %}
+        {% if entry.effort_print_load or entry.effort_assembly_skill is not none %}
+            <span class="badge axis-cost-real">Effort:{% if entry.effort_print_load %} {{ entry.effort_print_load }} print{% endif %}{% if entry.effort_print_load and entry.effort_assembly_skill is not none %} ·{% endif %}{% if entry.effort_assembly_skill is not none %} assembly {{ entry.effort_assembly_skill }}/5{% endif %}</span>
+        {% else %}
+            <span class="badge axis-pending">Effort: pending verification</span>
+        {% endif %}
         {% set cost = pricing[entry.id] %}
         {% if cost.spool is none %}
             <span class="badge axis-pending">Cost: pending verification</span>

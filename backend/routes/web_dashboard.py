@@ -21,7 +21,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import nullslast, or_
 from sqlalchemy.orm import Session
 
-from auth import SESSION_COOKIE_NAME, filament_preview_enabled, get_current_user_web_optional
+from auth import SESSION_COOKIE_NAME, filament_preview_enabled, get_current_user_web_optional, instruments_index_enabled
 from limits import enforce_collection_limit, enforce_filament_limit, enforce_print_limit
 from models import (
     AffiliateClick,
@@ -58,6 +58,7 @@ templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
 
 # Expose the feature flag to this router's templates (sidebar nav / studio).
 templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
+templates.env.globals["instruments_index_enabled"] = instruments_index_enabled
 
 
 def _require_user(user: Optional[User]) -> Optional[RedirectResponse]:
