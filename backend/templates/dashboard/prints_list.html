@@ -25,6 +25,30 @@
     Hit <strong>Post to profile</strong> on {{ 'each' if private_finished_count != 1 else 'it' }} to share your work.
 </div>
 {% endif %}
+
+{% if prompt_print %}
+<div class="filament-prompt" id="filament-prompt-{{ prompt_print.id }}">
+    <div class="filament-prompt-head">
+        <p>Add the filament you used on <strong>{{ prompt_print.title }}</strong>?</p>
+        <button type="button" class="filament-prompt-dismiss" aria-label="Dismiss">&times;</button>
+    </div>
+    {% with mode="attach", uid="promptpick", filaments=prompt_filaments, filaments_json=prompt_filaments_json, community_json=prompt_community_json, selected_filaments=[], selected_ids=[], print_id=prompt_print.id, last_used=prompt_last_used %}
+    {% include "dashboard/_filament_picker.html" %}
+    {% endwith %}
+</div>
+<script>
+(function() {
+    var key = 'dismissed-filament-prompt-{{ prompt_print.id }}';
+    var el = document.getElementById('filament-prompt-{{ prompt_print.id }}');
+    if (!el) return;
+    if (localStorage.getItem(key)) { el.remove(); return; }
+    el.querySelector('.filament-prompt-dismiss').addEventListener('click', function() {
+        localStorage.setItem(key, '1');
+        el.remove();
+    });
+})();
+</script>
+{% endif %}
 <form method="get" action="/dashboard/prints" class="filter-bar">
     {% if queued_filter %}<input type="hidden" name="queued" value="{{ queued_filter }}">{% endif %}
     <input type="search" name="search" value="{{ search }}" placeholder="Search titles…" class="filter-search">
