@@ -112,6 +112,7 @@ class SourcePlatform(str, enum.Enum):
     PRINTABLES = "printables"
     CULTS3D = "cults3d"
     THINGIVERSE = "thingiverse"
+    MYMINIFACTORY = "myminifactory"
     MANUAL = "manual"
     SLICER = "slicer"          # auto-imported via the slicer post-processing script
     BAMBU_STUDIO = "bambustudio"

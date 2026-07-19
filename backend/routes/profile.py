@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from affiliate import apply_affiliate, filament_buy_url
 from auth import filament_preview_enabled, get_current_user_web_optional, instruments_index_enabled
 from email_service import send_follow_notification
+from import_service import platform_display_name
 from models import Collection, CollectionPrint, Filament, Follow, Like, Print, PrintLink, Printer, User, get_db, PRINT_CATEGORY_LABELS
 from sqlalchemy import func
 
@@ -26,6 +27,7 @@ _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
 # base.html topbar has a gated "Preview" link → this instance renders public profile pages.
 templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
+templates.env.globals["source_display_name"] = platform_display_name
 templates.env.globals["instruments_index_enabled"] = instruments_index_enabled
 
 
