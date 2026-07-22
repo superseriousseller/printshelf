@@ -37,20 +37,64 @@
         <h2>Affiliate Clicks</h2>
         <div class="admin-stats" style="margin-bottom:16px">
             <div class="admin-stat"><span class="admin-stat-val">{{ clicks_total }}</span><span class="admin-stat-lbl">All time</span></div>
+            <div class="admin-stat"><span class="admin-stat-val">{{ clicks_7d }}</span><span class="admin-stat-lbl">Last 7d</span></div>
             <div class="admin-stat"><span class="admin-stat-val">{{ clicks_30d }}</span><span class="admin-stat-lbl">Last 30d</span></div>
-            {% for store, cnt in clicks_by_store %}
-            <div class="admin-stat"><span class="admin-stat-val">{{ cnt }}</span><span class="admin-stat-lbl">{{ store or "unknown" }}</span></div>
+            <div class="admin-stat"><span class="admin-stat-val">{{ unique_clickers_30d }}</span><span class="admin-stat-lbl">Unique clickers (30d)</span></div>
+            <div class="admin-stat"><span class="admin-stat-val">{{ anon_clicks_30d }}</span><span class="admin-stat-lbl">Anon clicks (30d)</span></div>
+        </div>
+
+        <!-- Is it earning? A click only earns once its store's affiliate ref is
+             actually configured — clicks alone don't say that. -->
+        <h3 class="admin-subhead">Is it earning?</h3>
+        <div class="admin-table-scroll" style="margin-bottom:16px">
+        <table class="admin-table">
+            <thead><tr><th>Store</th><th>Clicks (all time)</th><th>Status</th><th>Env var</th></tr></thead>
+            <tbody>
+            {% for row in programs %}
+            <tr>
+                <td>{{ row.store }}</td>
+                <td>{{ clicks_by_store_map.get(row.store, 0) }}</td>
+                <td>{% if row.configured %}<span style="color:var(--stat-done,#3ba55c)">✓ earning</span>{% else %}<span style="color:var(--stat-queued,#c77b2e)">— bare link (no ref set)</span>{% endif %}</td>
+                <td><code>{{ row.env_var }}</code></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+        <!-- 14-day trend -->
+        <h3 class="admin-subhead">Last 14 days</h3>
+        <div class="admin-trend" style="margin-bottom:16px">
+            {% for d in clicks_by_day %}
+            <div class="admin-trend-col" title="{{ d.day }}: {{ d.cnt }} clicks">
+                <div class="admin-trend-bar" style="height:{{ (d.cnt / max_day_cnt * 60)|round(0, 'ceil') if max_day_cnt else 0 }}px">{% if d.cnt %}{{ d.cnt }}{% endif %}</div>
+                <div class="admin-trend-lbl">{{ d.day.strftime('%d') }}</div>
+            </div>
             {% endfor %}
         </div>
+
+        <!-- Which page/CTA drives clicks -->
+        {% if clicks_by_surface %}
+        <h3 class="admin-subhead">By surface</h3>
+        <div class="admin-stats" style="margin-bottom:16px">
+            {% for surface, cnt in clicks_by_surface %}
+            <div class="admin-stat"><span class="admin-stat-val">{{ cnt }}</span><span class="admin-stat-lbl">{{ surface or "untagged (pre-fix)" }}</span></div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         {% if recent_clicks %}
+        <h3 class="admin-subhead">Recent</h3>
         <div class="admin-table-scroll">
         <table class="admin-table">
-            <thead><tr><th>Time</th><th>Store</th><th>Filament ID</th><th>User</th></tr></thead>
+            <thead><tr><th>Time</th><th>Store</th><th>Earning?</th><th>Surface</th><th>Filament ID</th><th>User</th></tr></thead>
             <tbody>
             {% for click, username in recent_clicks %}
             <tr>
                 <td>{{ click.clicked_at.strftime('%m-%d %H:%M') }}</td>
                 <td>{{ click.store or '—' }}</td>
+                <td>{% if click.store in earning_stores %}✓{% else %}—{% endif %}</td>
+                <td>{{ click.surface or '—' }}</td>
                 <td>{{ click.filament_id or '—' }}</td>
                 <td>{% if username %}<a href="/@{{ username }}">@{{ username }}</a>{% else %}—{% endif %}</td>
             </tr>

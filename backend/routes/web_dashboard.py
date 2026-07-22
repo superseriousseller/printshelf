@@ -701,7 +701,7 @@ def buy_filament(
         return RedirectResponse("/dashboard/filaments", status_code=303)
     from filament_import_service import detect_store
     store = detect_store(target)
-    db.add(AffiliateClick(user_id=user.id, filament_id=f.id, store=store or None))
+    db.add(AffiliateClick(user_id=user.id, filament_id=f.id, store=store or None, surface="dashboard_filament_buy"))
     db.commit()
     _log.info("filament buy click filament_id=%s user=%s store=%s target=%s", f.id, user.id, store, target)
     return RedirectResponse(target, status_code=302)
@@ -1898,7 +1898,7 @@ def buy_filament_search(
         return RedirectResponse("/dashboard/filaments", status_code=303)
     from filament_import_service import detect_store
     store = detect_store(target)
-    db.add(AffiliateClick(user_id=user.id, filament_id=None, store=store or None))
+    db.add(AffiliateClick(user_id=user.id, filament_id=None, store=store or None, surface="dashboard_catalog_buy"))
     db.commit()
     _log.info("catalog buy click user=%s brand=%s store=%s", user.id, brand, store)
     return RedirectResponse(target, status_code=302)

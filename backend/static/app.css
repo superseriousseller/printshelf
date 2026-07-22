@@ -832,6 +832,11 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .admin-table a:hover { text-decoration: underline; }
 .admin-dim { color: var(--text-dim); font-size: 0.82rem; }
 .admin-empty { color: var(--text-dim); font-size: 0.875rem; }
+.admin-subhead { font-size: 0.85rem; font-weight: 600; color: var(--text-dim); margin: 20px 0 10px; }
+.admin-trend { display: flex; align-items: flex-end; gap: 6px; height: 90px; padding: 8px 0; }
+.admin-trend-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; }
+.admin-trend-bar { width: 100%; max-width: 28px; min-height: 2px; background: var(--accent); border-radius: 3px 3px 0 0; display: flex; align-items: flex-start; justify-content: center; color: #fff; font-size: 0.68rem; padding-top: 2px; }
+.admin-trend-lbl { font-size: 0.68rem; color: var(--text-dim); margin-top: 4px; }
 
 /* Onboarding */
 .onboarding { background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px; }

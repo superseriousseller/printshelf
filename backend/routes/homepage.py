@@ -368,7 +368,7 @@ def public_preview_buy(
         return RedirectResponse("/preview", status_code=303)
     from filament_import_service import detect_store
     store = detect_store(target)
-    db.add(AffiliateClick(user_id=(current_user.id if current_user else None), filament_id=None, store=store or None))
+    db.add(AffiliateClick(user_id=(current_user.id if current_user else None), filament_id=None, store=store or None, surface="preview_public_buy"))
     db.commit()
     return RedirectResponse(target, status_code=302)
 
@@ -509,9 +509,9 @@ def instruments_notify(
 # Bump CACHE version when the SW logic or precache list changes, so clients
 # fetch the new worker and drop the stale cache on activate.
 _SERVICE_WORKER_JS = """\
-const CACHE = 'printshelf-v16';
+const CACHE = 'printshelf-v17';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/offline', '/static/app.css?v=28'];
+const PRECACHE = ['/offline', '/static/app.css?v=29'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
