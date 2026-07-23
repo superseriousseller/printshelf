@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from affiliate import apply_affiliate, filament_buy_url
 from auth import filament_preview_enabled, get_current_user_web_optional, instruments_index_enabled
 from email_service import send_follow_notification
+from import_service import platform_display_name
 from models import Collection, CollectionPrint, Filament, Follow, Like, Print, PrintLink, Printer, User, get_db, PRINT_CATEGORY_LABELS
 from sqlalchemy import func
 
@@ -26,6 +27,7 @@ _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
 # base.html topbar has a gated "Preview" link → this instance renders public profile pages.
 templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
+templates.env.globals["source_display_name"] = platform_display_name
 templates.env.globals["instruments_index_enabled"] = instruments_index_enabled
 
 
@@ -368,14 +370,21 @@ def public_print_detail(
     filaments_ctx = []
     for f in filaments:
         price_per_kg = round(f.price_at_save / f.spool_weight_g * 1000, 2) if (f.price_at_save and f.spool_weight_g) else None
-        buy_url = filament_buy_url(
+        # Buy chip routes through the tracked redirector, not the raw affiliate
+        # URL — the print-detail page is the highest-traffic Buy surface, so an
+        # untracked <a href> here was the reason /admin saw near-zero clicks.
+        has_buy = filament_buy_url(
             brand=f.brand, material=f.material, color=f.color_name or "",
             finish=f.finish or "", source_url=f.source_url or "",
-        )
+        ) is not None
+        buy_url = f"/@{user.username}/prints/{p.url_id}/buy?fid={f.id}" if has_buy else None
         filaments_ctx.append({"f": f, "price_per_kg": price_per_kg, "buy_url": buy_url})
 
     raw_links = db.query(PrintLink).filter(PrintLink.print_id == p.id).order_by(PrintLink.sort_order).all()
-    links_ctx = [{"label": lk.label, "url": apply_affiliate(lk.url)} for lk in raw_links]
+    links_ctx = [
+        {"label": lk.label, "url": f"/@{user.username}/prints/{p.url_id}/goto?lid={lk.id}"}
+        for lk in raw_links
+    ]
 
     return templates.TemplateResponse(
         request,
@@ -401,6 +410,91 @@ def public_print_detail(
             "app_url": os.environ.get("APP_URL", "https://printshelf.app"),
         },
     )
+
+
+def _detail_print_or_none(db: Session, username: str, print_ref: str) -> Optional[Print]:
+    """Resolve the public, non-queued print a detail-page redirector is acting
+    on. Same visibility rule as public_print_detail — only reachable there."""
+    try:
+        print_id = int(print_ref.split("-", 1)[0])
+    except (ValueError, AttributeError):
+        return None
+    return (
+        db.query(Print)
+        .join(User, Print.user_id == User.id)
+        .filter(
+            Print.id == print_id,
+            func.lower(User.username) == username.lower(),
+            Print.is_public == True,   # noqa: E712
+            Print.queued == False,     # noqa: E712
+        )
+        .first()
+    )
+
+
+@router.get("/@{username}/prints/{print_ref}/buy")
+def print_detail_buy(
+    username: str,
+    print_ref: str,
+    fid: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Tracked Buy redirect for the filament chip on a print's public detail
+    page — the highest-traffic Buy surface, previously untracked."""
+    from filament_import_service import detect_store
+    from models import AffiliateClick
+
+    fallback = RedirectResponse(f"/@{username}/prints/{print_ref}", status_code=303)
+    p = _detail_print_or_none(db, username, print_ref)
+    if p is None or fid not in (p.filament_ids or []):
+        return fallback
+    f = db.query(Filament).filter(Filament.id == fid).first()
+    if f is None:
+        return fallback
+    target = filament_buy_url(
+        brand=f.brand, material=f.material, color=f.color_name or "",
+        finish=f.finish or "", source_url=f.source_url or "",
+    )
+    if not target:
+        return fallback
+    store = detect_store(target)
+    db.add(AffiliateClick(
+        user_id=(current_user.id if current_user else None),
+        filament_id=f.id, store=store or None, surface="print_detail_filament",
+    ))
+    db.commit()
+    return RedirectResponse(target, status_code=302)
+
+
+@router.get("/@{username}/prints/{print_ref}/goto")
+def print_detail_link_goto(
+    username: str,
+    print_ref: str,
+    lid: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_web_optional),
+):
+    """Tracked redirect for a print's 'Goes great with' link chip — previously
+    linked straight to the affiliate URL with no click logged."""
+    from filament_import_service import detect_store
+    from models import AffiliateClick
+
+    fallback = RedirectResponse(f"/@{username}/prints/{print_ref}", status_code=303)
+    p = _detail_print_or_none(db, username, print_ref)
+    if p is None:
+        return fallback
+    lk = db.query(PrintLink).filter(PrintLink.id == lid, PrintLink.print_id == p.id).first()
+    if lk is None:
+        return fallback
+    target = apply_affiliate(lk.url)
+    store = detect_store(target)
+    db.add(AffiliateClick(
+        user_id=(current_user.id if current_user else None),
+        filament_id=None, store=store or None, surface="print_detail_link",
+    ))
+    db.commit()
+    return RedirectResponse(target, status_code=302)
 
 
 @router.post("/@{username}/follow")

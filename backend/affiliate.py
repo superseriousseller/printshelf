@@ -194,6 +194,30 @@ def filament_buy_url(
     return store_search_url(brand, material, color, finish)
 
 
+def program_status() -> list[dict]:
+    """Which stores currently have a live affiliate tag/ref configured (env vars
+    set) vs. which redirect bare — used by /admin to show whether clicks are
+    actually monetized, since we have no revenue API to query directly."""
+    rows = []
+    for store, (env_var, _param) in _STORE_TAG.items():
+        rows.append({
+            "store": store, "env_var": env_var,
+            "configured": bool((os.environ.get(env_var) or "").strip()),
+        })
+    awin_id_set = bool((os.environ.get("AWIN_AFFILIATE_ID") or "").strip())
+    for store, env_var in _AWIN_MERCHANT.items():
+        rows.append({
+            "store": store, "env_var": f"AWIN_AFFILIATE_ID + {env_var}",
+            "configured": awin_id_set and bool((os.environ.get(env_var) or "").strip()),
+        })
+    for store, env_var in _IMPACT_MERCHANT.items():
+        rows.append({
+            "store": store, "env_var": env_var,
+            "configured": bool((os.environ.get(env_var) or "").strip()),
+        })
+    return sorted(rows, key=lambda r: r["store"])
+
+
 def build_preview_catalog(db, exclude_keys=None, buy_base="/preview/buy", limit=200):
     """Community-sourced buyable-filament catalog for the preview studio: the
     distinct (brand, material, finish, color_name, color_hex) across ALL users'

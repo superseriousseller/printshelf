@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from affiliate import program_status
 from auth import get_current_user_web_optional
 from models import AffiliateClick, Filament, Follow, Print, Printer, User, get_db
 
@@ -92,6 +93,9 @@ def admin_dashboard(
 
     # --- Affiliate clicks ---
     clicks_total = db.query(func.count(AffiliateClick.id)).scalar()
+    clicks_7d = db.query(func.count(AffiliateClick.id)).filter(
+        AffiliateClick.clicked_at >= ago_7d
+    ).scalar()
     clicks_30d = db.query(func.count(AffiliateClick.id)).filter(
         AffiliateClick.clicked_at >= ago_30d
     ).scalar()
@@ -101,6 +105,42 @@ def admin_dashboard(
         .order_by(func.count(AffiliateClick.id).desc())
         .all()
     )
+    clicks_by_store_map = dict(clicks_by_store)
+    clicks_by_surface = (
+        db.query(AffiliateClick.surface, func.count(AffiliateClick.id).label("cnt"))
+        .group_by(AffiliateClick.surface)
+        .order_by(func.count(AffiliateClick.id).desc())
+        .all()
+    )
+    unique_clickers_30d = db.query(func.count(func.distinct(AffiliateClick.user_id))).filter(
+        AffiliateClick.clicked_at >= ago_30d, AffiliateClick.user_id.isnot(None)
+    ).scalar()
+    anon_clicks_30d = db.query(func.count(AffiliateClick.id)).filter(
+        AffiliateClick.clicked_at >= ago_30d, AffiliateClick.user_id.is_(None)
+    ).scalar()
+
+    # Which stores actually have a live affiliate ref configured (env vars set) —
+    # a click on an unconfigured store earns $0, so this is the "is it earning"
+    # signal since we have no revenue API to query directly.
+    programs = program_status()
+    earning_stores = {row["store"] for row in programs if row["configured"]}
+
+    # --- Daily click trend, last 14 days (oldest first) ---
+    click_days_raw = dict(
+        db.query(
+            func.date(AffiliateClick.clicked_at).label("day"),
+            func.count(AffiliateClick.id),
+        )
+        .filter(AffiliateClick.clicked_at >= now - timedelta(days=14))
+        .group_by(func.date(AffiliateClick.clicked_at))
+        .all()
+    )
+    clicks_by_day = []
+    for i in range(13, -1, -1):
+        day = (now - timedelta(days=i)).date()
+        clicks_by_day.append({"day": day, "cnt": click_days_raw.get(day, 0)})
+    max_day_cnt = max((d["cnt"] for d in clicks_by_day), default=0)
+
     recent_clicks = (
         db.query(AffiliateClick, User.username)
         .outerjoin(User, AffiliateClick.user_id == User.id)
@@ -136,8 +176,17 @@ def admin_dashboard(
             "top_makers": top_makers,
             # affiliate
             "clicks_total": clicks_total,
+            "clicks_7d": clicks_7d,
             "clicks_30d": clicks_30d,
             "clicks_by_store": clicks_by_store,
+            "clicks_by_store_map": clicks_by_store_map,
+            "clicks_by_surface": clicks_by_surface,
+            "unique_clickers_30d": unique_clickers_30d,
+            "anon_clicks_30d": anon_clicks_30d,
+            "programs": programs,
+            "earning_stores": earning_stores,
+            "clicks_by_day": clicks_by_day,
+            "max_day_cnt": max_day_cnt,
             "recent_clicks": recent_clicks,
         },
     )

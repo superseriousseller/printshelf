@@ -112,6 +112,7 @@ class SourcePlatform(str, enum.Enum):
     PRINTABLES = "printables"
     CULTS3D = "cults3d"
     THINGIVERSE = "thingiverse"
+    MYMINIFACTORY = "myminifactory"
     MANUAL = "manual"
     SLICER = "slicer"          # auto-imported via the slicer post-processing script
     BAMBU_STUDIO = "bambustudio"
@@ -598,6 +599,7 @@ class AffiliateClick(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     filament_id = Column(Integer, nullable=True)   # not FK — filament may be deleted
     store = Column(String(50), nullable=True, index=True)  # amazon, bambu, polymaker, etc.
+    surface = Column(String(40), nullable=True, index=True)  # which page/CTA drove the click
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 

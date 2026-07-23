@@ -68,6 +68,37 @@ def detect_platform(url: str) -> str:
     return "manual"
 
 
+# Known model/content platforms worth naming explicitly on "View on X" links.
+# Deliberately broader than detect_platform()'s SourcePlatform-enum values above —
+# this is display-only, not stored, so it's safe to recognize sites (Patreon,
+# MyMiniFactory, Thangs) that aren't first-class import sources.
+_DISPLAY_NAMES = {
+    "makerworld": "MakerWorld",
+    "printables": "Printables",
+    "thingiverse": "Thingiverse",
+    "cults3d": "Cults3D",
+    "myminifactory": "MyMiniFactory",
+    "patreon": "Patreon",
+    "thangs": "Thangs",
+}
+
+
+def platform_display_name(url: Optional[str]) -> Optional[str]:
+    """Human-friendly source name for a "View on X" link. Recognized platforms
+    get their proper name; anything else falls back to its bare domain
+    ("patreon.com") instead of a vague "the source" — so a brand-new/unlisted
+    site still gets a useful, specific label."""
+    if not url:
+        return None
+    host = (urlparse(url).hostname or "").lower()
+    if not host:
+        return None
+    for key, name in _DISPLAY_NAMES.items():
+        if key in host:
+            return name
+    return host[4:] if host.startswith("www.") else host
+
+
 def _headers_for(platform: str) -> dict:
     return UNFURL_HEADERS if platform == "printables" else BROWSER_HEADERS
 
