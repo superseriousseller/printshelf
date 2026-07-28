@@ -62,6 +62,7 @@
             <tr><td><code>PATCH</code></td><td><code>/api/filaments/{id}</code></td><td>Update a filament</td></tr>
             <tr><td><code>DELETE</code></td><td><code>/api/filaments/{id}</code></td><td>Delete a filament</td></tr>
         </table>
+        <p>Every filament response includes a read-only <code>buyUrl</code> — its saved <code>sourceUrl</code> if present, otherwise a store-search link for the brand/material/color. <code>null</code> only when the filament has no brand.</p>
 
         <h3>Printers</h3>
         <table class="dev-table">

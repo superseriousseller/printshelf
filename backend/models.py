@@ -16,6 +16,8 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, validates
 
+from affiliate import filament_buy_url
+
 Base = declarative_base()
 
 
@@ -270,6 +272,11 @@ class Filament(Base):
             "diameter": self.diameter,
             "status": self.status,
             "sourceUrl": self.source_url,
+            "buyUrl": filament_buy_url(
+                brand=self.brand or "", material=self.material or "",
+                color=self.color_name or "", finish=self.finish or "",
+                source_url=self.source_url or "",
+            ),
             "priceAtSave": self.price_at_save,
             "spoolWeightG": self.spool_weight_g,
             "finish": self.finish,
