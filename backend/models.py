@@ -16,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, validates
 
-from affiliate import filament_buy_url
+from affiliate import apply_affiliate, filament_buy_url
 
 Base = declarative_base()
 
@@ -335,6 +335,7 @@ class Print(Base):
 
     user = relationship("User", back_populates="prints")
     printer = relationship("Printer", back_populates="prints")
+    print_links = relationship("PrintLink", cascade="all, delete-orphan", order_by="PrintLink.sort_order")
 
     @property
     def slug(self) -> str:
@@ -357,6 +358,10 @@ class Print(Base):
             "photoUrl": self.photo_url,
             "printerId": self.printer_id,
             "filamentIds": self.filament_ids or [],
+            "links": [
+                {"label": lk.label, "url": apply_affiliate(lk.url)}
+                for lk in self.print_links
+            ],
             "status": self.status,
             "rating": self.rating,
             "notes": self.notes,

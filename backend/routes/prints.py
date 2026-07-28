@@ -15,7 +15,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from affiliate import is_allowed_link_domain
 from auth import get_current_user
@@ -204,7 +204,7 @@ def list_prints(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> dict:
-    q = db.query(Print).filter(Print.user_id == user.id)
+    q = db.query(Print).options(joinedload(Print.print_links)).filter(Print.user_id == user.id)
     if queued is not None:
         q = q.filter(Print.queued == queued)
     if status_filter:
