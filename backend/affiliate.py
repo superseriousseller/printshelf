@@ -13,7 +13,6 @@ Direct affiliate programs (appends ?param=tag to the product URL):
   AMAZON_AFFILIATE_TAG          Amazon Associates tracking id (e.g. "printshelf-20")
   BAMBU_AFFILIATE_REF           Bambu Lab Store referral code
   POLYMAKER_AFFILIATE_REF       Polymaker (Refersion) referral code
-  MATTERHACKERS_AFFILIATE_REF   MatterHackers referral code
   SUNLU_AFFILIATE_REF           SUNLU sca_ref token (e.g. "9625568.zGmL14Ga1b")
 
 Impact network programs (appends irpid + attribution flags to product URL):
@@ -22,6 +21,8 @@ Impact network programs (appends irpid + attribution flags to product URL):
 Awin network programs (wraps product URL in Awin redirect):
   AWIN_AFFILIATE_ID             Your Awin publisher ID (shared across all Awin merchants)
   ANYCUBIC_AWIN_MERCHANT_ID     Anycubic's Awin merchant ID (69360)
+  MATTERHACKERS_AWIN_MERCHANT_ID   MatterHackers' Awin merchant ID (97427) — MatterHackers has
+                                    no direct program; it's run through Awin, same as Anycubic.
 """
 import os
 from urllib.parse import parse_qsl, quote_plus, urlencode, urlparse, urlunparse
@@ -58,6 +59,7 @@ _AWIN_BASE = "https://www.awin1.com/cread.php"
 # The publisher (affiliate) ID is shared — read once from AWIN_AFFILIATE_ID.
 _AWIN_MERCHANT = {
     "anycubic": "ANYCUBIC_AWIN_MERCHANT_ID",
+    "matterhackers": "MATTERHACKERS_AWIN_MERCHANT_ID",
 }
 
 # Impact network merchants: store → env var holding the publisher ID (irpid).
@@ -68,12 +70,12 @@ _IMPACT_MERCHANT = {
 }
 
 # Direct affiliate programs: store → (env_var, query_param_name).
+# MatterHackers is NOT here — it's an Awin merchant (see _AWIN_MERCHANT).
 _STORE_TAG = {
-    "amazon":        ("AMAZON_AFFILIATE_TAG", "tag"),
-    "bambu":         ("BAMBU_AFFILIATE_REF", "ref"),
-    "polymaker":     ("POLYMAKER_AFFILIATE_REF", "ref"),
-    "matterhackers": ("MATTERHACKERS_AFFILIATE_REF", "aff"),
-    "sunlu":         ("SUNLU_AFFILIATE_REF", "sca_ref"),
+    "amazon":    ("AMAZON_AFFILIATE_TAG", "tag"),
+    "bambu":     ("BAMBU_AFFILIATE_REF", "ref"),
+    "polymaker": ("POLYMAKER_AFFILIATE_REF", "ref"),
+    "sunlu":     ("SUNLU_AFFILIATE_REF", "sca_ref"),
 }
 
 
