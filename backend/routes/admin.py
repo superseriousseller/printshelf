@@ -54,6 +54,14 @@ def admin_dashboard(
     free_users = db.query(func.count(User.id)).filter(User.tier == "free").scalar()
     pro_users = db.query(func.count(User.id)).filter(User.tier == "pro").scalar()
 
+    # --- Pro members (the actual paying humans behind the "Pro tier" count) ---
+    pro_members = (
+        db.query(User)
+        .filter(User.tier == "pro")
+        .order_by(User.created_at.desc())
+        .all()
+    )
+
     # --- Growth ---
     new_7d = db.query(func.count(User.id)).filter(User.created_at >= ago_7d).scalar()
     new_30d = db.query(func.count(User.id)).filter(User.created_at >= ago_30d).scalar()
@@ -165,6 +173,7 @@ def admin_dashboard(
             # tier
             "free_users": free_users,
             "pro_users": pro_users,
+            "pro_members": pro_members,
             # growth
             "new_7d": new_7d,
             "new_30d": new_30d,

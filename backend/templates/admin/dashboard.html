@@ -3,6 +3,12 @@
 
 {% block content %}
 <div class="admin-wrap">
+    <div id="pro-celebrate-banner" style="display:none">
+        <span class="pcb-emoji">🎉</span>
+        <span id="pcb-text">New Pro member since your last visit!</span>
+        <a href="#pro-members" class="pcb-link">See who &rsaquo;</a>
+        <button type="button" class="pcb-close" onclick="document.getElementById('pro-celebrate-banner').style.display='none'">✕</button>
+    </div>
     <h1 class="admin-title">Admin Console</h1>
     <p class="admin-ts">{{ now.strftime('%Y-%m-%d %H:%M') }} UTC <a href="/admin" class="btn-secondary admin-refresh">Refresh</a></p>
 
@@ -28,8 +34,34 @@
             <div class="admin-stat"><span class="admin-stat-val">{{ prints_7d }}</span><span class="admin-stat-lbl">Prints logged (7d)</span></div>
             <div class="admin-stat"><span class="admin-stat-val">{{ prints_30d }}</span><span class="admin-stat-lbl">Prints logged (30d)</span></div>
             <div class="admin-stat"><span class="admin-stat-val">{{ free_users }}</span><span class="admin-stat-lbl">Free tier</span></div>
-            <div class="admin-stat"><span class="admin-stat-val">{{ pro_users }}</span><span class="admin-stat-lbl">Pro tier</span></div>
+            <a class="admin-stat admin-stat-link" href="#pro-members" title="See who they are"><span class="admin-stat-val">{{ pro_users }}</span><span class="admin-stat-lbl">Pro tier &rsaquo;</span></a>
         </div>
+    </section>
+
+    <!-- Pro Members -->
+    <section class="admin-section" id="pro-members">
+        <h2>💎 Pro Members</h2>
+        {% if pro_members %}
+        <div class="admin-table-scroll">
+        <table class="admin-table">
+            <thead><tr><th>User</th><th>Email</th><th>Joined</th><th>Prints</th><th>Last login</th><th>Billing</th></tr></thead>
+            <tbody>
+            {% for u in pro_members %}
+            <tr>
+                <td><a href="/@{{ u.username }}">@{{ u.username }}</a>{% if u.display_name and u.display_name != u.username %} <span class="admin-dim">{{ u.display_name }}</span>{% endif %}</td>
+                <td class="admin-dim">{{ u.email }}</td>
+                <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>{{ user_print_counts.get(u.id, 0) }}</td>
+                <td>{{ u.last_login.strftime('%Y-%m-%d') if u.last_login else '—' }}</td>
+                <td>{% if u.stripe_subscription_id %}<span style="color:var(--stat-done,#3ba55c)">✓ paying</span>{% else %}<span class="admin-dim">comp / no sub</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="admin-empty">No Pro members yet. The first upgrade fires confetti here 🎉</p>
+        {% endif %}
     </section>
 
     <!-- Affiliate Clicks -->
@@ -148,4 +180,60 @@
         </div>
     </section>
 </div>
+
+<style>
+  .admin-stat-link { text-decoration:none; cursor:pointer; transition:transform .1s ease, box-shadow .1s ease; }
+  .admin-stat-link:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,.12); }
+  #pro-celebrate-banner {
+    display:flex; align-items:center; gap:12px; margin:0 0 18px;
+    padding:14px 18px; border-radius:14px; font-weight:600;
+    color:#1a1a1a; background:linear-gradient(100deg,#ffe27a,#ffd24d 45%,#7ef0b0);
+    box-shadow:0 6px 22px rgba(255,193,7,.35); animation:pcb-pop .5s ease;
+  }
+  #pro-celebrate-banner .pcb-emoji { font-size:1.5rem; }
+  #pro-celebrate-banner .pcb-link { margin-left:auto; color:#0a5c34; font-weight:700; text-decoration:none; white-space:nowrap; }
+  #pro-celebrate-banner .pcb-close { background:transparent; border:0; font-size:1rem; cursor:pointer; color:#1a1a1a; opacity:.6; }
+  @keyframes pcb-pop { from { transform:scale(.96); opacity:0 } to { transform:scale(1); opacity:1 } }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+(function () {
+  var CURRENT = parseInt("{{ pro_users }}", 10) || 0;
+  var KEY = "ps_admin_last_pro_count";
+  var prev = window.localStorage.getItem(KEY);
+
+  function sideBurst() {
+    if (typeof confetti !== "function") return;
+    var end = Date.now() + 1400;
+    (function frame() {
+      // flair from BOTH sides of the browser
+      confetti({ particleCount: 5, angle: 60,  spread: 65, origin: { x: 0 },   startVelocity: 55 });
+      confetti({ particleCount: 5, angle: 120, spread: 65, origin: { x: 1 },   startVelocity: 55 });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+    // one big center pop
+    confetti({ particleCount: 120, spread: 90, origin: { y: 0.3 } });
+  }
+
+  if (prev === null) {
+    // First visit on this browser — record silently, don't fire.
+    window.localStorage.setItem(KEY, String(CURRENT));
+  } else if (CURRENT > parseInt(prev, 10)) {
+    var gained = CURRENT - parseInt(prev, 10);
+    var b = document.getElementById("pro-celebrate-banner");
+    document.getElementById("pcb-text").textContent =
+      gained + " new Pro member" + (gained > 1 ? "s" : "") + " since your last visit!";
+    b.style.display = "flex";
+    sideBurst();
+    window.localStorage.setItem(KEY, String(CURRENT));
+  } else {
+    window.localStorage.setItem(KEY, String(CURRENT));
+  }
+
+  // Manual replay: click the "Pro tier" stat to re-trigger the confetti anytime.
+  var link = document.querySelector('.admin-stat-link');
+  if (link) link.addEventListener("click", function () { sideBurst(); });
+})();
+</script>
 {% endblock %}
