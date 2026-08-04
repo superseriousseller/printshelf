@@ -838,6 +838,13 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .admin-trend-bar { width: 100%; max-width: 28px; min-height: 2px; background: var(--accent); border-radius: 3px 3px 0 0; display: flex; align-items: flex-start; justify-content: center; color: #fff; font-size: 0.68rem; padding-top: 2px; }
 .admin-trend-lbl { font-size: 0.68rem; color: var(--text-dim); margin-top: 4px; }
 
+/* First-print CTA (zero-print empty state) */
+.first-print-cta { background: linear-gradient(135deg, var(--accent-soft), var(--bg-elev)); border: 1px solid var(--accent); border-radius: var(--radius); padding: 28px 24px; margin-bottom: 24px; }
+.first-print-cta h2 { margin: 0 0 6px; font-size: 1.3rem; }
+.first-print-cta > p { margin: 0 0 16px; color: var(--text-dim); }
+.first-print-cta .import-form { background: transparent; border: 0; padding: 0; margin: 0; max-width: none; }
+.first-print-cta .hint { margin-top: 10px; }
+
 /* Onboarding */
 .onboarding { background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px; }
 .onboarding h2 { margin: 0 0 16px; font-size: 1.1rem; }

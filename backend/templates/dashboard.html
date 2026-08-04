@@ -20,6 +20,19 @@
     <div class="stat-item"><span class="stat-value">{{ stats.profile_views }}</span><span class="stat-label">shelf views</span></div>
 </section>
 {% else %}
+<section class="first-print-cta">
+    <h2>Import your first print</h2>
+    <p>Paste a link from MakerWorld, Printables, Thingiverse, or Cults3D — we'll pull the title and photo for you.</p>
+    <form method="get" action="/dashboard/prints/new" class="import-form">
+        <label class="import-url-label">
+            <div class="import-row">
+                <input type="url" name="import_url" placeholder="https://makerworld.com/en/models/…" required autofocus>
+                <button type="submit" class="btn-primary">Import →</button>
+            </div>
+        </label>
+    </form>
+    <p class="hint">Or <a href="/dashboard/prints/new">log one manually</a> with just a title and photo.</p>
+</section>
 <section class="onboarding">
     <h2>Get started</h2>
     <ul class="onboarding-steps">
@@ -37,8 +50,8 @@
                 <p>Track what's on your spool rack.</p>
             </div>
         </li>
-        <li>
-            <span class="step-check">3</span>
+        <li class="{% if stats.has_any_print %}step-done{% endif %}">
+            <span class="step-check">{% if stats.has_any_print %}✓{% else %}3{% endif %}</span>
             <div>
                 <a href="/dashboard/prints/new">Log your first print</a>
                 <p>Upload a photo and give it a title.</p>

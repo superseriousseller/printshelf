@@ -554,6 +554,12 @@ def dashboard(
         "printers": printers,
         "total_spend": round(total_spend, 2) if total_spend else None,
         "profile_views": user.profile_views,
+        # Onboarding checklist step 3 ("log your first print") counts ANY print
+        # row, queued or not — matches how activation is measured elsewhere
+        # (42/173 users have ever created a print row; only 13 have a
+        # non-queued one, so gating on non-queued alone would under-credit
+        # users who've genuinely used the core feature).
+        "has_any_print": (total_prints + queued) > 0,
     }
     resend_notice = None
     if resend == "sent":
