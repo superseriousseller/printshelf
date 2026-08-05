@@ -123,8 +123,10 @@ def signup_submit(
             request, "signup.html", {"errors": errors, "values": values, "current_user": None}, status_code=400
         )
 
+    # Welcome email fires on successful verification (verify_email), not here —
+    # halves signup-time sends and keeps the first email in someone's inbox the
+    # one that actually needs a click.
     _send_verification(db, new_user)
-    send_welcome(new_user.email, new_user.username)
     response = RedirectResponse("/dashboard", status_code=303)
     _set_session_cookie(response, new_user.id)
     return response
@@ -473,6 +475,10 @@ def verify_email(
     record.user.email_verified = True
     record.used_at = datetime.utcnow()
     db.commit()
+    # used_at above prevents this token from reaching the success branch twice,
+    # so this fires exactly once per user (Google signups verify inline and
+    # send their welcome email separately in the OAuth callback).
+    send_welcome(record.user.email, record.user.username)
     return templates.TemplateResponse(
         request, "verify_email.html",
         {"state": "success", "current_user": record.user},
