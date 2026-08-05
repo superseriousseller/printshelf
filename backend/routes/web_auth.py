@@ -44,6 +44,38 @@ _PROD = os.environ.get("APP_ENV", "development") in {"production", "staging"}
 _COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days, matches JWT expiry
 
 
+# ---- Anti-bot signup protection (added 2026-08-05) ----
+# A bot flood (~40/day) was abusing the open signup form to fire verification
+# emails at scraped third-party addresses (email-bombing relay abuse). Two
+# layers: an invisible honeypot field (catches dumb bots with zero user
+# friction, no external keys) + Cloudflare Turnstile (gated on env keys).
+
+def _turnstile_site_key() -> str:
+    return os.environ.get("TURNSTILE_SITE_KEY", "").strip()
+
+
+def _verify_turnstile(token: str, remote_ip: str = "") -> bool:
+    """True if the Turnstile token is valid — or if Turnstile isn't configured
+    (fail-open when unset so a missing key never blocks signups). When it IS
+    configured: a missing/invalid token is rejected; a network error to
+    Cloudflare fails open so an outage doesn't lock out real users."""
+    secret = os.environ.get("TURNSTILE_SECRET", "").strip()
+    if not secret:
+        return True
+    if not token:
+        return False
+    try:
+        resp = httpx.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data={"secret": secret, "response": token, "remoteip": remote_ip or ""},
+            timeout=8.0,
+        )
+        return bool(resp.json().get("success"))
+    except Exception:
+        _log.warning("Turnstile siteverify network error — failing open", exc_info=True)
+        return True
+
+
 def _send_verification(db: Session, user: User) -> None:
     """Create a fresh verification token and send the email. Silent on failure."""
     from datetime import timedelta
@@ -88,9 +120,29 @@ def signup_submit(
     password: str = Form(...),
     password_confirm: str = Form(...),
     display_name: str = Form(""),
+    website: str = Form(""),  # honeypot — must stay empty; humans never see it
+    cf_turnstile_response: str = Form("", alias="cf-turnstile-response"),
     db: Session = Depends(get_db),
 ):
     ip = rate_limiter.client_ip(request)
+
+    # Honeypot: a filled hidden field means a bot. Silently drop — no account,
+    # no verification email — and return a plausible page so it can't tell.
+    if website.strip():
+        _log.info("Signup honeypot tripped from ip=%s email=%s — dropped", ip, email[:40])
+        return RedirectResponse("/login", status_code=303)
+
+    # Turnstile (no-op unless TURNSTILE_SECRET is configured on the server).
+    if not _verify_turnstile(cf_turnstile_response, ip):
+        _log.info("Signup Turnstile failed from ip=%s email=%s — dropped", ip, email[:40])
+        return templates.TemplateResponse(
+            request, "signup.html",
+            {"errors": ["Bot check failed — please try again."],
+             "values": {"email": email, "username": username, "display_name": display_name},
+             "current_user": None},
+            status_code=400,
+        )
+
     if not rate_limiter.check(ip, "signup", max_attempts=5, window_secs=300):
         raise HTTPException(status_code=429, detail="Too many signup attempts. Try again in a few minutes.")
     values = {"email": email, "username": username, "display_name": display_name}
@@ -207,6 +259,7 @@ def _google_configured() -> bool:
 
 # Expose to login/signup templates without threading it through every context.
 templates.env.globals["google_login_enabled"] = _google_configured
+templates.env.globals["turnstile_site_key"] = _turnstile_site_key
 # Shared dashboard layout calls this; register on this instance too (renders /dashboard).
 templates.env.globals["filament_preview_enabled"] = filament_preview_enabled
 

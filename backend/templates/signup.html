@@ -21,6 +21,9 @@
     {% endif %}
 
     <form method="post" action="/signup">
+        <!-- Honeypot: hidden from humans; bots fill it and get silently dropped. -->
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"
+               style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0">
         <label>
             Email
             <input type="email" name="email" required value="{{ values.email or '' }}" autocomplete="email">
@@ -41,6 +44,10 @@
             Confirm password
             <input type="password" name="password_confirm" required minlength="8" autocomplete="new-password">
         </label>
+        {% if turnstile_site_key() %}
+        <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key() }}" data-theme="auto" style="margin:12px 0"></div>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        {% endif %}
         <button type="submit" class="primary">Create account</button>
     </form>
     <p class="auth-alt">Already have one? <a href="/login">Log in</a></p>
