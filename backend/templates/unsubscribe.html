@@ -7,10 +7,13 @@
         <h1>Unsubscribed</h1>
         {% if type == "follow" %}
             <p>You won't receive emails when someone follows you.</p>
-        {% else %}
+            <p>You can re-enable notifications any time from your <a href="/dashboard/account">Account settings</a>.</p>
+        {% elif type == "feed" %}
             <p>You won't receive emails when someone you follow logs a new print.</p>
+            <p>You can re-enable notifications any time from your <a href="/dashboard/account">Account settings</a>.</p>
+        {% else %}
+            <p>You won't receive marketing or re-engagement emails from PrintShelf.</p>
         {% endif %}
-        <p>You can re-enable notifications any time from your <a href="/dashboard/account">Account settings</a>.</p>
     {% else %}
         <h1>Invalid link</h1>
         <p>This unsubscribe link is invalid. Visit your <a href="/dashboard/account">Account settings</a> to manage notifications.</p>

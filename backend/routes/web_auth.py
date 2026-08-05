@@ -529,12 +529,14 @@ def unsubscribe(
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.unsubscribe_token == token).first() if token else None
-    if not user or type not in ("follow", "feed"):
+    if not user or type not in ("follow", "feed", "marketing"):
         return templates.TemplateResponse(request, "unsubscribe.html", {"state": "invalid", "current_user": None})
     if type == "follow":
         user.notify_follow = False
-    else:
+    elif type == "feed":
         user.notify_feed = False
+    else:
+        user.email_opt_out = True
     db.commit()
     return templates.TemplateResponse(request, "unsubscribe.html", {"state": "success", "type": type, "current_user": None})
 
