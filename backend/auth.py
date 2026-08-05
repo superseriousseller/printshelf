@@ -153,11 +153,16 @@ def create_user(
     password: str,
     username: str,
     display_name: Optional[str] = None,
+    attribution: Optional[dict] = None,
 ) -> User:
     """Register a new user.
 
     Raises HTTPException(409) if email or username is taken.
     Raises HTTPException(400) if username format is invalid.
+
+    `attribution` (see attribution.read_attribution) is optional silent
+    signup-source data — every key defaults to None so callers that don't
+    pass it (or pass an empty dict) behave exactly as before.
     """
     email_n = _normalize_email(email)
     username_n = _normalize_username(username)
@@ -173,6 +178,7 @@ def create_user(
     if db.query(User).filter(User.username.ilike(username_n)).first():
         raise HTTPException(status_code=409, detail="Username taken")
 
+    attrib = attribution or {}
     user = User(
         email=email_n,
         password_hash=hash_password(password),
@@ -181,6 +187,14 @@ def create_user(
         api_key=generate_api_key(),
         tier="free",
         unsubscribe_token=secrets.token_hex(16),
+        signup_referrer=attrib.get("signup_referrer"),
+        signup_landing_path=attrib.get("signup_landing_path"),
+        signup_landing_querystring=attrib.get("signup_landing_querystring"),
+        utm_source=attrib.get("utm_source"),
+        utm_medium=attrib.get("utm_medium"),
+        utm_campaign=attrib.get("utm_campaign"),
+        utm_content=attrib.get("utm_content"),
+        utm_term=attrib.get("utm_term"),
     )
     db.add(user)
     db.commit()

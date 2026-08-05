@@ -28,6 +28,7 @@ from auth import (
     hash_password,
     instruments_index_enabled,
 )
+import attribution
 from email_service import send_password_reset, send_verification_email, send_welcome
 from models import Collection, EmailVerificationToken, Filament, PasswordResetToken, Print, Printer, User, generate_api_key, get_db, slugify
 import rate_limiter
@@ -114,6 +115,7 @@ def signup_submit(
             password=password,
             username=username,
             display_name=display_name or None,
+            attribution=attribution.read_attribution(request),
         )
     except Exception as exc:
         # create_user raises HTTPException(409) for duplicates
@@ -229,7 +231,10 @@ def _unique_username(db: Session, base: str) -> str:
     return candidate
 
 
-def _find_or_create_google_user(db: Session, sub: str, email: str, name: Optional[str], picture: Optional[str]) -> User:
+def _find_or_create_google_user(
+    db: Session, sub: str, email: str, name: Optional[str], picture: Optional[str],
+    attrib: Optional[dict] = None,
+) -> User:
     # 1) Known Google account.
     user = db.query(User).filter(User.google_sub == sub).first()
     if user:
@@ -247,6 +252,7 @@ def _find_or_create_google_user(db: Session, sub: str, email: str, name: Optiona
         db.commit()
         return user
     # 3) New account. Random unusable password (they log in via Google; can reset later).
+    attrib = attrib or {}
     user = User(
         email=email,
         password_hash=hash_password(secrets.token_urlsafe(32)),
@@ -258,6 +264,14 @@ def _find_or_create_google_user(db: Session, sub: str, email: str, name: Optiona
         google_sub=sub,
         avatar_url=(picture or None) and picture[:500],
         last_login=datetime.utcnow(),
+        signup_referrer=attrib.get("signup_referrer"),
+        signup_landing_path=attrib.get("signup_landing_path"),
+        signup_landing_querystring=attrib.get("signup_landing_querystring"),
+        utm_source=attrib.get("utm_source"),
+        utm_medium=attrib.get("utm_medium"),
+        utm_campaign=attrib.get("utm_campaign"),
+        utm_content=attrib.get("utm_content"),
+        utm_term=attrib.get("utm_term"),
     )
     user.display_name = (name or user.username).strip()[:100]
     db.add(user)
@@ -341,7 +355,10 @@ def google_callback(
     if not sub or not email or not info.get("email_verified", False):
         return _fail("missing sub/email/unverified")
 
-    user = _find_or_create_google_user(db, sub, email, info.get("name"), info.get("picture"))
+    user = _find_or_create_google_user(
+        db, sub, email, info.get("name"), info.get("picture"),
+        attrib=attribution.read_attribution(request),
+    )
     resp = RedirectResponse(next_target, status_code=303)
     _set_session_cookie(resp, user.id)
     resp.delete_cookie(_OAUTH_STATE_COOKIE, path="/")
