@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import attribution
 from models import User, get_db, init_db
 from auth import (
     create_user, authenticate_user, create_access_token,
@@ -96,6 +97,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Silent signup attribution (Referer/UTM/landing-path capture) ---
+app.middleware("http")(attribution.capture_attribution_middleware)
 
 
 app.include_router(printers_routes.router)
