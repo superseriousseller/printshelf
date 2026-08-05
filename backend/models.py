@@ -170,6 +170,18 @@ class User(Base):
     api_key = Column(String(64), unique=True, nullable=False, index=True)
     google_sub = Column(String(64), nullable=True, unique=True, index=True)  # Google account id (OAuth login)
 
+    # Silent signup attribution — captured invisibly (no user-facing form) via the
+    # attribution.py middleware, first-touch-wins across the pre-signup visit. Null
+    # for direct traffic and for every user who existed before this was added.
+    signup_referrer = Column(String(500), nullable=True)
+    signup_landing_path = Column(String(255), nullable=True)
+    signup_landing_querystring = Column(String(500), nullable=True)
+    utm_source = Column(String(200), nullable=True)
+    utm_medium = Column(String(200), nullable=True)
+    utm_campaign = Column(String(200), nullable=True)
+    utm_content = Column(String(200), nullable=True)
+    utm_term = Column(String(200), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_login = Column(DateTime, nullable=True)
 
