@@ -17,9 +17,9 @@ until `staging` → `main` is merged + pushed (Railway auto-redeploys prod). **N
 | # | Item | Status | Commit | Notes |
 |---|------|--------|--------|-------|
 | 1 | **Thumbnail backfill** — resolve missing MakerWorld/og covers | ✅ DONE on PROD | `cdc7490` (pushed to staging) | Ran against prod DB. Verified via live API: **239/242** have thumbnails (was 58). 3 left need user-uploaded photos. |
-| 2 | **Activation build** — first-print CTA + honest checklist completion | 🔷 STAGED | `8a0bc96` | Browser QA **35/35** (23 core + 6 bonus + 6 regression), 0 console/server errors. Awaiting prod approval. |
-| 3 | **MakerWorld copy fix** — stale "must be entered manually" | 🔷 STAGED | `edadcce` | Placeholder + hint corrected. Awaiting prod approval. |
-| 4 | **Resend email quota** — hit ~80% of daily free tier | ⏳ Cam upgrading Resend | — | Cause: 84 real signups in 3d × 2 emails each (verify+welcome). NOT caused by QA (local had empty RESEND key). Verification does NOT hard-gate the app. |
+| 2 | **Activation build** — first-print CTA + honest checklist completion | ✅ DONE on PROD (2026-08-05) | `8a0bc96` | Browser QA **35/35** (23 core + 6 bonus + 6 regression), 0 console/server errors. Merged staging→main + pushed; Railway redeployed; prod smoke test passed (health ok, public surfaces 200, /u→/@ 404 shelf ok). |
+| 3 | **MakerWorld copy fix** — stale "must be entered manually" | ✅ DONE on PROD (2026-08-05) | `edadcce` | Placeholder + hint corrected. Shipped in same merge as #2. |
+| 4 | **Resend email quota** — hit ~80% of daily free tier | ✅ RESOLVED (2026-08-05) | — | Cam upgraded Resend to **1,000 emails/day** (was free tier). Next tier = 5k/day if needed. Headroom restored. |
 | 5 | **Email reorder** — verify-at-signup; welcome fires on verify success (not both at signup) | ⬜ APPROVED, not built | — | Cam greenlit. Improves verify conversion + halves signup-time sends. |
 | 6 | **Silent referrer/UTM capture** on signup (no user-facing form) | ⬜ awaiting go | — | Cam declined a "how'd you hear" FORM; this is invisible capture. Adds source column to users, stores Referer + utm_*. Makes every future signup attributable. |
 | 7 | **Traffic-source investigation** (this wave) | ⏳ open | — | See findings below. Source still unknown; needs CF dashboard OR item #6. |
