@@ -166,6 +166,14 @@ class User(Base):
     drip_day2_sent = Column(Boolean, default=False, nullable=False, server_default=text('false'))
     drip_day7_sent = Column(Boolean, default=False, nullable=False, server_default=text('false'))
 
+    # General marketing opt-out (separate from notify_follow/notify_feed, which
+    # are per-notification-type) — set via /unsubscribe?type=marketing, reusing
+    # unsubscribe_token below. Respected by this and any future campaign.
+    email_opt_out = Column(Boolean, default=False, nullable=False, server_default=text('false'))
+    # Idempotency + audit trail for the one-time re-engagement campaign
+    # (backend/scripts/send_reengagement_campaign.py). Null = never sent.
+    reengagement_sent_at = Column(DateTime, nullable=True)
+
     # Chrome extension auth — regeneratable from settings
     api_key = Column(String(64), unique=True, nullable=False, index=True)
     google_sub = Column(String(64), nullable=True, unique=True, index=True)  # Google account id (OAuth login)
