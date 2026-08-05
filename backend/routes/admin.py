@@ -4,8 +4,10 @@ Gated by ADMIN_USERNAME env var. Set it to your PrintShelf username on Railway.
 No separate user model change needed — checked at request time.
 """
 import os
+from collections import Counter
 from datetime import datetime, timedelta
 from typing import Optional
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -22,21 +24,43 @@ router = APIRouter(tags=["admin"])
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(_BACKEND_DIR, "templates"))
 
+# (days, label) presets for the Signup Sources window selector.
+_SIGNUP_SOURCE_WINDOWS = [(7, "7d"), (30, "30d"), (90, "90d"), (3650, "All time")]
+
 
 def _is_admin(user: Optional[User]) -> bool:
     admin_username = os.environ.get("ADMIN_USERNAME", "").strip()
     return bool(admin_username and user and user.username == admin_username)
 
 
+def _referrer_domain(referrer: Optional[str]) -> str:
+    """Normalize a Referer URL to just its host (www. stripped, matches
+    import_service.platform_display_name's convention). Null/unparsable ->
+    "(direct)" -- itself informative, not an error."""
+    if not referrer:
+        return "(direct)"
+    try:
+        host = (urlparse(referrer).hostname or "").lower()
+    except Exception:
+        return "(direct)"
+    if not host:
+        return "(direct)"
+    return host[4:] if host.startswith("www.") else host
+
+
 @router.get("/admin", response_class=HTMLResponse)
 def admin_dashboard(
     request: Request,
+    days: int = 30,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_web_optional),
 ):
     if not _is_admin(current_user):
         # Authenticated but not admin → home. Unauthenticated → login.
         return RedirectResponse("/" if current_user else "/login", status_code=303)
+
+    if days not in {d for d, _ in _SIGNUP_SOURCE_WINDOWS}:
+        days = 30
 
     now = datetime.utcnow()
     ago_7d = now - timedelta(days=7)
@@ -87,6 +111,25 @@ def admin_dashboard(
         .group_by(Print.user_id)
         .all()
     }
+    # referrer domain + utm_source per user, for the Recent Signups table
+    user_signup_source = {
+        u.id: {"domain": _referrer_domain(u.signup_referrer), "utm_source": u.utm_source}
+        for u in recent_users
+    }
+
+    # --- Signup Sources rollup (item #6 follow-on: "where are the 176 coming from") ---
+    # Domain grouping can't be done in SQL portably (raw URLs, not hosts), and at
+    # this user count an in-memory aggregate is instant — same tradeoff already
+    # made for the Explore facets scan (see CLAUDE.md).
+    source_rows = (
+        db.query(User.signup_referrer, User.utm_source, User.utm_medium, User.utm_campaign)
+        .filter(User.created_at >= now - timedelta(days=days))
+        .all()
+    )
+    signup_source_total = len(source_rows)
+    referrer_breakdown = Counter(_referrer_domain(r) for r, _, _, _ in source_rows).most_common()
+    utm_source_breakdown = Counter((s or "(none)") for _, s, _, _ in source_rows).most_common()
+    campaign_breakdown = Counter((s, m, c) for _, s, m, c in source_rows if s).most_common()
 
     # --- Top makers ---
     top_makers = (
@@ -182,6 +225,14 @@ def admin_dashboard(
             # tables
             "recent_users": recent_users,
             "user_print_counts": user_print_counts,
+            "user_signup_source": user_signup_source,
+            # signup sources
+            "signup_source_days": days,
+            "signup_source_windows": _SIGNUP_SOURCE_WINDOWS,
+            "signup_source_total": signup_source_total,
+            "referrer_breakdown": referrer_breakdown,
+            "utm_source_breakdown": utm_source_breakdown,
+            "campaign_breakdown": campaign_breakdown,
             "top_makers": top_makers,
             # affiliate
             "clicks_total": clicks_total,

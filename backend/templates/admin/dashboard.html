@@ -38,6 +38,62 @@
         </div>
     </section>
 
+    <!-- Signup Sources (item #6 follow-on) -->
+    <section class="admin-section" id="signup-sources">
+        <h2>📍 Signup Sources</h2>
+        <p class="admin-ts">
+            {% for w, label in signup_source_windows %}{% if w == signup_source_days %}<strong>{{ label }}</strong>{% else %}<a href="/admin?days={{ w }}">{{ label }}</a>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}
+            — {{ signup_source_total }} signup{{ 's' if signup_source_total != 1 else '' }} in window
+        </p>
+
+        {% if signup_source_total %}
+        <div style="display:flex;flex-wrap:wrap;gap:24px">
+            <div style="flex:1;min-width:220px">
+                <h3 class="admin-subhead">By referrer domain</h3>
+                <div class="admin-table-scroll">
+                <table class="admin-table">
+                    <thead><tr><th>Domain</th><th>Signups</th></tr></thead>
+                    <tbody>
+                    {% for domain, cnt in referrer_breakdown %}
+                    <tr><td>{{ domain }}</td><td>{{ cnt }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+            <div style="flex:1;min-width:220px">
+                <h3 class="admin-subhead">By UTM source</h3>
+                <div class="admin-table-scroll">
+                <table class="admin-table">
+                    <thead><tr><th>utm_source</th><th>Signups</th></tr></thead>
+                    <tbody>
+                    {% for src, cnt in utm_source_breakdown %}
+                    <tr><td>{{ src }}</td><td>{{ cnt }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+
+        {% if campaign_breakdown %}
+        <h3 class="admin-subhead" style="margin-top:16px">By campaign (where utm_source is set)</h3>
+        <div class="admin-table-scroll">
+        <table class="admin-table">
+            <thead><tr><th>utm_source</th><th>utm_medium</th><th>utm_campaign</th><th>Signups</th></tr></thead>
+            <tbody>
+            {% for parts, cnt in campaign_breakdown %}
+            <tr><td>{{ parts[0] }}</td><td>{{ parts[1] or '—' }}</td><td>{{ parts[2] or '—' }}</td><td>{{ cnt }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="admin-empty">No signups in this window.</p>
+        {% endif %}
+    </section>
+
     <!-- Pro Members -->
     <section class="admin-section" id="pro-members">
         <h2>💎 Pro Members</h2>
@@ -163,7 +219,7 @@
         <h2>Recent Signups</h2>
         <div class="admin-table-scroll">
         <table class="admin-table">
-            <thead><tr><th>User</th><th>Email</th><th>Tier</th><th>Prints</th><th>Joined</th><th>Last login</th></tr></thead>
+            <thead><tr><th>User</th><th>Email</th><th>Tier</th><th>Prints</th><th>Referrer</th><th>UTM Source</th><th>Joined</th><th>Last login</th></tr></thead>
             <tbody>
             {% for u in recent_users %}
             <tr>
@@ -171,6 +227,8 @@
                 <td class="admin-dim">{{ u.email }}</td>
                 <td>{{ u.tier or 'free' }}</td>
                 <td>{{ user_print_counts.get(u.id, 0) }}</td>
+                <td>{{ user_signup_source.get(u.id, {}).get('domain', '(direct)') }}</td>
+                <td>{{ user_signup_source.get(u.id, {}).get('utm_source') or '—' }}</td>
                 <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
                 <td>{{ u.last_login.strftime('%Y-%m-%d') if u.last_login else '—' }}</td>
             </tr>
