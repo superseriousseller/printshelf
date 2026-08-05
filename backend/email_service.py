@@ -246,3 +246,38 @@ border-radius:6px;text-decoration:none;display:inline-block;">View print</a></p>
     except Exception:
         logger.exception("Failed to send feed notification to %s", to_email)
         return False
+
+
+def send_reengagement_campaign(to_email: str, first_name: str, unsubscribe_token: str) -> bool:
+    """One-time re-engagement nudge for verified users who never logged a print.
+    Sent by backend/scripts/send_reengagement_campaign.py, not by any route."""
+    if not _API_KEY:
+        logger.warning("RESEND_API_KEY not set — skipping reengagement email to %s", to_email)
+        return False
+    try:
+        import resend
+        resend.api_key = _API_KEY
+        dash_url = f"{_APP_URL}/dashboard"
+        unsub_url = f"{_APP_URL}/unsubscribe?token={unsubscribe_token}&type=marketing"
+        resend.Emails.send({
+            "from": _FROM,
+            "to": [to_email],
+            "subject": "Your first print is 30 seconds away",
+            "html": f"""
+<p>Hey {first_name},</p>
+<p>You signed up for PrintShelf but haven't logged a print yet — that's the one step that makes it click.
+PrintShelf keeps every model, filament, and setting in one place so you never lose track of what you printed
+or how you dialed it in.</p>
+<p>Easiest start: paste a MakerWorld link and we'll auto-fill the details.</p>
+<p><a href="{dash_url}" style="background:#ff6a3d;color:#fff;padding:10px 20px;
+border-radius:6px;text-decoration:none;display:inline-block;">Add your first print →</a></p>
+<p>Happy printing,<br>The PrintShelf team</p>
+<p style="color:#888;font-size:12px;margin-top:24px;">
+  <a href="{unsub_url}" style="color:#888;">Unsubscribe from this kind of email</a>
+</p>
+""",
+        })
+        return True
+    except Exception:
+        logger.exception("Failed to send reengagement email to %s", to_email)
+        return False
