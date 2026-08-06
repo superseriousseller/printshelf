@@ -12,8 +12,19 @@
     <h1 class="admin-title">Admin Console</h1>
     <p class="admin-ts">{{ now.strftime('%Y-%m-%d %H:%M') }} UTC <a href="/admin" class="btn-secondary admin-refresh">Refresh</a></p>
 
+    <!-- Section jump-nav (esp. useful on mobile — one long scroll otherwise) -->
+    <nav class="admin-nav">
+        <a href="#platform">Platform</a>
+        <a href="#growth">Growth</a>
+        <a href="#business">💰 Business</a>
+        <a href="#signup-sources">Signups</a>
+        <a href="#pro-members">💎 Pro</a>
+        <a href="#affiliate">Affiliate</a>
+        <a href="#top-makers">Makers</a>
+    </nav>
+
     <!-- Platform Totals -->
-    <section class="admin-section">
+    <section class="admin-section" id="platform">
         <h2>Platform</h2>
         <div class="admin-stats">
             <div class="admin-stat"><span class="admin-stat-val">{{ total_users }}</span><span class="admin-stat-lbl">Users</span></div>
@@ -26,7 +37,7 @@
     </section>
 
     <!-- Growth -->
-    <section class="admin-section">
+    <section class="admin-section" id="growth">
         <h2>Growth</h2>
         <div class="admin-stats">
             <div class="admin-stat"><span class="admin-stat-val">{{ new_7d }}</span><span class="admin-stat-lbl">New users (7d)</span></div>
@@ -118,17 +129,17 @@
         <h2>💎 Pro Members</h2>
         {% if pro_members %}
         <div class="admin-table-scroll">
-        <table class="admin-table">
+        <table class="admin-table admin-table--cards">
             <thead><tr><th>User</th><th>Email</th><th>Joined</th><th>Prints</th><th>Last login</th><th>Billing</th></tr></thead>
             <tbody>
             {% for u in pro_members %}
             <tr>
-                <td><a href="/@{{ u.username }}">@{{ u.username }}</a>{% if u.display_name and u.display_name != u.username %} <span class="admin-dim">{{ u.display_name }}</span>{% endif %}</td>
-                <td class="admin-dim">{{ u.email }}</td>
-                <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
-                <td>{{ user_print_counts.get(u.id, 0) }}</td>
-                <td>{{ u.last_login.strftime('%Y-%m-%d') if u.last_login else '—' }}{% if u.stripe_subscription_id and (not u.last_login or u.last_login < at_risk_before) %} <span class="admin-badge-risk" title="Paying but idle 30d+">at-risk</span>{% endif %}</td>
-                <td>{% if u.stripe_subscription_id %}<span style="color:var(--stat-done,#3ba55c)">✓ paying</span>{% else %}<span class="admin-dim">comp / no sub</span>{% endif %}</td>
+                <td data-label="User"><a href="/@{{ u.username }}">@{{ u.username }}</a>{% if u.display_name and u.display_name != u.username %} <span class="admin-dim">{{ u.display_name }}</span>{% endif %}</td>
+                <td class="admin-dim" data-label="Email">{{ u.email }}</td>
+                <td data-label="Joined">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+                <td data-label="Prints">{{ user_print_counts.get(u.id, 0) }}</td>
+                <td data-label="Last login">{{ u.last_login.strftime('%Y-%m-%d') if u.last_login else '—' }}{% if u.stripe_subscription_id and (not u.last_login or u.last_login < at_risk_before) %} <span class="admin-badge-risk" title="Paying but idle 30d+">at-risk</span>{% endif %}</td>
+                <td data-label="Billing">{% if u.stripe_subscription_id %}<span style="color:var(--stat-done,#3ba55c)">✓ paying</span>{% else %}<span class="admin-dim">comp / no sub</span>{% endif %}</td>
             </tr>
             {% endfor %}
             </tbody>
@@ -140,7 +151,7 @@
     </section>
 
     <!-- Affiliate Clicks -->
-    <section class="admin-section">
+    <section class="admin-section" id="affiliate">
         <h2>Affiliate Clicks</h2>
         <div class="admin-stats" style="margin-bottom:16px">
             <div class="admin-stat"><span class="admin-stat-val">{{ clicks_total }}</span><span class="admin-stat-lbl">All time</span></div>
@@ -215,7 +226,7 @@
     </section>
 
     <!-- Top Makers -->
-    <section class="admin-section">
+    <section class="admin-section" id="top-makers">
         <h2>Top Makers</h2>
         <div class="admin-table-scroll">
         <table class="admin-table">
@@ -237,19 +248,19 @@
     <section class="admin-section">
         <h2>Recent Signups</h2>
         <div class="admin-table-scroll">
-        <table class="admin-table">
+        <table class="admin-table admin-table--cards">
             <thead><tr><th>User</th><th>Email</th><th>Tier</th><th>Prints</th><th>Referrer</th><th>UTM Source</th><th>Joined</th><th>Last login</th></tr></thead>
             <tbody>
             {% for u in recent_users %}
             <tr>
-                <td><a href="/@{{ u.username }}">@{{ u.username }}</a></td>
-                <td class="admin-dim">{{ u.email }}</td>
-                <td>{{ u.tier or 'free' }}</td>
-                <td>{{ user_print_counts.get(u.id, 0) }}</td>
-                <td>{{ user_signup_source.get(u.id, {}).get('domain', '(direct)') }}</td>
-                <td>{{ user_signup_source.get(u.id, {}).get('utm_source') or '—' }}</td>
-                <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
-                <td>{{ u.last_login.strftime('%Y-%m-%d') if u.last_login else '—' }}</td>
+                <td data-label="User"><a href="/@{{ u.username }}">@{{ u.username }}</a></td>
+                <td class="admin-dim" data-label="Email">{{ u.email }}</td>
+                <td data-label="Tier">{{ u.tier or 'free' }}</td>
+                <td data-label="Prints">{{ user_print_counts.get(u.id, 0) }}</td>
+                <td data-label="Referrer">{{ user_signup_source.get(u.id, {}).get('domain', '(direct)') }}</td>
+                <td data-label="UTM Source">{{ user_signup_source.get(u.id, {}).get('utm_source') or '—' }}</td>
+                <td data-label="Joined">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+                <td data-label="Last login">{{ u.last_login.strftime('%Y-%m-%d') if u.last_login else '—' }}</td>
             </tr>
             {% endfor %}
             </tbody>

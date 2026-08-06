@@ -404,6 +404,10 @@ a:hover { text-decoration: underline; }
 
     /* Admin */
     .admin-wrap { padding: 16px 12px; }
+    /* Stat cards: 2-up grid instead of wasteful 1-2 per row */
+    .admin-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .admin-stat { min-width: 0; padding: 12px 14px; }
+    .admin-stat-val { font-size: 1.35rem; }
 
     /* Hero gallery: 1-col on very narrow screens */
     .hero-gallery { grid-template-columns: repeat(2, 1fr); }
@@ -837,6 +841,23 @@ a.like-btn.like-static:hover { border-color: #e0567a; color: #e0567a; cursor: po
 .admin-trend-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; }
 .admin-trend-bar { width: 100%; max-width: 28px; min-height: 2px; background: var(--accent); border-radius: 3px 3px 0 0; display: flex; align-items: flex-start; justify-content: center; color: #fff; font-size: 0.68rem; padding-top: 2px; }
 .admin-trend-lbl { font-size: 0.68rem; color: var(--text-dim); margin-top: 4px; }
+
+/* Section jump-nav — horizontally scrollable chip row (esp. mobile) */
+.admin-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 28px; }
+.admin-nav a { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; text-decoration: none; white-space: nowrap; }
+.admin-nav a:hover { color: var(--text); border-color: var(--accent); }
+/* Anchor jumps must clear the sticky topbar */
+.admin-section { scroll-margin-top: 72px; }
+
+/* Wide tables → stacked cards on phones (row = card, cell = labeled line) */
+@media (max-width: 560px) {
+  .admin-table--cards { min-width: 0; }
+  .admin-table--cards thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .admin-table--cards tr { display: block; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; margin-bottom: 10px; }
+  .admin-table--cards td { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border: none; text-align: right; }
+  .admin-table--cards td::before { content: attr(data-label); color: var(--text-dim); font-weight: 600; font-size: 0.78rem; text-align: left; }
+  .admin-table--cards td:first-child { font-weight: 600; }
+}
 
 /* First-print CTA (zero-print empty state) */
 .first-print-cta { background: linear-gradient(135deg, var(--accent-soft), var(--bg-elev)); border: 1px solid var(--accent); border-radius: var(--radius); padding: 28px 24px; margin-bottom: 24px; }
