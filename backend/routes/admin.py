@@ -86,6 +86,33 @@ def admin_dashboard(
         .all()
     )
 
+    # --- Business / Money (real numbers only) ---
+    # Pro monthly price. Mirrors billing.py's "monthly_price" ($4.99); annual
+    # ($39) subs are billed differently, so est. MRR is labeled an estimate that
+    # assumes the monthly rate. No fabricated affiliate-revenue figure here —
+    # attribution isn't wired reliably per store, so any $ would be fake.
+    PRO_MONTHLY_PRICE = 4.99
+    paying_pro = db.query(func.count(User.id)).filter(
+        User.tier == "pro", User.stripe_subscription_id.isnot(None)
+    ).scalar()
+    est_mrr = round(paying_pro * PRO_MONTHLY_PRICE, 2)
+    # Free → Pro conversion.
+    conversion_pct = round((pro_users / total_users * 100), 1) if total_users else 0.0
+    # Activation: share of users who've logged at least one (non-queued) print.
+    activated_users = db.query(func.count(func.distinct(Print.user_id))).filter(
+        Print.queued == False  # noqa: E712
+    ).scalar()
+    activation_pct = round((activated_users / total_users * 100), 1) if total_users else 0.0
+    # Active-in-last-7d (returning users, not just signups).
+    active_7d = db.query(func.count(func.distinct(User.id))).filter(
+        User.last_login >= ago_7d
+    ).scalar()
+    # Pro at-risk: paying members who haven't logged in for 30+ days (churn watch).
+    pro_at_risk = sum(
+        1 for u in pro_members
+        if u.stripe_subscription_id and (u.last_login is None or u.last_login < ago_30d)
+    )
+
     # --- Growth ---
     new_7d = db.query(func.count(User.id)).filter(User.created_at >= ago_7d).scalar()
     new_30d = db.query(func.count(User.id)).filter(User.created_at >= ago_30d).scalar()
@@ -217,6 +244,16 @@ def admin_dashboard(
             "free_users": free_users,
             "pro_users": pro_users,
             "pro_members": pro_members,
+            # money / business (real numbers only)
+            "paying_pro": paying_pro,
+            "est_mrr": est_mrr,
+            "pro_monthly_price": PRO_MONTHLY_PRICE,
+            "conversion_pct": conversion_pct,
+            "activation_pct": activation_pct,
+            "activated_users": activated_users,
+            "active_7d": active_7d,
+            "pro_at_risk": pro_at_risk,
+            "at_risk_before": ago_30d,
             # growth
             "new_7d": new_7d,
             "new_30d": new_30d,

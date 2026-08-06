@@ -38,6 +38,25 @@
         </div>
     </section>
 
+    <!-- Business / Money (real numbers only — no fabricated affiliate $) -->
+    <section class="admin-section" id="business">
+        <h2>💰 Business</h2>
+        <div class="admin-stats">
+            <a class="admin-stat admin-stat-link" href="#pro-members" title="Paying Pro members">
+                <span class="admin-stat-val">${{ '%.0f'|format(est_mrr) }}</span>
+                <span class="admin-stat-lbl">Est. MRR ({{ paying_pro }} paying × ${{ '%.2f'|format(pro_monthly_price) }})</span>
+            </a>
+            <div class="admin-stat"><span class="admin-stat-val">{{ conversion_pct }}%</span><span class="admin-stat-lbl">Free → Pro conversion</span></div>
+            <div class="admin-stat"><span class="admin-stat-val">{{ activation_pct }}%</span><span class="admin-stat-lbl">Activated ({{ activated_users }} logged a print)</span></div>
+            <div class="admin-stat"><span class="admin-stat-val">{{ active_7d }}</span><span class="admin-stat-lbl">Active last 7d</span></div>
+            <div class="admin-stat{% if pro_at_risk %} admin-stat-warn{% endif %}">
+                <span class="admin-stat-val">{{ pro_at_risk }}</span>
+                <span class="admin-stat-lbl">Pro at-risk (30d+ idle)</span>
+            </div>
+        </div>
+        <p class="admin-ts" style="margin-top:10px">Est. MRR assumes the monthly rate; annual subs bill differently. Affiliate $ is intentionally omitted until per-store attribution is verified — see the "Is it earning?" table below.</p>
+    </section>
+
     <!-- Signup Sources (item #6 follow-on) -->
     <section class="admin-section" id="signup-sources">
         <h2>📍 Signup Sources</h2>
@@ -108,7 +127,7 @@
                 <td class="admin-dim">{{ u.email }}</td>
                 <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
                 <td>{{ user_print_counts.get(u.id, 0) }}</td>
-                <td>{{ u.last_login.strftime('%Y-%m-%d') if u.last_login else '—' }}</td>
+                <td>{{ u.last_login.strftime('%Y-%m-%d') if u.last_login else '—' }}{% if u.stripe_subscription_id and (not u.last_login or u.last_login < at_risk_before) %} <span class="admin-badge-risk" title="Paying but idle 30d+">at-risk</span>{% endif %}</td>
                 <td>{% if u.stripe_subscription_id %}<span style="color:var(--stat-done,#3ba55c)">✓ paying</span>{% else %}<span class="admin-dim">comp / no sub</span>{% endif %}</td>
             </tr>
             {% endfor %}
@@ -240,6 +259,9 @@
 </div>
 
 <style>
+  .admin-stat-warn { border-color:var(--stat-queued,#c77b2e); }
+  .admin-stat-warn .admin-stat-val { color:var(--stat-queued,#c77b2e); }
+  .admin-badge-risk { display:inline-block; font-size:0.68rem; font-weight:600; color:#fff; background:var(--stat-queued,#c77b2e); padding:1px 6px; border-radius:8px; margin-left:4px; vertical-align:middle; }
   .admin-stat-link { text-decoration:none; cursor:pointer; transition:transform .1s ease, box-shadow .1s ease; }
   .admin-stat-link:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,.12); }
   #pro-celebrate-banner {
