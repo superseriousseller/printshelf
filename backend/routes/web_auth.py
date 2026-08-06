@@ -54,6 +54,17 @@ def _turnstile_site_key() -> str:
     return os.environ.get("TURNSTILE_SITE_KEY", "").strip()
 
 
+def _qa_bypass(request: Request) -> bool:
+    """True when the request carries the secret QA-bypass header matching
+    TURNSTILE_QA_BYPASS. Lets automated signup smoke-tests skip Turnstile
+    without weakening protection for real users. No-op unless the env var is
+    set; the secret is never in code, so bots can't guess it."""
+    secret = os.environ.get("TURNSTILE_QA_BYPASS", "").strip()
+    if not secret:
+        return False
+    return request.headers.get("X-QA-Bypass", "").strip() == secret
+
+
 def _verify_turnstile(token: str, remote_ip: str = "") -> bool:
     """True if the Turnstile token is valid — or if Turnstile isn't configured
     (fail-open when unset so a missing key never blocks signups). When it IS
@@ -133,7 +144,8 @@ def signup_submit(
         return RedirectResponse("/login", status_code=303)
 
     # Turnstile (no-op unless TURNSTILE_SECRET is configured on the server).
-    if not _verify_turnstile(cf_turnstile_response, ip):
+    # QA smoke-tests pass a secret X-QA-Bypass header to skip the challenge.
+    if not _qa_bypass(request) and not _verify_turnstile(cf_turnstile_response, ip):
         _log.info("Signup Turnstile failed from ip=%s email=%s — dropped", ip, email[:40])
         return templates.TemplateResponse(
             request, "signup.html",
