@@ -233,6 +233,8 @@ class Printer(Base):
     model = Column(String(100), nullable=True)       # e.g. "X1 Carbon"
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    # Which client created this row: web | extension | shortcut | slicer | api | seed | unknown
+    created_via = Column(String(20), nullable=False, default="unknown", server_default="unknown")
 
     user = relationship("User", back_populates="printers")
     prints = relationship("Print", back_populates="printer")
@@ -248,6 +250,7 @@ class Printer(Base):
             "brand": self.brand,
             "model": self.model,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "createdVia": self.created_via,
         }
 
 
@@ -274,6 +277,8 @@ class Filament(Base):
     notes = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    # Which client created this row: web | extension | shortcut | slicer | api | seed | unknown
+    created_via = Column(String(20), nullable=False, default="unknown", server_default="unknown")
 
     user = relationship("User", back_populates="filaments")
 
@@ -302,6 +307,7 @@ class Filament(Base):
             "finish": self.finish,
             "notes": self.notes,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "createdVia": self.created_via,
         }
 
 
@@ -352,6 +358,8 @@ class Print(Base):
 
     print_date = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    # Which client created this row: web | extension | shortcut | slicer | api | seed | unknown
+    created_via = Column(String(20), nullable=False, default="unknown", server_default="unknown")
 
     user = relationship("User", back_populates="prints")
     printer = relationship("Printer", back_populates="prints")
@@ -400,6 +408,7 @@ class Print(Base):
             "category": self.category,
             "likeCount": self.like_count,
             "viewCount": self.view_count,
+            "createdVia": self.created_via,
         }
 
 
