@@ -15,6 +15,7 @@ from filament_import_service import extract as extract_filament_url
 from import_service import ImportError_
 from limits import enforce_filament_limit
 from models import Filament, FilamentStatus, User, get_db
+from source_attribution import resolve_created_via
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,7 @@ def create_filament(
     body: FilamentCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    created_via: str = Depends(resolve_created_via),
 ) -> dict:
     enforce_filament_limit(db, user)
     _validate_status(body.status)
@@ -129,6 +131,7 @@ def create_filament(
         source_url=body.source_url,
         price_at_save=body.price_at_save,
         notes=body.notes,
+        created_via=created_via,
     )
     db.add(f)
     db.commit()

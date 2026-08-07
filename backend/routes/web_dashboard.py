@@ -286,7 +286,7 @@ def create_printer(
             _ctx(user, db=db, printer=None, errors=["Name is required."], values={"name": name, "brand": brand, "model": model}),
             status_code=400,
         )
-    p = Printer(user_id=user.id, name=name.strip(), brand=brand.strip() or None, model=model.strip() or None)
+    p = Printer(user_id=user.id, name=name.strip(), brand=brand.strip() or None, model=model.strip() or None, created_via="web")
     db.add(p)
     db.commit()
     return RedirectResponse("/dashboard/printers", status_code=303)
@@ -516,6 +516,7 @@ def create_filament(
         diameter=diameter_f, finish=finish.strip() or None, status=status,
         source_url=source_url.strip() or None, price_at_save=price_f,
         spool_weight_g=spool_weight_i, notes=notes.strip() or None,
+        created_via="web",
     )
     db.add(f)
     db.commit()
@@ -553,6 +554,7 @@ def quick_add_filament(
         user_id=user.id, brand=brand, material=material,
         color_name=color_name.strip() or None, color_hex=_normalize_hex(color_hex),
         diameter=1.75, finish=finish.strip() or None, status="own",
+        created_via="web",
     )
     db.add(f)
     db.commit()
@@ -1155,6 +1157,7 @@ async def create_print(
         filament_used_g=filament_used_f,
         video_url=video_url.strip() or None,
         category=category_val,
+        created_via="web",
     )
     db.add(p)
     db.commit()

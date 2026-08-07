@@ -581,6 +581,7 @@ def queue_print(
         status="queued",
         queued=True,
         is_public=False,
+        created_via="web",
     )
     db.add(queued)
     db.commit()

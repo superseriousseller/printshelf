@@ -600,7 +600,7 @@ def share_capture(
             {**base_ctx, "error": "No link was shared. Open a model and use Share \u2192 Add to PrintShelf."})
     from routes.prints import log_print_from_model_url
     try:
-        pr, deduped = log_print_from_model_url(db, current_user, link)
+        pr, deduped = log_print_from_model_url(db, current_user, link, created_via="shortcut")
     except _HTTPException as e:
         return templates.TemplateResponse(
             request, "share_result.html",

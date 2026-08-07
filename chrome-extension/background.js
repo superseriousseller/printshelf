@@ -89,6 +89,7 @@ async function addPrint(payload) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        "X-PrintShelf-Client": "extension",
       },
       body: JSON.stringify(body),
     });
@@ -133,7 +134,7 @@ async function addFilament(payload) {
   try {
     const r = await fetch(`${apiBase}/api/filaments/import-url`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "X-PrintShelf-Client": "extension" },
       body: JSON.stringify({ url: sourceUrl }),
     });
     if (r.status === 401) {
@@ -186,7 +187,7 @@ async function addFilament(payload) {
   try {
     res = await fetch(`${apiBase}/api/filaments`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "X-PrintShelf-Client": "extension" },
       body: JSON.stringify(body),
     });
   } catch (err) {

@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session, joinedload
 from affiliate import is_allowed_link_domain
 from auth import get_current_user
 from limits import enforce_filament_limit, enforce_print_limit
+from source_attribution import resolve_created_via
 from models import (
     Filament,
     Print,
@@ -156,7 +157,7 @@ def _validate_enums(status: Optional[str], platform: Optional[str], category: Op
         )
 
 
-def _create_print(db: Session, user: User, body: PrintCreate, *, force_queued: Optional[bool] = None) -> Print:
+def _create_print(db: Session, user: User, body: PrintCreate, *, force_queued: Optional[bool] = None, created_via: str = "unknown") -> Print:
     enforce_print_limit(db, user)
     _validate_enums(body.status, body.source_platform, body.category)
     _validate_refs(db, user, body.printer_id, body.filament_ids)
@@ -185,6 +186,7 @@ def _create_print(db: Session, user: User, body: PrintCreate, *, force_queued: O
         supports=body.supports,
         print_time_mins=body.print_time_mins,
         filament_used_g=body.filament_used_g,
+        created_via=created_via,
     )
     db.add(p)
     db.commit()
@@ -223,8 +225,9 @@ def create_print(
     body: PrintCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    created_via: str = Depends(resolve_created_via),
 ) -> dict:
-    p = _create_print(db, user, body)
+    p = _create_print(db, user, body, created_via=created_via)
     return p.to_dict()
 
 
@@ -233,9 +236,10 @@ def queue_print(
     body: PrintCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    created_via: str = Depends(resolve_created_via),
 ) -> dict:
     """Convenience endpoint used by the Chrome extension: forces queued=true."""
-    p = _create_print(db, user, body, force_queued=True)
+    p = _create_print(db, user, body, force_queued=True, created_via=created_via)
     return p.to_dict()
 
 
@@ -345,6 +349,7 @@ def _resolve_filament(db: Session, user: User, desc: "IngestFilament", warnings:
     f = Filament(
         user_id=user.id, brand=(desc.brand or "Generic"), material=mat,
         color_name=cname, color_hex=hexv, finish=(desc.finish or None), status="own",
+        created_via="slicer",
     )
     db.add(f)
     db.commit()
@@ -438,7 +443,7 @@ def ingest_print(
         print_time_mins=body.print_time_mins,
         filament_used_g=body.filament_used_g,
     )
-    p = _create_print(db, user, pc_body)
+    p = _create_print(db, user, pc_body, created_via="slicer")
     return {"print": p.to_dict(), "created": created, "warnings": warnings}
 
 
@@ -448,7 +453,7 @@ class PrintFromUrl(BaseModel):
     queued: bool = False
 
 
-def log_print_from_model_url(db: Session, user: User, url: str, queued: bool = False):
+def log_print_from_model_url(db: Session, user: User, url: str, queued: bool = False, created_via: str = "unknown"):
     """Shared core for the mobile share flow (API /from-url + web /share).
     Returns (print, deduped_bool). Raises HTTPException on a bad/unreadable URL."""
     url = (url or "").strip()
@@ -503,7 +508,7 @@ def log_print_from_model_url(db: Session, user: User, url: str, queued: bool = F
         queued=queued,
         is_public=bool((user.socials or {}).get("_slicer_public")),
     )
-    return _create_print(db, user, pc_body), False
+    return _create_print(db, user, pc_body, created_via=created_via), False
 
 
 @router.post("/from-url", status_code=201)
@@ -511,10 +516,11 @@ def create_from_url(
     body: PrintFromUrl,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    created_via: str = Depends(resolve_created_via),
 ) -> dict:
     """Share a model link -> a logged, enriched print. Visibility follows the
     account setting. Deduped by URL."""
-    pr, deduped = log_print_from_model_url(db, user, body.url, body.queued)
+    pr, deduped = log_print_from_model_url(db, user, body.url, body.queued, created_via=created_via)
     out = pr.to_dict()
     if deduped:
         out["deduplicated"] = True

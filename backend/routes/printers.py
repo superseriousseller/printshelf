@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from models import Printer, User, get_db
+from source_attribution import resolve_created_via
 
 router = APIRouter(prefix="/api/printers", tags=["printers"])
 
@@ -52,8 +53,9 @@ def create_printer(
     body: PrinterCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    created_via: str = Depends(resolve_created_via),
 ) -> dict:
-    p = Printer(user_id=user.id, name=body.name.strip(), brand=body.brand, model=body.model)
+    p = Printer(user_id=user.id, name=body.name.strip(), brand=body.brand, model=body.model, created_via=created_via)
     db.add(p)
     db.commit()
     db.refresh(p)
