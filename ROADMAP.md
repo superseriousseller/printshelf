@@ -70,6 +70,13 @@ the extension's `content/inject.js` + host_permissions. A near-total flatline on
 nobody uses them. Do a live capture test on each before assuming it's just user
 preference. (Applies to both the extension and the web URL-import path.)
 
+This is the "Tier 2" extension test: the automated harness
+(`backend/scripts/extension_qa.py`, added 2026-08-06) covers Tier 1 (the
+create + `created_via` path against a local server, no store DOM). Extending it
+to drive the 4 real model sites and assert each content script still extracts
+correctly would satisfy this item — needs headed Chromium + live network, so
+it's more fragile than Tier 1.
+
 ---
 
 ## P3 — Close the print → filament adoption gap

@@ -192,3 +192,32 @@ For any failed step, capture:
   → service worker link) — that's where background-side errors land.
 - The DevTools console output from the **Makerworld page** — that's where
   content-script errors land.
+
+---
+
+## 15 · Automated harness (Tier 1 — no store DOM)
+
+`backend/scripts/extension_qa.py` loads THIS unpacked extension in a real
+Chromium (Playwright), points it at a throwaway local PrintShelf server, invokes
+the extension's real `addPrint()` service-worker code, and asserts the row lands
+with `created_via='extension'`. It's the fast, repeatable proof that the
+extension binary behaves like the published one for the create + attribution
+path — run it before shipping extension changes.
+
+    cd backend
+    ../venv/bin/pip install playwright          # one-time
+    ../venv/bin/playwright install chromium      # one-time (~95MB)
+    ../venv/bin/python scripts/extension_qa.py    # exit 0 = pass
+
+Notes:
+- Needs a **headed** Chromium (extensions can't load headless). Fine on a Mac
+  with a GUI session; won't run over a blind SSH/headless box.
+- It loads a temp COPY of the extension with the local test port added to
+  `host_permissions` (the shipped manifest only whitelists :8765). The real
+  artifact is untouched; only the local host allowlist differs.
+- It does NOT scrape real MakerWorld/Printables/Cults3D/Thingiverse pages — that
+  DOM-level "Tier 2" scraper check is still the manual Section 14 pass (and the
+  ROADMAP P2 item). `addFilament` also isn't covered here because it routes
+  through `/api/filaments/import-url`, which needs a live product page.
+- `playwright` is a QA-only dep — intentionally NOT in `requirements.txt`, so it
+  never bloats the Railway prod build.
