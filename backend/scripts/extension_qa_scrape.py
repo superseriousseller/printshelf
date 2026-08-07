@@ -26,10 +26,16 @@ import time
 EXT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "chrome-extension"))
 BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
+# `direct` = a known-good model URL; when set, we go straight there (full page
+# load, like a user landing from Google/a shared link) instead of hunting the
+# listing. This both hardens the harness and isolates real content-script bugs
+# from SPA soft-navigation timing artifacts.
 PLATFORMS = [
     {"name": "makerworld", "listing": "https://makerworld.com/en/popular", "link": 'a[href*="/models/"]'},
-    {"name": "printables", "listing": "https://www.printables.com/model", "link": 'a[href*="/model/"]'},
-    {"name": "thingiverse", "listing": "https://www.thingiverse.com/", "link": 'a[href*="/thing:"]'},
+    {"name": "printables", "listing": "https://www.printables.com/model", "link": 'a[href*="/model/"]',
+     "direct": "https://www.printables.com/model/1782379-ultimate-weekly-pill-organizer-dispenser-gravity-c"},
+    {"name": "thingiverse", "listing": "https://www.thingiverse.com/", "link": 'a[href*="/thing:"]',
+     "direct": "https://www.thingiverse.com/thing:7391415"},
     {"name": "cults3d", "listing": "https://cults3d.com/en", "link": 'a[href*="/3d-model/"]'},
 ]
 
@@ -101,21 +107,24 @@ def main():
                 r = {"platform": plat["name"], "model_url": None, "fab": False, "saved": False, "title": None, "note": ""}
                 page = ctx.new_page()
                 try:
-                    page.goto(plat["listing"], wait_until="domcontentloaded", timeout=30000)
-                    page.wait_for_timeout(3500)  # let SPA hydrate
-                    # nudge lazy-loaded grids, then wait for a model link to appear
-                    try:
-                        page.mouse.wheel(0, 2500); page.wait_for_timeout(1500)
-                    except Exception:
-                        pass
-                    href = None
-                    try:
-                        page.wait_for_selector(plat["link"], timeout=8000)
-                        el = page.query_selector(plat["link"])
-                        if el:
-                            href = el.get_attribute("href")
-                    except Exception:
-                        pass
+                    href = plat.get("direct")
+                    if href:
+                        r["note"] = "(direct model load) "
+                    else:
+                        page.goto(plat["listing"], wait_until="domcontentloaded", timeout=30000)
+                        page.wait_for_timeout(3500)  # let SPA hydrate
+                        # nudge lazy-loaded grids, then wait for a model link to appear
+                        try:
+                            page.mouse.wheel(0, 2500); page.wait_for_timeout(1500)
+                        except Exception:
+                            pass
+                        try:
+                            page.wait_for_selector(plat["link"], timeout=8000)
+                            el = page.query_selector(plat["link"])
+                            if el:
+                                href = el.get_attribute("href")
+                        except Exception:
+                            pass
                     if not href:
                         r["note"] = "no model link found on listing (blocked or DOM changed)"
                         results.append(r); page.close(); continue

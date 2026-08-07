@@ -74,28 +74,31 @@ The automated Tier-1 harness (`backend/scripts/extension_qa.py`) covers the
 create + `created_via` path. A Tier-2 harness (`backend/scripts/extension_qa_scrape.py`,
 added 2026-08-06) drives the REAL content scripts on live model pages headed.
 
-**Tier-2 findings (2026-08-06, 3 headed runs):**
-- **Thingiverse — WORKS.** FAB injects, scrape returns a real title
-  ("ANAVI Handle desktop mount"). So its prod **0 is user behavior, not a broken
-  scraper** — don't waste effort "fixing" it; if anything, promote it.
-- **Printables — BUG (strong, needs 1 human confirm).** FAB injects and the save
-  succeeds, but the title scrapes as **"www.printables.com"** (the site name /
-  `document.title` fallback) instead of the model name — reproduced across 3 runs
-  and 2 different models, INCLUDING after waiting for a real title source
-  (og:title/JSON-LD/h1) to hydrate. i.e. a valid title source existed and
-  extractTitle still fell through to `document.title`. Likely the Printables
-  `readJsonLdName()`/`og:title`/`h1` path is failing on the current DOM. Confirm
-  with a manual click-through, then fix the printables title selectors.
-- **MakerWorld — not re-verified here** (harness couldn't grab a listing link;
-  likely cookie-consent/anti-bot on the listing page). Prod's 291 prints already
-  prove it works, so this is a harness gap, not a scraper problem.
-- **Cults3D — INCONCLUSIVE.** Harness couldn't reach a model page from the
-  listing (same listing-link issue). Its prod 0 is still unexplained — needs a
-  manual click-through or a better listing-link resolver in the harness.
+**Tier-2 findings (2026-08-06, headed, several runs — NET: no scraper bug found):**
+- **Thingiverse — WORKS.** FAB injects, scrape returns the real title
+  ("ANAVI Handle desktop mount"). Its prod **0 is user behavior, not a broken
+  scraper** — don't "fix" it; promote it if anything.
+- **Printables — WORKS (earlier "bug" was a test artifact).** On a DIRECT model
+  load (how users arrive from Google / a shared link / a new tab) the scrape is
+  correct ("Ultimate Weekly Pill Organizer & Dispenser Gravity Cascade"). A
+  standalone DOM probe confirmed the page has correct JSON-LD name + og:title +
+  h1. The earlier "www.printables.com" only reproduced when the harness reached
+  the page via listing→click (SPA soft-navigation → content script scraped before
+  hydration → fell back to document.title). Possible LOW-PRI edge case: a user who
+  browses Printables internally and clicks the FAB mid-soft-nav could get the site
+  name. Dominant path is fine; not worth a fix now.
+- **MakerWorld — works (prod 291); not re-verified in-harness.** Its listing
+  defeats anchor-scraping (SPA); no live direct URL was on hand to test.
+- **Cults3D — UNVERIFIABLE via harness: Cloudflare "Just a moment…" challenge**
+  blocks the automated browser (a real human browser passes it). So its prod 0 is
+  NOT shown to be a scraper bug — it's just untestable this way. Needs a 30-sec
+  manual click-through on a real Cults3D model to confirm the FAB + scrape work.
 
-Remaining Tier-2 work: fix the harness's makerworld/cults3d listing-link
-resolution (dismiss cookie-consent, better selectors), and fix the Printables
-title extraction.
+**Bottom line:** every scraper reachable by the harness works. The 291/3/0/0
+flatline is a **traffic/behavior** story (which sites users actually import
+from), not broken content scripts. Cults3D is the only unconfirmed one (Cloudflare).
+Remaining optional work: get past Cloudflare (real user profile / manual) to
+confirm Cults3D; add live `direct` URLs for makerworld/cults3d to the harness.
 
 ---
 
