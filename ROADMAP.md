@@ -70,12 +70,32 @@ the extension's `content/inject.js` + host_permissions. A near-total flatline on
 nobody uses them. Do a live capture test on each before assuming it's just user
 preference. (Applies to both the extension and the web URL-import path.)
 
-This is the "Tier 2" extension test: the automated harness
-(`backend/scripts/extension_qa.py`, added 2026-08-06) covers Tier 1 (the
-create + `created_via` path against a local server, no store DOM). Extending it
-to drive the 4 real model sites and assert each content script still extracts
-correctly would satisfy this item — needs headed Chromium + live network, so
-it's more fragile than Tier 1.
+The automated Tier-1 harness (`backend/scripts/extension_qa.py`) covers the
+create + `created_via` path. A Tier-2 harness (`backend/scripts/extension_qa_scrape.py`,
+added 2026-08-06) drives the REAL content scripts on live model pages headed.
+
+**Tier-2 findings (2026-08-06, 3 headed runs):**
+- **Thingiverse — WORKS.** FAB injects, scrape returns a real title
+  ("ANAVI Handle desktop mount"). So its prod **0 is user behavior, not a broken
+  scraper** — don't waste effort "fixing" it; if anything, promote it.
+- **Printables — BUG (strong, needs 1 human confirm).** FAB injects and the save
+  succeeds, but the title scrapes as **"www.printables.com"** (the site name /
+  `document.title` fallback) instead of the model name — reproduced across 3 runs
+  and 2 different models, INCLUDING after waiting for a real title source
+  (og:title/JSON-LD/h1) to hydrate. i.e. a valid title source existed and
+  extractTitle still fell through to `document.title`. Likely the Printables
+  `readJsonLdName()`/`og:title`/`h1` path is failing on the current DOM. Confirm
+  with a manual click-through, then fix the printables title selectors.
+- **MakerWorld — not re-verified here** (harness couldn't grab a listing link;
+  likely cookie-consent/anti-bot on the listing page). Prod's 291 prints already
+  prove it works, so this is a harness gap, not a scraper problem.
+- **Cults3D — INCONCLUSIVE.** Harness couldn't reach a model page from the
+  listing (same listing-link issue). Its prod 0 is still unexplained — needs a
+  manual click-through or a better listing-link resolver in the harness.
+
+Remaining Tier-2 work: fix the harness's makerworld/cults3d listing-link
+resolution (dismiss cookie-consent, better selectors), and fix the Printables
+title extraction.
 
 ---
 
