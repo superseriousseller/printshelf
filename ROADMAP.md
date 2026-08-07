@@ -51,6 +51,15 @@ Server resolves `created_via` at create time:
 - Filaments with a store `source_url` → likely `extension`; without → `web`.
 - Mark anything uncertain `unknown` rather than a wrong definite value.
 
+> **DECISION 2026-08-07 — DO NOT run the backfill on prod.** Cam confirmed his
+> historical rows (all 306 prints / 251 filaments, ~96% his own) were created via
+> the **API** (some web/Claude Code), NOT the browser extension — he only used
+> the extension for testing. So the `source_url → extension` heuristic mislabels
+> his data. Prod historical rows are intentionally left `created_via='unknown'`;
+> only new post-2026-08-07 activity gets real attribution. `scripts/backfill_created_via.py`
+> stays for possible future real-user data, but must NOT be run against the
+> current prod dataset.
+
 ### Surface it
 - Admin dashboard: a **"By source"** breakdown for filaments + prints (mirror
   the existing affiliate "By surface" section) so this question is a real query,
