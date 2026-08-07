@@ -16,6 +16,7 @@
     <nav class="admin-nav">
         <a href="#platform">Platform</a>
         <a href="#growth">Growth</a>
+        <a href="#source">🧭 Source</a>
         <a href="#business">💰 Business</a>
         <a href="#signup-sources">Signups</a>
         <a href="#pro-members">💎 Pro</a>
@@ -46,6 +47,40 @@
             <div class="admin-stat"><span class="admin-stat-val">{{ prints_30d }}</span><span class="admin-stat-lbl">Prints logged (30d)</span></div>
             <div class="admin-stat"><span class="admin-stat-val">{{ free_users }}</span><span class="admin-stat-lbl">Free tier</span></div>
             <a class="admin-stat admin-stat-link" href="#pro-members" title="See who they are"><span class="admin-stat-val">{{ pro_users }}</span><span class="admin-stat-lbl">Pro tier &rsaquo;</span></a>
+        </div>
+    </section>
+
+    <!-- Source attribution: which client created each row (created_via) -->
+    <section class="admin-section" id="source">
+        <h2>🧭 By source (created via)</h2>
+        <p class="admin-ts">Which client actually created each row — web vs Chrome extension vs external API vs iOS Shortcut vs slicer. <code>unknown</code> = created before source tracking existed (pre-backfill).</p>
+        <div style="display:flex;flex-wrap:wrap;gap:24px">
+            <div style="flex:1;min-width:220px">
+                <h3 class="admin-subhead">Filaments</h3>
+                <div class="admin-table-scroll">
+                <table class="admin-table admin-table--cards">
+                    <thead><tr><th>Source</th><th>Count</th></tr></thead>
+                    <tbody>
+                    {% for src, cnt in filaments_by_source %}
+                    <tr><td data-label="Source">{{ src or 'unknown' }}</td><td data-label="Count">{{ cnt }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+            <div style="flex:1;min-width:220px">
+                <h3 class="admin-subhead">Prints</h3>
+                <div class="admin-table-scroll">
+                <table class="admin-table admin-table--cards">
+                    <thead><tr><th>Source</th><th>Count</th></tr></thead>
+                    <tbody>
+                    {% for src, cnt in prints_by_source %}
+                    <tr><td data-label="Source">{{ src or 'unknown' }}</td><td data-label="Count">{{ cnt }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
         </div>
     </section>
 

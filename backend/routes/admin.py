@@ -74,6 +74,22 @@ def admin_dashboard(
     total_printers = db.query(func.count(Printer.id)).scalar()
     total_follows = db.query(func.count(Follow.id)).scalar()
 
+    # --- Source attribution: which client created each row (created_via) ---
+    # First-party (web/extension/shortcut/slicer) vs external api vs unknown/seed.
+    filaments_by_source = (
+        db.query(Filament.created_via, func.count(Filament.id))
+        .group_by(Filament.created_via)
+        .order_by(func.count(Filament.id).desc())
+        .all()
+    )
+    prints_by_source = (
+        db.query(Print.created_via, func.count(Print.id))
+        .filter(Print.queued == False)  # noqa: E712
+        .group_by(Print.created_via)
+        .order_by(func.count(Print.id).desc())
+        .all()
+    )
+
     # --- Tier split ---
     free_users = db.query(func.count(User.id)).filter(User.tier == "free").scalar()
     pro_users = db.query(func.count(User.id)).filter(User.tier == "pro").scalar()
@@ -240,6 +256,9 @@ def admin_dashboard(
             "total_filaments": total_filaments,
             "total_printers": total_printers,
             "total_follows": total_follows,
+            # source attribution
+            "filaments_by_source": filaments_by_source,
+            "prints_by_source": prints_by_source,
             # tier
             "free_users": free_users,
             "pro_users": pro_users,
