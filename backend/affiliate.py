@@ -12,7 +12,7 @@ URL" — useful before Cam has signed up for a given affiliate program.
 Direct affiliate programs (appends ?param=tag to the product URL):
   AMAZON_AFFILIATE_TAG          Amazon Associates tracking id (e.g. "printshelf-20")
   BAMBU_AFFILIATE_REF           Bambu Lab Store referral code
-  POLYMAKER_AFFILIATE_REF       Polymaker (Refersion) referral code
+  POLYMAKER_AFFILIATE_REF       Polymaker (Superfiliate) ref token, e.g. "superfiliate-PLUGGEDIN3D"
   SUNLU_AFFILIATE_REF           SUNLU sca_ref token (e.g. "9625568.zGmL14Ga1b")
 
 Impact network programs (appends irpid + attribution flags to product URL):
