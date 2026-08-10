@@ -23,6 +23,8 @@ Awin network programs (wraps product URL in Awin redirect):
   ANYCUBIC_AWIN_MERCHANT_ID     Anycubic's Awin merchant ID (69360)
   MATTERHACKERS_AWIN_MERCHANT_ID   MatterHackers' Awin merchant ID (97427) — MatterHackers has
                                     no direct program; it's run through Awin, same as Anycubic.
+  ESUN_AWIN_MERCHANT_ID         eSUN official store's Awin merchant ID (99267) — approved 7/30,
+                                    run through Awin (no direct eSUN affiliate program exists).
 """
 import os
 from urllib.parse import parse_qsl, quote_plus, urlencode, urlparse, urlunparse
@@ -39,6 +41,7 @@ _ALLOWED_LINK_DOMAINS: frozenset[str] = frozenset({
     "www.matterhackers.com", "matterhackers.com",
     "store.sunlu.com", "www.sunlu.com", "sunlu.com",
     "www.flashforge.com", "flashforge.com",
+    "esun3dstore.com", "www.esun3dstore.com", "esun3d.com", "www.esun3d.com",
 })
 
 
@@ -60,6 +63,7 @@ _AWIN_BASE = "https://www.awin1.com/cread.php"
 _AWIN_MERCHANT = {
     "anycubic": "ANYCUBIC_AWIN_MERCHANT_ID",
     "matterhackers": "MATTERHACKERS_AWIN_MERCHANT_ID",
+    "esun": "ESUN_AWIN_MERCHANT_ID",
 }
 
 # Impact network merchants: store → env var holding the publisher ID (irpid).
@@ -160,6 +164,7 @@ _BRAND_SEARCH: list[tuple[str, str]] = [
     ("anycubic",      "https://store.anycubic.com/search?q={q}"),
     ("matterhackers", "https://www.matterhackers.com/store/c?q={q}"),
     ("flashforge",    "https://www.flashforge.com/search?q={q}"),
+    ("esun",          "https://esun3dstore.com/search?q={q}"),
 ]
 
 

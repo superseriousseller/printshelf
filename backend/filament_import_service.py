@@ -83,6 +83,8 @@ def detect_store(url: str) -> str:
         return "sunlu"
     if "flashforge.com" in host:
         return "flashforge"
+    if "esun3dstore.com" in host or "esun3d.com" in host:
+        return "esun"
     return "manual"
 
 
