@@ -196,7 +196,10 @@ async def stripe_webhook(
     s = _stripe()
     try:
         event = s.Webhook.construct_event(payload, stripe_signature, STRIPE_WEBHOOK_SECRET)
-    except stripe.error.SignatureVerificationError:
+    except (stripe.SignatureVerificationError, ValueError):
+        # Use the top-level SDK exception (version-proof; stripe.error is a legacy shim
+        # that AttributeErrors on newer majors → was the 500 since 2026-07-24). ValueError
+        # covers a malformed payload body.
         raise HTTPException(status_code=400, detail="Invalid webhook signature.")
 
     etype = event["type"]
@@ -222,7 +225,14 @@ def _handle_checkout_completed(session, db: Session) -> None:
     user.tier = "pro"
     user.stripe_customer_id = session.get("customer")
     user.stripe_subscription_id = session.get("subscription")
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        # Never let a DB error (e.g. replayed event hitting the unique
+        # stripe_customer_id) bubble to a 500 and make Stripe retry-storm.
+        db.rollback()
+        _log.exception("checkout commit failed user_id=%s (rolled back)", user_id)
+        return
     _log.info("upgraded user_id=%s to pro via checkout", user_id)
 
 
@@ -244,5 +254,10 @@ def _handle_subscription_change(subscription, db: Session) -> None:
         user.tier = "pro"
     elif status in ("canceled", "unpaid", "incomplete_expired"):
         user.tier = "free"
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        _log.exception("subscription_change commit failed user_id=%s (rolled back)", user.id)
+        return
     _log.info("subscription_change user_id=%s status=%s tier=%s", user.id, status, user.tier)
