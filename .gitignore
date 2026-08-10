@@ -31,3 +31,7 @@ seed/reddit_post.md
 REVIEW_NEEDED.md
 CC_RESPONSE.md
 relay/relay.log
+
+# relay/agent artifacts
+.claude/
+relay/
