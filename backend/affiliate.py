@@ -25,6 +25,11 @@ Awin network programs (wraps product URL in Awin redirect):
                                     no direct program; it's run through Awin, same as Anycubic.
   ESUN_AWIN_MERCHANT_ID         eSUN official store's Awin merchant ID (99267) — approved 7/30,
                                     run through Awin (no direct eSUN affiliate program exists).
+
+Shopify Collabs programs (rewrites product URL to a /discount/<code>?redirect=<path> link):
+  WEST3D_COLLABS_CODE           West3D discount/attribution code (PLUGGEDIN3D) — approved 8/10.
+                                    Attribution is discount-code-based: the link applies the code
+                                    (which credits the affiliate) then redirects to the product.
 """
 import os
 from urllib.parse import parse_qsl, quote_plus, urlencode, urlparse, urlunparse
@@ -42,6 +47,7 @@ _ALLOWED_LINK_DOMAINS: frozenset[str] = frozenset({
     "store.sunlu.com", "www.sunlu.com", "sunlu.com",
     "www.flashforge.com", "flashforge.com",
     "esun3dstore.com", "www.esun3dstore.com", "esun3d.com", "www.esun3d.com",
+    "west3d.com", "www.west3d.com",
 })
 
 
@@ -64,6 +70,14 @@ _AWIN_MERCHANT = {
     "anycubic": "ANYCUBIC_AWIN_MERCHANT_ID",
     "matterhackers": "MATTERHACKERS_AWIN_MERCHANT_ID",
     "esun": "ESUN_AWIN_MERCHANT_ID",
+}
+
+# Shopify Collabs merchants: store → (env_var holding the discount/attribution code,
+# store base URL). Attribution is the discount code — the buy link rewrites the product
+# URL to `<base>/discount/<code>?redirect=<path+query>`, which applies the code (crediting
+# the affiliate) then 302s to the product. Verified live 2026-08-10.
+_SHOPIFY_COLLABS = {
+    "west3d": ("WEST3D_COLLABS_CODE", "https://west3d.com"),
 }
 
 # Impact network merchants: store → env var holding the publisher ID (irpid).
@@ -90,6 +104,14 @@ def _impact_url(url: str, pid: str) -> str:
              if k not in _IMPACT_PARAMS]
     pairs += [("irpid", pid), ("irgwc", "1"), ("afsrc", "1"), ("utm_source", "impact")]
     return urlunparse(parsed._replace(query=urlencode(pairs)))
+
+
+def _shopify_collabs_url(url: str, base: str, code: str) -> str:
+    parsed = urlparse(url)
+    redirect = parsed.path or "/"
+    if parsed.query:
+        redirect += "?" + parsed.query
+    return f"{base}/discount/{code}?redirect={quote_plus(redirect)}"
 
 
 def _awin_url(destination: str, merchant_id: str) -> str:
@@ -130,6 +152,15 @@ def apply_affiliate(url: str) -> str:
             return _impact_url(url, pid)
         return url
 
+    # Shopify Collabs: rewrite to a discount-redirect link.
+    collab = _SHOPIFY_COLLABS.get(store)
+    if collab:
+        env_var, base = collab
+        code = (os.environ.get(env_var) or "").strip()
+        if code:
+            return _shopify_collabs_url(url, base, code)
+        return url
+
     # Awin network: wrap the URL in an Awin redirect.
     merchant_env = _AWIN_MERCHANT.get(store)
     if merchant_env:
@@ -165,6 +196,7 @@ _BRAND_SEARCH: list[tuple[str, str]] = [
     ("matterhackers", "https://www.matterhackers.com/store/c?q={q}"),
     ("flashforge",    "https://www.flashforge.com/search?q={q}"),
     ("esun",          "https://esun3dstore.com/search?q={q}"),
+    ("west3d",        "https://west3d.com/search?q={q}"),
 ]
 
 
@@ -218,6 +250,11 @@ def program_status() -> list[dict]:
             "configured": awin_id_set and bool((os.environ.get(env_var) or "").strip()),
         })
     for store, env_var in _IMPACT_MERCHANT.items():
+        rows.append({
+            "store": store, "env_var": env_var,
+            "configured": bool((os.environ.get(env_var) or "").strip()),
+        })
+    for store, (env_var, _base) in _SHOPIFY_COLLABS.items():
         rows.append({
             "store": store, "env_var": env_var,
             "configured": bool((os.environ.get(env_var) or "").strip()),

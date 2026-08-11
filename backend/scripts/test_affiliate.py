@@ -26,6 +26,7 @@ def _reload_affiliate(env: dict):
         "AMAZON_AFFILIATE_TAG", "BAMBU_AFFILIATE_REF", "POLYMAKER_AFFILIATE_REF",
         "SUNLU_AFFILIATE_REF", "FLASHFORGE_IMPACT_PID", "AWIN_AFFILIATE_ID",
         "ANYCUBIC_AWIN_MERCHANT_ID", "MATTERHACKERS_AWIN_MERCHANT_ID",
+        "ESUN_AWIN_MERCHANT_ID", "WEST3D_COLLABS_CODE",
     ):
         os.environ.pop(key, None)
     os.environ.update(env)
@@ -125,6 +126,30 @@ check(
     "FlashForge -> Impact irpid (unchanged)",
     aff.apply_affiliate("https://www.flashforge.com/product/pla"),
     "https://www.flashforge.com/product/pla?irpid=7371845&irgwc=1&afsrc=1&utm_source=impact",
+)
+
+print("\n== West3D: Shopify Collabs discount-redirect ==")
+aff = _reload_affiliate({"WEST3D_COLLABS_CODE": "PLUGGEDIN3D"})
+check(
+    "West3D product -> /discount/<code>?redirect=<path>",
+    aff.apply_affiliate("https://west3d.com/products/ambrosia-asa"),
+    "https://west3d.com/discount/PLUGGEDIN3D?redirect=%2Fproducts%2Fambrosia-asa",
+)
+check(
+    "West3D product w/ variant -> query preserved (encoded)",
+    aff.apply_affiliate("https://west3d.com/products/ambrosia-asa?variant=123"),
+    "https://west3d.com/discount/PLUGGEDIN3D?redirect=%2Fproducts%2Fambrosia-asa%3Fvariant%3D123",
+)
+check(
+    "West3D is an allowed link domain",
+    aff.is_allowed_link_domain("https://west3d.com/products/x"),
+    True,
+)
+aff = _reload_affiliate({})
+check(
+    "West3D bare passthrough when code unset (no crash)",
+    aff.apply_affiliate("https://west3d.com/products/ambrosia-asa"),
+    "https://west3d.com/products/ambrosia-asa",
 )
 
 print(f"\n{'=' * 40}\n  {passed}/{passed + failed} passed\n{'=' * 40}")
