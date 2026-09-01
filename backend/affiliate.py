@@ -20,7 +20,8 @@ Impact network programs (appends irpid + attribution flags to product URL):
 
 Awin network programs (wraps product URL in Awin redirect):
   AWIN_AFFILIATE_ID             Your Awin publisher ID (shared across all Awin merchants)
-  ANYCUBIC_AWIN_MERCHANT_ID     Anycubic's Awin merchant ID (69360)
+  ANYCUBIC_AWIN_MERCHANT_ID     Anycubic's Awin merchant ID (129417 — US programme,
+                                    joined/Active 2026-08-31; replaced old 69360)
   MATTERHACKERS_AWIN_MERCHANT_ID   MatterHackers' Awin merchant ID (97427) — MatterHackers has
                                     no direct program; it's run through Awin, same as Anycubic.
   ESUN_AWIN_MERCHANT_ID         eSUN official store's Awin merchant ID (99267) — approved 7/30,
