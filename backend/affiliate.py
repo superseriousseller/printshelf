@@ -22,6 +22,8 @@ Awin network programs (wraps product URL in Awin redirect):
   AWIN_AFFILIATE_ID             Your Awin publisher ID (shared across all Awin merchants)
   ANYCUBIC_AWIN_MERCHANT_ID     Anycubic's Awin merchant ID (129417 — US programme,
                                     joined/Active 2026-08-31; replaced old 69360)
+  CREALITY_AWIN_MERCHANT_ID     Creality Official Store's Awin merchant ID (97013 —
+                                    joined/Active 2026-08-31)
   MATTERHACKERS_AWIN_MERCHANT_ID   MatterHackers' Awin merchant ID (97427) — MatterHackers has
                                     no direct program; it's run through Awin, same as Anycubic.
   ESUN_AWIN_MERCHANT_ID         eSUN official store's Awin merchant ID (99267) — approved 7/30,
@@ -44,6 +46,7 @@ _ALLOWED_LINK_DOMAINS: frozenset[str] = frozenset({
     "us.store.bambulab.com", "eu.store.bambulab.com", "store.bambulab.com",
     "us.polymaker.com", "polymaker.com", "shop.polymaker.com",
     "store.anycubic.com",
+    "store.creality.com", "www.creality.com", "creality.com",
     "www.matterhackers.com", "matterhackers.com",
     "store.sunlu.com", "www.sunlu.com", "sunlu.com",
     "www.flashforge.com", "flashforge.com",
@@ -69,6 +72,7 @@ _AWIN_BASE = "https://www.awin1.com/cread.php"
 # The publisher (affiliate) ID is shared — read once from AWIN_AFFILIATE_ID.
 _AWIN_MERCHANT = {
     "anycubic": "ANYCUBIC_AWIN_MERCHANT_ID",
+    "creality": "CREALITY_AWIN_MERCHANT_ID",
     "matterhackers": "MATTERHACKERS_AWIN_MERCHANT_ID",
     "esun": "ESUN_AWIN_MERCHANT_ID",
 }
@@ -194,6 +198,7 @@ _BRAND_SEARCH: list[tuple[str, str]] = [
     ("polymaker",     "https://us.polymaker.com/search?q={q}"),
     ("sunlu",         "https://store.sunlu.com/search?q={q}"),
     ("anycubic",      "https://store.anycubic.com/search?q={q}"),
+    ("creality",      "https://store.creality.com/search?q={q}"),
     ("matterhackers", "https://www.matterhackers.com/store/c?q={q}"),
     ("flashforge",    "https://www.flashforge.com/search?q={q}"),
     ("esun",          "https://esun3dstore.com/search?q={q}"),

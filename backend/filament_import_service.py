@@ -79,6 +79,8 @@ def detect_store(url: str) -> str:
         return "matterhackers"
     if "anycubic.com" in host:
         return "anycubic"
+    if "creality.com" in host:
+        return "creality"
     if "sunlu.com" in host:
         return "sunlu"
     if "flashforge.com" in host:
@@ -98,6 +100,7 @@ _FIXED_BRAND = {
     "bambu": "Bambu Lab",
     "polymaker": "Polymaker",
     "anycubic": "Anycubic",
+    "creality": "Creality",
     "sunlu": "SUNLU",
     "flashforge": "FlashForge",
 }
