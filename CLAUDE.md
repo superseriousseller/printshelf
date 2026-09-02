@@ -174,6 +174,7 @@ Deploy: push `staging` → smoke test → 85/85 QA → merge to `main` → push 
 **Self-Check** — After any change: adjacent breakage? Edge cases? Consistent with codebase? Note in QA Log.
 
 **Customer-Facing QA Gate:**
+_Scope (clarified 2026-09-02): applies to changes users see or feel — UI/UX, page behavior, flows, copy, pricing/limits. Backend-only config (affiliate wiring, merchant IDs, infra, dependency pins, webhook exception handling) ships straight to `main` under the Ship-it-yourself order (tests green, never push red) and is NOT gated. When in doubt, gate it. This gate is real and enforced for its scope — it is not retired._
 1. Deploy to staging. Stop.
 2. Generate and post QA script (format below). Say: *"Staging is ready for QA. Waiting for your go-ahead before merging."* Stop.
 3. Merge only after explicit confirmation. If QA fails — fix, redeploy, new script, wait again. Never auto-merge.
