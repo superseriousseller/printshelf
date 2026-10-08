@@ -210,6 +210,18 @@ def _search_query(*parts: str) -> str:
     return quote_plus(" ".join(p.strip() for p in parts if p and p.strip()))
 
 
+def _bambu_to_amazon(brand: str) -> bool:
+    """Bambu's own affiliate program (via Sovrn) is still unapproved, so every
+    Bambu link that goes to bambulab.com earns $0. Until BAMBU_AFFILIATE_REF is
+    set, route Bambu filament buy-links to an Amazon search instead — Amazon
+    carries Bambu filament + printers and pays via AMAZON_AFFILIATE_TAG
+    (printshelf-20), and each sale also counts toward Associates' order floor.
+    Auto-reverts to bambulab.com the moment BAMBU_AFFILIATE_REF is configured.
+    """
+    key = (brand or "").lower().replace(" ", "")
+    return "bambu" in key and not (os.environ.get("BAMBU_AFFILIATE_REF") or "").strip()
+
+
 def store_search_url(brand: str, material: str = "", color: str = "", finish: str = "") -> str | None:
     """Affiliate-tagged 'Buy' link for a filament with no product URL.
 
@@ -222,10 +234,12 @@ def store_search_url(brand: str, material: str = "", color: str = "", finish: st
     if not brand:
         return None
     key = brand.lower().replace(" ", "")
-    for needle, tmpl in _BRAND_SEARCH:
-        if needle in key:
-            return apply_affiliate(tmpl.format(q=_search_query(material, finish, color)))
-    # Catch-all: brand has no dedicated store → Amazon search (brand in the query).
+    # Bambu earns nothing on its own store until Sovrn approves → send to Amazon.
+    if not _bambu_to_amazon(brand):
+        for needle, tmpl in _BRAND_SEARCH:
+            if needle in key:
+                return apply_affiliate(tmpl.format(q=_search_query(material, finish, color)))
+    # Catch-all (incl. Bambu fallback): no monetized store → Amazon search.
     return apply_affiliate("https://www.amazon.com/s?k=" + _search_query(brand, material, finish, color))
 
 
@@ -234,7 +248,9 @@ def filament_buy_url(
 ) -> str | None:
     """Best Buy URL for a filament: its product URL (affiliate-tagged) if present,
     otherwise a store-search fallback by brand. None when neither is available."""
-    if source_url:
+    # Bambu product URLs point at bambulab.com and earn $0 while Sovrn is pending;
+    # ignore the bare source_url and send the click to a tagged Amazon search.
+    if source_url and not _bambu_to_amazon(brand):
         return apply_affiliate(source_url)
     return store_search_url(brand, material, color, finish)
 

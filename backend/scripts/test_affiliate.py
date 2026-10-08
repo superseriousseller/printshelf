@@ -152,5 +152,29 @@ check(
     "https://west3d.com/products/ambrosia-asa",
 )
 
+print("\n== Bambu: Amazon fallback while Sovrn affiliate is unapproved ==")
+aff = _reload_affiliate({"AMAZON_AFFILIATE_TAG": "printshelf-20"})  # BAMBU_AFFILIATE_REF unset
+check(
+    "Bambu search fallback -> tagged Amazon search",
+    aff.filament_buy_url(brand="Bambu Lab", material="PLA Basic", color="Black"),
+    "https://www.amazon.com/s?k=Bambu+Lab+PLA+Basic+Black&tag=printshelf-20",
+)
+check(
+    "Bambu source_url (bambulab.com) -> redirected to tagged Amazon search",
+    aff.filament_buy_url(brand="Bambu Lab", material="PLA", source_url="https://us.store.bambulab.com/products/pla-basic"),
+    "https://www.amazon.com/s?k=Bambu+Lab+PLA&tag=printshelf-20",
+)
+check(
+    "Non-Bambu source_url is untouched by the fallback",
+    aff.filament_buy_url(brand="Polymaker", material="PLA", source_url="https://us.polymaker.com/products/polyterra"),
+    "https://us.polymaker.com/products/polyterra",
+)
+aff = _reload_affiliate({"AMAZON_AFFILIATE_TAG": "printshelf-20", "BAMBU_AFFILIATE_REF": "bambu-ref"})
+check(
+    "Bambu auto-reverts to bambulab.com once the ref is set",
+    aff.filament_buy_url(brand="Bambu Lab", material="PLA", source_url="https://us.store.bambulab.com/products/pla-basic"),
+    "https://us.store.bambulab.com/products/pla-basic?ref=bambu-ref",
+)
+
 print(f"\n{'=' * 40}\n  {passed}/{passed + failed} passed\n{'=' * 40}")
 sys.exit(1 if failed else 0)
