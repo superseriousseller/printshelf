@@ -24,6 +24,8 @@ from urllib.parse import urlparse, urlencode
 import httpx
 from bs4 import BeautifulSoup
 
+from net_guard import UnsafeURLError, assert_public_url, safe_get, safe_head
+
 logger = logging.getLogger(__name__)
 
 BROWSER_UA = (
@@ -259,9 +261,8 @@ def _fetch_json(url: str, use_proxy: bool):
         r = _fetch_via_proxy(url)
         status = getattr(r, "_proxied_status", r.status_code)
     else:
-        with httpx.Client(timeout=REQUEST_TIMEOUT, follow_redirects=True,
-                          headers={**BROWSER_HEADERS, "Accept": "application/json"}) as c:
-            r = c.get(url)
+        r = safe_get(url, headers={**BROWSER_HEADERS, "Accept": "application/json"},
+                     timeout=REQUEST_TIMEOUT)
         status = r.status_code
     if status >= 400:
         return status, None
@@ -277,11 +278,13 @@ def _validate_thumbnail(url: str) -> Optional[str]:
     Fail *open* on network errors — the server's HEAD can be flaky where the
     end-user's browser will still load the CDN image fine."""
     try:
-        with httpx.Client(timeout=5.0) as hc:
-            head = hc.head(url, follow_redirects=True)
+        head = safe_head(url, timeout=5.0)
         if head.status_code >= 400:
             logger.info("makerworld cover CDN %s — skipping %s", head.status_code, url[:80])
             return None
+    except UnsafeURLError:
+        logger.info("dropping non-public thumbnail url %s", (url or "")[:80])
+        return None
     except Exception:
         pass
     return url
@@ -298,7 +301,7 @@ def _extract_makerworld_api(url: str, use_proxy: bool) -> Optional[dict]:
     api = f"https://makerworld.com/api/v1/design-service/design/{mid}"
     try:
         status, data = _fetch_json(api, use_proxy)
-    except httpx.RequestError as e:
+    except (httpx.RequestError, UnsafeURLError) as e:
         logger.warning("makerworld api fetch failed for id=%s: %s", mid, e)
         return None
     logger.info("makerworld api fetch: id=%s status=%s ok=%s", mid, status, bool(data))
@@ -331,6 +334,10 @@ def extract(url: str) -> dict:
     """
     if not url or not url.startswith(("http://", "https://")):
         raise ImportError_("Provide a full http(s) URL")
+    try:
+        assert_public_url(url)
+    except UnsafeURLError as e:
+        raise ImportError_(str(e))
 
     platform = detect_platform(url)
     use_proxy = platform == "makerworld" and bool(_CF_PROXY_URL and _CF_PROXY_SECRET)
@@ -350,10 +357,11 @@ def extract(url: str) -> dict:
             effective_status = getattr(r, "_proxied_status", r.status_code)
             logger.info("makerworld proxy fetch: status=%s url=%s", effective_status, effective_url)
         else:
-            with httpx.Client(timeout=REQUEST_TIMEOUT, follow_redirects=True, headers=_headers_for(platform)) as c:
-                r = c.get(url)
+            r = safe_get(url, headers=_headers_for(platform), timeout=REQUEST_TIMEOUT)
             effective_url = str(r.url)
             effective_status = r.status_code
+    except UnsafeURLError as e:
+        raise ImportError_(str(e))
     except httpx.RequestError as e:
         logger.warning("import fetch failed for %s: %s", url, e)
         # Even with a network failure we can sometimes salvage a title from the URL slug.
@@ -389,12 +397,12 @@ def extract(url: str) -> dict:
     # Validate before storing so we don't save a broken URL.
     if thumbnail and platform == "makerworld":
         try:
-            with httpx.Client(timeout=5.0) as hc:
-                head = hc.head(thumbnail)
+            head = safe_head(thumbnail, timeout=5.0)
             if head.status_code >= 400:
                 logger.info("makerworld thumbnail CDN %s for %s — skipping", head.status_code, thumbnail[:80])
                 thumbnail = None
         except Exception:
+            # Includes UnsafeURLError — a non-public og:image is dropped, not fetched.
             thumbnail = None
     designer = _extract_designer(soup, title)  # uses raw title to pull "by Author" attribution
     if title:

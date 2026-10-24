@@ -39,6 +39,7 @@ from import_service import (
     _og,
     _title_from_url_slug,
 )
+from net_guard import UnsafeURLError, assert_public_url, safe_get
 
 logger = logging.getLogger(__name__)
 
@@ -265,12 +266,17 @@ def extract(url: str) -> dict:
     """
     if not url or not url.startswith(("http://", "https://")):
         raise ImportError_("Provide a full http(s) URL")
+    try:
+        assert_public_url(url)
+    except UnsafeURLError as e:
+        raise ImportError_(str(e))
 
     store = detect_store(url)
 
     try:
-        with httpx.Client(timeout=REQUEST_TIMEOUT, follow_redirects=True, headers=_headers_for(store)) as c:
-            r = c.get(url)
+        r = safe_get(url, headers=_headers_for(store), timeout=REQUEST_TIMEOUT)
+    except UnsafeURLError as e:
+        raise ImportError_(str(e))
     except httpx.RequestError as e:
         logger.warning("filament import fetch failed for %s: %s", url, e)
         slug_title = _title_from_url_slug(url)
