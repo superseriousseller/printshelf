@@ -78,10 +78,18 @@ if SENTRY_DSN and APP_ENV in ("production", "staging"):
         logger.error(f"Sentry init failed: {e}")
 
 
+# Hide interactive API docs + schema in deployed envs — /docs, /redoc and
+# /openapi.json otherwise leak the full route map (incl. admin/auth/billing).
+# Local dev (APP_ENV=development) keeps them.
+_DOCS_PUBLIC = APP_ENV not in ("production", "staging")
+
 app = FastAPI(
     title="PrintShelf API",
     description="3D print tracking for makers",
     version=APP_VERSION,
+    docs_url="/docs" if _DOCS_PUBLIC else None,
+    redoc_url="/redoc" if _DOCS_PUBLIC else None,
+    openapi_url="/openapi.json" if _DOCS_PUBLIC else None,
 )
 
 
@@ -101,6 +109,18 @@ app.add_middleware(
 
 # --- Silent signup attribution (Referer/UTM/landing-path capture) ---
 app.middleware("http")(attribution.capture_attribution_middleware)
+
+
+# --- Baseline security response headers (every response) ---
+@app.middleware("http")
+async def security_headers_middleware(request, call_next):
+    response = await call_next(request)
+    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+    return response
 
 
 app.include_router(printers_routes.router)
