@@ -14,7 +14,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 import rate_limiter
-from models import Print, User, get_db
+from models import AffiliateClick, Print, User, get_db
 
 router = APIRouter(tags=["stats"])
 
@@ -60,6 +60,43 @@ def _compute_stats(db: Session, now: datetime) -> dict:
         per_day[created_at.date().isoformat()] += 1
     signups_per_day = [{"date": d, "count": c} for d, c in sorted(per_day.items())]
 
+    # --- Affiliate clicks (monetized-link taps through the /buy redirector) ---
+    # Real counts from the affiliate_clicks table. last7 vs prev7 give a trend;
+    # byStore7d + a 14-day daily series feed the growth dashboard's detail view.
+    two_week_ago = now - timedelta(days=14)
+    clicks_total = db.query(func.count(AffiliateClick.id)).scalar() or 0
+    clicks_7d = db.query(func.count(AffiliateClick.id)).filter(
+        AffiliateClick.clicked_at >= week_ago
+    ).scalar() or 0
+    clicks_prev7 = db.query(func.count(AffiliateClick.id)).filter(
+        AffiliateClick.clicked_at >= two_week_ago,
+        AffiliateClick.clicked_at < week_ago,
+    ).scalar() or 0
+    clicks_30d = db.query(func.count(AffiliateClick.id)).filter(
+        AffiliateClick.clicked_at >= month_ago
+    ).scalar() or 0
+    by_store_7d = (
+        db.query(AffiliateClick.store, func.count(AffiliateClick.id).label("cnt"))
+        .filter(AffiliateClick.clicked_at >= week_ago)
+        .group_by(AffiliateClick.store)
+        .order_by(func.count(AffiliateClick.id).desc())
+        .all()
+    )
+    clicks_by_store_7d = [
+        {"store": (s or "other"), "count": c} for s, c in by_store_7d
+    ]
+    # 14-day daily series (grouped in Python for Postgres/SQLite portability,
+    # same call as signups_per_day above).
+    recent_clicks = db.query(AffiliateClick.clicked_at).filter(
+        AffiliateClick.clicked_at >= two_week_ago
+    ).all()
+    clicks_per_day_map = defaultdict(int)
+    for (clicked_at,) in recent_clicks:
+        clicks_per_day_map[clicked_at.date().isoformat()] += 1
+    clicks_per_day = [
+        {"date": d, "count": c} for d, c in sorted(clicks_per_day_map.items())
+    ]
+
     return {
         "totalUsers": total_users,
         "newUsersThisWeek": new_this_week,
@@ -71,6 +108,14 @@ def _compute_stats(db: Session, now: datetime) -> dict:
         "paidUsers": paid_users,
         "usersByTier": {"free": total_users - paid_users, "pro": paid_users},
         "signupsPerDay": signups_per_day,
+        "affiliateClicks": {
+            "last7": clicks_7d,
+            "prev7": clicks_prev7,
+            "last30": clicks_30d,
+            "total": clicks_total,
+            "byStore7d": clicks_by_store_7d,
+            "perDay": clicks_per_day,
+        },
     }
 
 
