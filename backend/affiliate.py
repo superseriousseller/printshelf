@@ -52,6 +52,11 @@ _ALLOWED_LINK_DOMAINS: frozenset[str] = frozenset({
     "www.flashforge.com", "flashforge.com",
     "esun3dstore.com", "www.esun3dstore.com", "esun3d.com", "www.esun3d.com",
     "west3d.com", "www.west3d.com",
+    # Up2Stream / Arylic — DIY-audio affiliate partner (code PLUGGEDIN3D, 15% off).
+    # pluggedin3d.com = PluggedIn3D's own vanity-redirect domain; e.g. /stereo 302s
+    # through the tracked links.pluggedin3d.com/go/ counter to the Up2Stream affiliate.
+    "up2stream.net", "www.up2stream.net", "arylic.com", "www.arylic.com",
+    "pluggedin3d.com", "www.pluggedin3d.com",
 })
 
 

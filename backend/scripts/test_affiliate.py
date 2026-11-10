@@ -152,6 +152,29 @@ check(
     "https://west3d.com/products/ambrosia-asa",
 )
 
+print("\n== Up2Stream / Arylic + PluggedIn3D vanity redirect: allowed buy-link domains ==")
+aff = _reload_affiliate({})
+check(
+    "PluggedIn3D vanity redirect (/stereo) is an allowed link domain",
+    aff.is_allowed_link_domain("https://pluggedin3d.com/stereo"),
+    True,
+)
+check(
+    "Up2Stream store is an allowed link domain",
+    aff.is_allowed_link_domain("https://up2stream.net/products/amp-2-1"),
+    True,
+)
+check(
+    "Arylic store is an allowed link domain",
+    aff.is_allowed_link_domain("https://arylic.com/products/up2stream-amp-2-1"),
+    True,
+)
+check(
+    "PluggedIn3D vanity link passes through untouched (no known-store tag)",
+    aff.apply_affiliate("https://pluggedin3d.com/stereo"),
+    "https://pluggedin3d.com/stereo",
+)
+
 print("\n== Bambu: Amazon fallback while Sovrn affiliate is unapproved ==")
 aff = _reload_affiliate({"AMAZON_AFFILIATE_TAG": "printshelf-20"})  # BAMBU_AFFILIATE_REF unset
 check(
