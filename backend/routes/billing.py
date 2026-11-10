@@ -1,4 +1,5 @@
 """Stripe billing — Checkout, Customer Portal, and webhook handler."""
+import json
 import logging
 import os
 from typing import Optional
@@ -195,28 +196,40 @@ async def stripe_webhook(
         raise HTTPException(status_code=503, detail="Webhook secret not configured.")
     s = _stripe()
     try:
-        event = s.Webhook.construct_event(payload, stripe_signature, STRIPE_WEBHOOK_SECRET)
+        # construct_event is used ONLY to verify the signature (version-proof;
+        # stripe.SignatureVerificationError is the top-level SDK exception, and
+        # ValueError covers a malformed body).
+        s.Webhook.construct_event(payload, stripe_signature, STRIPE_WEBHOOK_SECRET)
     except (stripe.SignatureVerificationError, ValueError):
-        # Use the top-level SDK exception (version-proof; stripe.error is a legacy shim
-        # that AttributeErrors on newer majors → was the 500 since 2026-07-24). ValueError
-        # covers a malformed payload body.
         raise HTTPException(status_code=400, detail="Invalid webhook signature.")
 
-    etype = event["type"]
+    # Read the event from the RAW JSON as plain dicts — do NOT touch the parsed
+    # StripeObject. In stripe-python 15.x a StripeObject routes attribute access
+    # (incl. `.get`) through __getattr__ → KeyError → AttributeError, so calling
+    # `event["data"]["object"].get(...)` raised an UNCAUGHT AttributeError and
+    # EVERY real delivery returned 500 — Stripe flagged the endpoint for
+    # disabling (2026-11-10). Plain dicts keep `.get()` working across SDK majors.
+    try:
+        event = json.loads(payload)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid webhook payload.")
+
+    etype = event.get("type", "")
+    obj = (event.get("data") or {}).get("object") or {}
     _log.info("stripe_webhook event=%s", etype)
 
     if etype == "checkout.session.completed":
-        _handle_checkout_completed(event["data"]["object"], db)
+        _handle_checkout_completed(obj, db)
     elif etype in ("customer.subscription.deleted", "customer.subscription.updated"):
-        _handle_subscription_change(event["data"]["object"], db)
+        _handle_subscription_change(obj, db)
     elif etype == "invoice.payment_failed":
-        _log.warning("stripe payment_failed customer=%s", event["data"]["object"].get("customer"))
+        _log.warning("stripe payment_failed customer=%s", obj.get("customer"))
 
     return {"ok": True}
 
 
 def _handle_checkout_completed(session, db: Session) -> None:
-    user_id = int(session.get("metadata", {}).get("user_id", 0))
+    user_id = int((session.get("metadata") or {}).get("user_id") or 0)
     if not user_id:
         return
     user = db.query(User).filter(User.id == user_id).first()
@@ -237,7 +250,7 @@ def _handle_checkout_completed(session, db: Session) -> None:
 
 
 def _handle_subscription_change(subscription, db: Session) -> None:
-    user_id = int(subscription.get("metadata", {}).get("user_id", 0))
+    user_id = int((subscription.get("metadata") or {}).get("user_id") or 0)
     customer_id = subscription.get("customer")
     status = subscription.get("status")
 
