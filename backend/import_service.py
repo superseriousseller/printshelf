@@ -221,6 +221,99 @@ def _fetch_via_proxy(url: str) -> httpx.Response:
     return resp
 
 
+# --- Product-image resolver for the print-detail "Items used" cards -----------
+# Returns a real product photo for an affiliate item link (og:image / Amazon
+# hi-res / Shopify), so items render like the links page (image + title) instead
+# of bare text tags. Seeded for the common known links (guaranteed instant, no
+# network), best-effort fetch + in-process cache for the rest. Never raises;
+# short timeout; safe to call at render time.
+_LINK_IMG_SEED = {
+    "amazon:B006LW0WDQ": "https://m.media-amazon.com/images/I/71Aiwp41kGL._AC_SL1500_.jpg",
+    "amazon:B00N9866QM": "https://m.media-amazon.com/images/I/616s+o+k4KL._AC_SL1500_.jpg",
+    "amazon:B08BZ972B5": "https://m.media-amazon.com/images/I/71Js9os90VL._AC_SL1500_.jpg",
+    "pluggedin3d.com/stereo": "https://www.up2stream.net/cdn/shop/files/2.1_amplifier.jpg?v=1755659613",
+}
+_link_img_cache: dict = {}
+
+
+def _norm_url_key(url: str) -> str:
+    u = (url or "").split("?")[0].strip().lower()
+    for p in ("https://", "http://"):
+        if u.startswith(p):
+            u = u[len(p):]
+    if u.startswith("www."):
+        u = u[4:]
+    return u.rstrip("/")
+
+
+def _link_img_key(url: str) -> str:
+    try:
+        host = (urlparse(url or "").hostname or "").lower()
+    except Exception:
+        host = ""
+    if "amazon" in host or "amzn" in host:
+        m = re.search(r"/(?:dp|gp/product|gp/aw/d|product)/([A-Z0-9]{10})", url or "", re.I)
+        if m:
+            return "amazon:" + m.group(1).upper()
+    return _norm_url_key(url)
+
+
+def _thumb_size(img: Optional[str]) -> Optional[str]:
+    if not img:
+        return img
+    if "media-amazon.com" in img or "ssl-images-amazon" in img:
+        return re.sub(r"\._[A-Za-z0-9,_\-]+_\.jpg", "._AC_SL320_.jpg", img)
+    if "/cdn/shop/" in img:  # Shopify product CDN
+        return img.split("?")[0] + "?width=320"
+    return img
+
+
+def _og_image(body: Optional[str]) -> Optional[str]:
+    for pat in (
+        r'property=["\']og:image(?::secure_url)?["\'][^>]+content=["\']([^"\']+)',
+        r'content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+        r'"hiRes":"(https://[^"]+\.jpg)"',
+        r'"large":"(https://[^"]+\.jpg)"',
+    ):
+        m = re.search(pat, body or "")
+        if m:
+            return m.group(1).replace("&amp;", "&")
+    return None
+
+
+def resolve_link_image(url: str) -> Optional[str]:
+    if not url:
+        return None
+    key = _link_img_key(url)
+    if key in _LINK_IMG_SEED:
+        return _thumb_size(_LINK_IMG_SEED[key])
+    if key in _link_img_cache:
+        return _link_img_cache[key] or None
+    img = None
+    try:
+        try:
+            r = safe_get(url, headers=BROWSER_HEADERS, timeout=6.0)
+            if getattr(r, "status_code", 500) < 400:
+                img = _og_image(r.text)
+        except Exception:
+            img = None
+        if not img and _CF_PROXY_URL:
+            try:
+                r = _fetch_via_proxy(url)
+                if getattr(r, "_proxied_status", getattr(r, "status_code", 500)) < 400:
+                    img = _og_image(r.text)
+            except Exception:
+                img = None
+    except Exception:
+        img = None
+    # Reject obvious site logos (e.g. a Shopify homepage og:image is the brand logo).
+    if img and "logo" in img.rsplit("/", 1)[-1].lower():
+        img = None
+    img = _thumb_size(img) if img else None
+    _link_img_cache[key] = img or ""
+    return img
+
+
 def _makerworld_model_id(url: str) -> Optional[str]:
     """Pull the numeric model id from a Makerworld URL (/[locale/]models/<id>-<slug>)."""
     m = re.search(r"/models/(\d+)", urlparse(url).path)

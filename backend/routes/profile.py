@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from affiliate import apply_affiliate, filament_buy_url
 from auth import filament_preview_enabled, get_current_user_web_optional, instruments_index_enabled
 from email_service import send_follow_notification
-from import_service import platform_display_name
+from import_service import platform_display_name, resolve_link_image
 from models import Collection, CollectionPrint, Filament, Follow, Like, Print, PrintLink, Printer, User, get_db, PRINT_CATEGORY_LABELS
 from sqlalchemy import func
 
@@ -237,6 +237,31 @@ def public_profile(
     )
 
 
+# Store identity for an item-link card (icon glyph + gradient + store name),
+# derived from the raw affiliate URL's domain. Keeps the "Items used" list
+# reading like the links page (icon tile + title + store) instead of bare tags.
+_LINK_STORE_META = [
+    (("amazon", "amzn"),                     {"store": "Amazon",        "glyph": "🛒", "accent": "#ff9a3d", "accent2": "#ff6a3d"}),
+    (("up2stream", "arylic", "pluggedin3d"), {"store": "Up2Stream",     "glyph": "🔊", "accent": "#4aa3ff", "accent2": "#1f6fd0"}),
+    (("bambulab",),                          {"store": "Bambu Lab",     "glyph": "🧵", "accent": "#2fcf6a", "accent2": "#0a9a42"}),
+    (("polymaker",),                         {"store": "Polymaker",     "glyph": "🧵", "accent": "#5bc0ff", "accent2": "#1f7fd0"}),
+    (("creality",),                          {"store": "Creality",      "glyph": "🧵", "accent": "#ffb24a", "accent2": "#e07a1f"}),
+    (("matterhackers",),                     {"store": "MatterHackers", "glyph": "🧵", "accent": "#ff7a4a", "accent2": "#d0451f"}),
+    (("west3d",),                            {"store": "West3D",        "glyph": "🧵", "accent": "#7a9cff", "accent2": "#3f5fd0"}),
+    (("sunlu",),                             {"store": "SUNLU",         "glyph": "🧵", "accent": "#ffcf4a", "accent2": "#e0a01f"}),
+    (("flashforge", "esun"),                 {"store": "FlashForge",    "glyph": "🧵", "accent": "#ff8a4a", "accent2": "#d0551f"}),
+]
+_LINK_STORE_DEFAULT = {"store": "Shop", "glyph": "🛒", "accent": "#9aa0aa", "accent2": "#5a6068"}
+
+
+def _link_card_meta(raw_url: str) -> dict:
+    u = (raw_url or "").lower()
+    for needles, meta in _LINK_STORE_META:
+        if any(n in u for n in needles):
+            return meta
+    return _LINK_STORE_DEFAULT
+
+
 @router.get("/@{username}/prints/{print_ref}", response_class=HTMLResponse)
 def public_print_detail(
     request: Request,
@@ -382,7 +407,12 @@ def public_print_detail(
 
     raw_links = db.query(PrintLink).filter(PrintLink.print_id == p.id).order_by(PrintLink.sort_order).all()
     links_ctx = [
-        {"label": lk.label, "url": f"/@{user.username}/prints/{p.url_id}/goto?lid={lk.id}"}
+        {
+            "label": lk.label,
+            "url": f"/@{user.username}/prints/{p.url_id}/goto?lid={lk.id}",
+            "thumb": resolve_link_image(lk.url),
+            **_link_card_meta(lk.url),
+        }
         for lk in raw_links
     ]
 

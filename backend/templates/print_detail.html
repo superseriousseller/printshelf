@@ -174,9 +174,22 @@
             {% if links_ctx %}
             <div class="detail-links">
                 <p class="detail-section-label">Items used in this print</p>
-                <ul class="chip-list">
+                <ul class="item-cards">
                     {% for lk in links_ctx %}
-                    <li><a href="{{ lk.url }}" class="chip chip-link" target="_blank" rel="noopener sponsored">{{ lk.label }} →</a></li>
+                    <li>
+                        <a class="item-card" href="{{ lk.url }}" target="_blank" rel="noopener sponsored">
+                            {% if lk.thumb %}
+                            <span class="item-ico prod"><img src="{{ lk.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></span>
+                            {% else %}
+                            <span class="item-ico" style="background:linear-gradient(140deg,{{ lk.accent }},{{ lk.accent2 }})">{{ lk.glyph }}</span>
+                            {% endif %}
+                            <span class="item-txt">
+                                <span class="item-title">{{ lk.label }}</span>
+                                <span class="item-sub">{{ lk.store }}</span>
+                            </span>
+                            <span class="item-chev">Buy&nbsp;›</span>
+                        </a>
+                    </li>
                     {% endfor %}
                 </ul>
             </div>
@@ -200,22 +213,20 @@
             </div>
             {% endif %}
 
-            {% if print_.video_url %}
-            {% set vurl = print_.video_url %}
-            {% if "youtube.com" in vurl or "youtu.be" in vurl %}
-                {% set vlabel = "▶ Watch on YouTube" %}
-            {% elif "tiktok.com" in vurl %}
-                {% set vlabel = "▶ Watch on TikTok" %}
-            {% elif "instagram.com" in vurl %}
-                {% set vlabel = "▶ Watch on Instagram" %}
-            {% else %}
-                {% set vlabel = "▶ Watch video" %}
-            {% endif %}
-            <p class="detail-video"><a href="{{ vurl }}" target="_blank" rel="noopener" class="btn-secondary">{{ vlabel }}</a></p>
-            {% endif %}
-
-            {% if print_.source_url %}
-            <p class="detail-source"><a href="{{ print_.source_url }}" target="_blank" rel="noopener">View on {{ source_display_name(print_.source_url) }}</a></p>
+            {% if print_.video_url or print_.source_url %}
+            <div class="detail-actions">
+                {% if print_.video_url %}
+                {% set vurl = print_.video_url %}
+                {% if "youtube.com" in vurl or "youtu.be" in vurl %}{% set vlabel = "▶ Watch on YouTube" %}
+                {% elif "tiktok.com" in vurl %}{% set vlabel = "▶ Watch on TikTok" %}
+                {% elif "instagram.com" in vurl %}{% set vlabel = "▶ Watch on Instagram" %}
+                {% else %}{% set vlabel = "▶ Watch video" %}{% endif %}
+                <a href="{{ vurl }}" target="_blank" rel="noopener" class="btn-secondary">{{ vlabel }}</a>
+                {% endif %}
+                {% if print_.source_url %}
+                <a href="{{ print_.source_url }}" target="_blank" rel="noopener" class="btn-secondary">🌐 View on {{ source_display_name(print_.source_url) }}</a>
+                {% endif %}
+            </div>
             {% endif %}
             {% set _slicers = {'bambustudio':'Bambu Studio','orcaslicer':'OrcaSlicer','prusaslicer':'PrusaSlicer','slicer':'a 3D slicer'} %}
             {% if print_.source_platform in _slicers %}
